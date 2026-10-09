@@ -1,0 +1,215 @@
+﻿@model List<SwiftyS26.Models.LockerAccessOverride>
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewBag.Title = "Locker Access Audit";
+    ViewBag.PageTitle = "LOCKER ACCESS AUDIT";
+    ViewBag.ActiveNav = "lockers";
+}
+
+@section Styles {
+    <style>
+        .audit-intro {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            font-size: 13px;
+            color: var(--text-sub);
+            margin-bottom: 22px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+            .audit-intro i {
+                color: var(--red);
+                font-size: 18px;
+                margin-top: 1px;
+            }
+
+        .audit-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px 22px;
+            margin-bottom: 14px;
+            box-shadow: var(--shadow-sm);
+            border-left: 4px solid var(--red);
+        }
+
+        .audit-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .audit-locker {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 20px;
+            letter-spacing: .5px;
+            color: var(--text);
+        }
+
+        .audit-time {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .audit-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 14px;
+            margin-bottom: 12px;
+        }
+
+        .audit-field label {
+            display: block;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .audit-field div {
+            font-size: 13px;
+            color: var(--text-sub);
+        }
+
+        .audit-reason {
+            background: var(--bg3);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            font-size: 13px;
+            color: var(--text-sub);
+            margin-bottom: 10px;
+        }
+
+            .audit-reason strong {
+                color: var(--text);
+            }
+
+        .audit-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11.5px;
+            color: var(--muted);
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+        }
+
+        .notified-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 2px 9px;
+            border-radius: 20px;
+            font-size: 10.5px;
+            font-weight: 700;
+        }
+
+            .notified-badge.yes {
+                background: var(--green-light);
+                color: var(--green);
+            }
+
+            .notified-badge.no {
+                background: var(--red-light);
+                color: var(--red);
+            }
+
+        .empty-audit {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--muted);
+        }
+
+            .empty-audit i {
+                font-size: 36px;
+                opacity: .3;
+                display: block;
+                margin-bottom: 14px;
+            }
+    </style>
+}
+
+<div class="page-content">
+
+    <div class="audit-intro">
+        <i class="fas fa-shield-halved"></i>
+        <div>
+            <strong>Immutable security log.</strong> Every time staff open a member's locker while their
+            reservation is still active, it's recorded here permanently. These records cannot be edited
+            or deleted from anywhere in the application. Only the last 200 entries are shown.
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="admin-card">
+            <div class="empty-audit">
+                <i class="fas fa-shield-halved"></i>
+                No override actions have ever been performed. This log will populate automatically
+                the first time staff use Override Open on a locker fault.
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="admin-card" style="padding:16px 22px; margin-bottom:20px;">
+            <div class="admin-card-title" style="margin-bottom:0;">
+                <i class="fas fa-list"></i> @Model.Count record@(Model.Count == 1 ? "" : "s")
+            </div>
+        </div>
+
+        foreach (var o in Model)
+        {
+            <div class="audit-card">
+                <div class="audit-head">
+                    <div>
+                        <div class="audit-locker">Locker @o.Locker?.LockerNumber</div>
+                        <div class="audit-time">@o.PerformedAt.ToString("dddd, dd MMMM yyyy 'at' HH:mm")</div>
+                    </div>
+                    <span class="notified-badge @(o.MemberNotified ? "yes" : "no")">
+                        <i class="fas @(o.MemberNotified ? "fa-check" : "fa-triangle-exclamation")"></i>
+                        @(o.MemberNotified ? "Member notified" : "Notification failed")
+                    </span>
+                </div>
+
+                <div class="audit-grid">
+                    <div class="audit-field">
+                        <label>Member</label>
+                        <div>@(o.Member?.FullName ?? "Unknown") (@o.Member?.MemberNumber)</div>
+                    </div>
+                    <div class="audit-field">
+                        <label>Related Fault</label>
+                        <div>@(o.LockerFault?.ReferenceNumber ?? "—")</div>
+                    </div>
+                    <div class="audit-field">
+                        <label>IP Address</label>
+                        <div>@(o.IpAddress ?? "—")</div>
+                    </div>
+                </div>
+
+                <div class="audit-reason">
+                    <strong>Reason:</strong> @o.Reason
+                </div>
+                <div class="audit-reason">
+                    <strong>Member informed via:</strong> @o.Acknowledgement
+                </div>
+
+                <div class="audit-footer">
+                    <span>Override #@o.LockerAccessOverrideId</span>
+                    <span>Reservation #@(o.ReservationId?.ToString() ?? "—")</span>
+                </div>
+            </div>
+        }
+    }
+
+</div>
+

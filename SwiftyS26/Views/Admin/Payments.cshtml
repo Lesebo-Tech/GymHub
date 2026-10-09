@@ -1,0 +1,68 @@
+﻿@model List<SwiftyS26.Models.Payment>
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    var totalPayments = (int)(ViewBag.TotalPayments ?? 0);
+    decimal totalPaymentsAmount = ViewBag.TotalPaymentsAmount ?? 0m;
+    var payments = Model ?? new List<SwiftyS26.Models.Payment>();
+}
+
+<div class="admin-stats-grid">
+    <div class="admin-stat-card blue">
+        <div class="stat-icon"><i class="fas fa-receipt"></i></div>
+        <div class="stat-number">@totalPayments</div>
+        <div class="stat-label">Total Transactions</div>
+    </div>
+    <div class="admin-stat-card gold">
+        <div class="stat-icon"><i class="fas fa-coins"></i></div>
+        <div class="stat-number">R @string.Format("{0:N0}", totalPaymentsAmount)</div>
+        <div class="stat-label">Total Revenue</div>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-header">
+        <div class="admin-card-title"><i class="fas fa-credit-card"></i> All Payments</div>
+        <div class="admin-card-count">@payments.Count records</div>
+    </div>
+    <div class="search-bar">
+        <input type="text" id="paymentSearch"
+               placeholder="Search by member name, ID or reference..."
+               oninput="filterTable('paymentSearch','paymentsTable')" />
+    </div>
+    <div class="admin-table-wrap">
+        <table class="admin-table" id="paymentsTable">
+            <thead>
+                <tr>
+                    <th>Reference</th>
+                    <th>Member</th>
+                    <th>Member ID</th>
+                    <th>Amount</th>
+                    <th>Method</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (payments.Count > 0)
+                {
+                    foreach (var p in payments)
+                    {
+                        <tr>
+                            <td class="payment-ref">@p.Reference</td>
+                            <td class="member-name">@(p.Member != null ? p.Member.FullName : "—")</td>
+                            <td class="member-id">@(p.Member != null ? p.Member.MemberNumber : "—")</td>
+                            <td class="payment-amount">R @p.Amount.ToString("F2")</td>
+                            <td class="payment-method">@p.Method</td>
+                            <td><span class="pay-badge @p.Status.ToLower()">@p.Status</span></td>
+                            <td class="payment-date">@p.PaymentDate.ToString("dd MMM yyyy")</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted);">No payments recorded yet.</td></tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

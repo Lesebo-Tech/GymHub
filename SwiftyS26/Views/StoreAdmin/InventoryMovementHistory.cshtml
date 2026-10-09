@@ -1,0 +1,986 @@
+﻿@model SwiftyS26.ViewModels.InventoryMovementHistoryPageViewModel
+@using System
+@using System.Linq
+
+@{
+    Layout = Session["LoggedInAdmin"] != null
+        ? "~/Views/Shared/_AdminLayout.cshtml"
+        : "~/Views/Shared/_StoreStaffLayout.cshtml";
+
+    ViewBag.Title = "Inventory Movement History";
+    ViewBag.PageTitle = "INVENTORY MOVEMENT HISTORY";
+
+    var movements =
+        Model != null && Model.Movements != null
+            ? Model.Movements
+            : new List<SwiftyS26.Models.InventoryMovement>();
+
+    string fromDateValue =
+        Model != null && Model.FromDate.HasValue
+            ? Model.FromDate.Value.ToString("yyyy-MM-dd")
+            : "";
+
+    string toDateValue =
+        Model != null && Model.ToDate.HasValue
+            ? Model.ToDate.Value.ToString("yyyy-MM-dd")
+            : "";
+}
+
+<style>
+    @@keyframes im-fade-up {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .im-page {
+        max-width: 1600px;
+        margin: 0 auto;
+    }
+
+    .im-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .im-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .im-title-icon {
+        color: #2563eb;
+        font-size: 28px;
+    }
+
+    .im-title h2 {
+        margin: 0;
+        color: #0f172a;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 30px;
+        letter-spacing: 1px;
+    }
+
+    .im-subtitle {
+        margin: 4px 0 0;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .im-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .im-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 10px 15px;
+        border-radius: 9px;
+        font-size: 12px;
+        font-weight: 850;
+        text-decoration: none;
+        cursor: pointer;
+        transition: .2s ease;
+    }
+
+        .im-button:hover {
+            text-decoration: none;
+            transform: translateY(-1px);
+        }
+
+    .im-button-primary {
+        border: 1px solid #2563eb;
+        color: #fff;
+        background: #2563eb;
+    }
+
+        .im-button-primary:hover {
+            color: #fff;
+            background: #1d4ed8;
+        }
+
+    .im-button-light {
+        border: 1px solid #dbe3ef;
+        color: #334155;
+        background: #fff;
+    }
+
+        .im-button-light:hover {
+            color: #0f172a;
+            background: #f8fafc;
+        }
+
+    .im-button-pdf {
+        border: 1px solid #fecaca;
+        color: #dc2626;
+        background: #fff;
+    }
+
+        .im-button-pdf:hover {
+            color: #b91c1c;
+            background: #fef2f2;
+        }
+
+    .im-button-excel {
+        border: 1px solid #bbf7d0;
+        color: #15803d;
+        background: #fff;
+    }
+
+        .im-button-excel:hover {
+            color: #166534;
+            background: #f0fdf4;
+        }
+
+    .im-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        padding: 12px 15px;
+        margin-bottom: 15px;
+        border: 1px solid;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .im-alert-success {
+        color: #15803d;
+        background: #f0fdf4;
+        border-color: #bbf7d0;
+    }
+
+    .im-alert-error {
+        color: #b91c1c;
+        background: #fef2f2;
+        border-color: #fecaca;
+    }
+
+    .im-info {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        padding: 12px 15px;
+        margin-bottom: 17px;
+        border: 1px solid #bfdbfe;
+        border-radius: 10px;
+        color: #1d4ed8;
+        background: #eff6ff;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .im-stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(150px, 1fr));
+        gap: 12px;
+        margin-bottom: 17px;
+    }
+
+    .im-stat {
+        padding: 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 13px;
+        background: #fff;
+        animation: im-fade-up .3s ease both;
+    }
+
+    .im-stat-label {
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 850;
+        letter-spacing: .35px;
+        text-transform: uppercase;
+    }
+
+    .im-stat-value {
+        margin-top: 6px;
+        color: #0f172a;
+        font-size: 24px;
+        font-weight: 900;
+    }
+
+    .im-positive {
+        color: #16a34a;
+    }
+
+    .im-negative {
+        color: #dc2626;
+    }
+
+    .im-neutral {
+        color: #2563eb;
+    }
+
+    .im-breakdown {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(145px, 1fr));
+        gap: 11px;
+        margin-bottom: 17px;
+    }
+
+    .im-breakdown-card {
+        padding: 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #fff;
+    }
+
+    .im-breakdown-label {
+        color: #64748b;
+        font-size: 9.5px;
+        font-weight: 850;
+        text-transform: uppercase;
+    }
+
+    .im-breakdown-value {
+        margin-top: 5px;
+        color: #0f172a;
+        font-size: 19px;
+        font-weight: 900;
+    }
+
+    .im-filter-card {
+        padding: 16px;
+        margin-bottom: 18px;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        background: #fff;
+    }
+
+    .im-filter-title {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        margin-bottom: 13px;
+        color: #0f172a;
+        font-size: 13px;
+        font-weight: 900;
+    }
+
+        .im-filter-title i {
+            color: #2563eb;
+        }
+
+    .im-filter-grid {
+        display: grid;
+        grid-template-columns: minmax(220px, 1.5fr) minmax(170px, 1fr) minmax(170px, 1fr) minmax(170px, 1fr) minmax(140px, .8fr) minmax(140px, .8fr);
+        gap: 10px;
+    }
+
+    .im-field label {
+        display: block;
+        margin-bottom: 5px;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 850;
+        text-transform: uppercase;
+    }
+
+    .im-input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px 11px;
+        border: 1px solid #dbe3ef;
+        border-radius: 8px;
+        outline: none;
+        color: #0f172a;
+        background: #fff;
+        font-size: 12.5px;
+    }
+
+        .im-input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .1);
+        }
+
+    .im-filter-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 13px;
+        flex-wrap: wrap;
+    }
+
+    .im-table-wrap {
+        overflow-x: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        background: #fff;
+        animation: im-fade-up .35s ease both;
+    }
+
+    .im-table {
+        width: 100%;
+        min-width: 1280px;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+        .im-table th {
+            padding: 11px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #64748b;
+            background: #f8fafc;
+            font-size: 9.5px;
+            font-weight: 850;
+            text-align: left;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .im-table td {
+            padding: 13px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+            vertical-align: middle;
+        }
+
+        .im-table tbody tr:hover {
+            background: #fafcff;
+        }
+
+        .im-table tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+    .im-product {
+        color: #0f172a;
+        font-weight: 900;
+    }
+
+    .im-muted {
+        margin-top: 3px;
+        color: #64748b;
+        font-size: 10.5px;
+    }
+
+    .im-change {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        min-width: 55px;
+        font-size: 13px;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .im-change-positive {
+        color: #16a34a;
+    }
+
+    .im-change-negative {
+        color: #dc2626;
+    }
+
+    .im-type {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 9px;
+        border-radius: 999px;
+        font-size: 9.5px;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .im-type-delivery {
+        color: #16a34a;
+        background: #f0fdf4;
+    }
+
+    .im-type-order {
+        color: #2563eb;
+        background: #eff6ff;
+    }
+
+    .im-type-release {
+        color: #7c3aed;
+        background: #f5f3ff;
+    }
+
+    .im-type-return {
+        color: #0891b2;
+        background: #ecfeff;
+    }
+
+    .im-type-damage {
+        color: #dc2626;
+        background: #fef2f2;
+    }
+
+    .im-type-adjustment {
+        color: #b45309;
+        background: #fffbeb;
+    }
+
+    .im-type-neutral {
+        color: #475569;
+        background: #f1f5f9;
+    }
+
+    .im-reference {
+        color: #2563eb;
+        font-weight: 800;
+    }
+
+    .im-notes {
+        max-width: 290px;
+        color: #475569;
+        font-size: 11px;
+        line-height: 1.4;
+    }
+
+    .im-empty {
+        padding: 60px 20px;
+        color: #64748b;
+        text-align: center;
+    }
+
+        .im-empty i {
+            display: block;
+            margin-bottom: 10px;
+            color: #94a3b8;
+            font-size: 32px;
+        }
+
+        .im-empty strong {
+            display: block;
+            margin-bottom: 4px;
+            color: #0f172a;
+        }
+
+    @@media (max-width: 1200px) {
+        .im-filter-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .im-breakdown {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @@media (max-width: 850px) {
+        .im-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .im-filter-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @@media (max-width: 550px) {
+        .im-header {
+            flex-direction: column;
+        }
+
+        .im-actions,
+        .im-actions .im-button {
+            width: 100%;
+        }
+
+        .im-stats,
+        .im-breakdown,
+        .im-filter-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .im-filter-actions,
+        .im-filter-actions .im-button {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="im-page">
+    <div class="im-header">
+        <div>
+            <div class="im-title">
+                <i class="fas fa-boxes-stacked im-title-icon"></i>
+                <h2>Inventory Movement History</h2>
+            </div>
+
+            <p class="im-subtitle">
+                Read-only audit ledger of every recorded increase and
+                decrease in GymHub store stock.
+            </p>
+        </div>
+
+        <div class="im-actions">
+            <a class="im-button im-button-light"
+               href="@Url.Action("StoreReports", "StoreAdmin")">
+                <i class="fas fa-arrow-left"></i>
+                Reports
+            </a>
+
+            <a class="im-button im-button-pdf"
+               href="@Url.Action(
+                   "ExportInventoryMovementHistoryPdf",
+                   "StoreAdmin",
+                   new
+                   {
+                       search = Model.Search,
+                       movementType = Model.MovementType,
+                       referenceType = Model.ReferenceType,
+                       productId = Model.ProductId,
+                       fromDate = fromDateValue,
+                       toDate = toDateValue
+                   })">
+                <i class="fas fa-file-pdf"></i>
+                Export PDF
+            </a>
+
+            <a class="im-button im-button-excel"
+               href="@Url.Action(
+                   "ExportInventoryMovementHistoryExcel",
+                   "StoreAdmin",
+                   new
+                   {
+                       search = Model.Search,
+                       movementType = Model.MovementType,
+                       referenceType = Model.ReferenceType,
+                       productId = Model.ProductId,
+                       fromDate = fromDateValue,
+                       toDate = toDateValue
+                   })">
+                <i class="fas fa-file-excel"></i>
+                Export Excel
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="im-alert im-alert-success">
+            <i class="fas fa-circle-check"></i>
+            <span>@TempData["Success"]</span>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="im-alert im-alert-error">
+            <i class="fas fa-circle-exclamation"></i>
+            <span>@TempData["Error"]</span>
+        </div>
+    }
+
+    <div class="im-info">
+        <i class="fas fa-shield-halved"></i>
+
+        <span>
+            This ledger is read-only. Each record identifies the product,
+            quantity change, business process reference, responsible person
+            and date of the stock movement.
+        </span>
+    </div>
+
+    <div class="im-stats">
+        <div class="im-stat">
+            <div class="im-stat-label">Matching movements</div>
+            <div class="im-stat-value">@Model.TotalRecords</div>
+        </div>
+
+        <div class="im-stat">
+            <div class="im-stat-label">Units added</div>
+            <div class="im-stat-value im-positive">
+                +@Model.TotalUnitsAdded
+            </div>
+        </div>
+
+        <div class="im-stat">
+            <div class="im-stat-label">Units removed</div>
+            <div class="im-stat-value im-negative">
+                -@Model.TotalUnitsRemoved
+            </div>
+        </div>
+
+        <div class="im-stat">
+            <div class="im-stat-label">Net quantity change</div>
+
+            <div class="im-stat-value @(Model.NetQuantityChange > 0
+                ? "im-positive"
+                : Model.NetQuantityChange < 0
+                    ? "im-negative"
+                    : "im-neutral")">
+
+                @(Model.NetQuantityChange > 0
+                    ? "+" + Model.NetQuantityChange
+                    : Model.NetQuantityChange.ToString())
+            </div>
+        </div>
+    </div>
+
+    <div class="im-breakdown">
+        <div class="im-breakdown-card">
+            <div class="im-breakdown-label">
+                Supplier delivery
+            </div>
+
+            <div class="im-breakdown-value im-positive">
+                +@Model.SupplierDeliveryUnits
+            </div>
+        </div>
+
+        <div class="im-breakdown-card">
+            <div class="im-breakdown-label">
+                Order reservations
+            </div>
+
+            <div class="im-breakdown-value im-negative">
+                -@Model.StoreOrderReservationUnits
+            </div>
+        </div>
+
+        <div class="im-breakdown-card">
+            <div class="im-breakdown-label">
+                Uncollected releases
+            </div>
+
+            <div class="im-breakdown-value im-positive">
+                +@Model.UncollectedReleasedUnits
+            </div>
+        </div>
+
+        <div class="im-breakdown-card">
+            <div class="im-breakdown-label">
+                Member returns restocked
+            </div>
+
+            <div class="im-breakdown-value im-positive">
+                +@Model.ReturnedToStockUnits
+            </div>
+        </div>
+
+        <div class="im-breakdown-card">
+            <div class="im-breakdown-label">
+                Damaged write-offs
+            </div>
+
+            <div class="im-breakdown-value im-negative">
+                -@Model.DamagedWriteOffUnits
+            </div>
+        </div>
+    </div>
+
+    <div class="im-filter-card">
+        <div class="im-filter-title">
+            <i class="fas fa-filter"></i>
+            Filter Inventory Movements
+        </div>
+
+        @using (Html.BeginForm(
+            "InventoryMovementHistory",
+            "StoreAdmin",
+            FormMethod.Get))
+        {
+            <div class="im-filter-grid">
+                <div class="im-field">
+                    <label for="search">Search</label>
+
+                    <input id="search"
+                           class="im-input"
+                           type="search"
+                           name="search"
+                           value="@Model.Search"
+                           placeholder="Product, reference, person or notes" />
+                </div>
+
+                <div class="im-field">
+                    <label for="productId">Product</label>
+
+                    @Html.DropDownList(
+                             "productId",
+                             ViewBag.Products as SelectList,
+                             "All products",
+                             new
+                             {
+                                 @class = "im-input",
+                                 id = "productId"
+                             })
+                </div>
+
+                <div class="im-field">
+                    <label for="movementType">Movement type</label>
+
+                    @Html.DropDownList(
+                             "movementType",
+                             ViewBag.MovementTypes as SelectList,
+                             "All movement types",
+                             new
+                             {
+                                 @class = "im-input",
+                                 id = "movementType"
+                             })
+                </div>
+
+                <div class="im-field">
+                    <label for="referenceType">Reference type</label>
+
+                    @Html.DropDownList(
+                             "referenceType",
+                             ViewBag.ReferenceTypes as SelectList,
+                             "All reference types",
+                             new
+                             {
+                                 @class = "im-input",
+                                 id = "referenceType"
+                             })
+                </div>
+
+                <div class="im-field">
+                    <label for="fromDate">From date</label>
+
+                    <input id="fromDate"
+                           class="im-input"
+                           type="date"
+                           name="fromDate"
+                           value="@fromDateValue" />
+                </div>
+
+                <div class="im-field">
+                    <label for="toDate">To date</label>
+
+                    <input id="toDate"
+                           class="im-input"
+                           type="date"
+                           name="toDate"
+                           value="@toDateValue" />
+                </div>
+            </div>
+
+            <div class="im-filter-actions">
+                <a class="im-button im-button-light"
+                   href="@Url.Action(
+                       "InventoryMovementHistory",
+                       "StoreAdmin")">
+                    <i class="fas fa-rotate-left"></i>
+                    Clear
+                </a>
+
+                <button class="im-button im-button-primary"
+                        type="submit">
+                    <i class="fas fa-filter"></i>
+                    Apply Filters
+                </button>
+            </div>
+        }
+    </div>
+
+    <div class="im-table-wrap">
+        @if (!movements.Any())
+        {
+            <div class="im-empty">
+                <i class="fas fa-boxes-stacked"></i>
+                <strong>No matching inventory movements</strong>
+                <span>Adjust the selected filters and try again.</span>
+            </div>
+        }
+        else
+        {
+            <table class="im-table">
+                <thead>
+                    <tr>
+                        <th>Date and time</th>
+                        <th>Product</th>
+                        <th>Quantity change</th>
+                        <th>Movement type</th>
+                        <th>Reference type</th>
+                        <th>Reference</th>
+                        <th>Performed by</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var movement in movements)
+                    {
+                        bool isIncrease =
+                            movement.QuantityChange > 0;
+
+                        string typeClass =
+                            "im-type-neutral";
+
+                        string typeIcon =
+                            "fas fa-box";
+
+                        switch (movement.MovementType)
+                        {
+                            case "SupplierDelivery":
+                                typeClass = "im-type-delivery";
+                                typeIcon = "fas fa-truck";
+                                break;
+
+                            case "StoreOrderReservation":
+                                typeClass = "im-type-order";
+                                typeIcon = "fas fa-cart-shopping";
+                                break;
+
+                            case "UncollectedRelease":
+                                typeClass = "im-type-release";
+                                typeIcon = "fas fa-box-open";
+                                break;
+
+                            case "ReturnRestocked":
+                                typeClass = "im-type-return";
+                                typeIcon = "fas fa-rotate-left";
+                                break;
+
+                            case "ExchangeReturned":
+                                typeClass = "im-type-return";
+                                typeIcon = "fas fa-right-left";
+                                break;
+
+                            case "ExchangeIssued":
+                                typeClass = "im-type-order";
+                                typeIcon = "fas fa-right-left";
+                                break;
+
+                            case "DamagedWriteOff":
+                                typeClass = "im-type-damage";
+                                typeIcon = "fas fa-triangle-exclamation";
+                                break;
+
+                            case "SupplierReturn":
+                                typeClass = "im-type-damage";
+                                typeIcon = "fas fa-truck-arrow-right";
+                                break;
+
+                            case "ManualAdjustment":
+                            case "InitialStock":
+                                typeClass = "im-type-adjustment";
+                                typeIcon = "fas fa-sliders";
+                                break;
+                        }
+
+                        string movementText =
+                            string.IsNullOrWhiteSpace(
+                                movement.MovementType)
+                                ? "Unspecified"
+                                : movement.MovementType;
+
+                        <tr>
+                            <td>
+                                <strong>
+                                    @movement.CreatedAt.ToString(
+                                             "dd MMM yyyy")
+                                </strong>
+
+                                <div class="im-muted">
+                                    @movement.CreatedAt.ToString("HH:mm:ss")
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="im-product">
+                                    @(movement.Product != null
+                                        ? movement.Product.Name
+                                        : "Unknown product")
+                                </div>
+
+                                <div class="im-muted">
+                                    Product ID:
+                                    @movement.ProductId
+                                </div>
+                            </td>
+
+                            <td>
+                                <span class="im-change @(isIncrease
+                                    ? "im-change-positive"
+                                    : "im-change-negative")">
+
+                                    <i class="fas @(isIncrease
+                                        ? "fa-arrow-up"
+                                        : "fa-arrow-down")"></i>
+
+                                    @(isIncrease
+                                        ? "+" +
+                                          movement.QuantityChange
+                                        : movement.QuantityChange
+                                            .ToString())
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="im-type @typeClass">
+                                    <i class="@typeIcon"></i>
+                                    @movementText
+                                </span>
+                            </td>
+
+                            <td>
+                                @(string.IsNullOrWhiteSpace(
+                                    movement.ReferenceType)
+                                    ? "—"
+                                    : movement.ReferenceType)
+                            </td>
+
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(
+                                    movement.ReferenceNumber))
+                                {
+                                    <span class="im-reference">
+                                        @movement.ReferenceNumber
+                                    </span>
+
+                                    if (movement.ReferenceId.HasValue)
+                                    {
+                                        <div class="im-muted">
+                                            Record ID:
+                                            @movement.ReferenceId.Value
+                                        </div>
+                                    }
+                                }
+                                else if (movement.ReferenceId.HasValue)
+                                {
+                                    <span>
+                                        #@movement.ReferenceId.Value
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="im-muted">—</span>
+                                }
+                            </td>
+
+                            <td>
+                                <strong>
+                                    @(string.IsNullOrWhiteSpace(
+                                        movement.PerformedBy)
+                                        ? "GymHub System"
+                                        : movement.PerformedBy)
+                                </strong>
+                            </td>
+
+                            <td>
+                                <div class="im-notes">
+                                    @(string.IsNullOrWhiteSpace(
+                                        movement.Notes)
+                                        ? "No notes recorded."
+                                        : movement.Notes)
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

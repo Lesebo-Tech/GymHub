@@ -1,0 +1,118 @@
+﻿@model SwiftyS26.Models.MemberForm
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.ActivePage = "freeze";
+    ViewBag.PageTitle = "Freeze Membership";
+    string nextBillingDate = ViewBag.NextBillingDate ?? "—";
+}
+
+@section head {
+    <link href="~/Content/freeze.css" rel="stylesheet" />
+}
+
+<div class="section-header">
+    <div class="section-title">Freeze Membership</div>
+    <div class="section-sub">Pause your membership for injury, travel or medical reasons</div>
+</div>
+
+<div id="freeze-status-banner"></div>
+
+<!-- Freeze Request Card -->
+<div class="dash-card" id="freeze-request-card">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fas fa-pause-circle"></i> Request a Freeze
+        </div>
+    </div>
+
+    <div class="freeze-info-box">
+        <div class="fib-title">
+            <i class="fas fa-circle-info"></i> How membership freezes work
+        </div>
+        <ul>
+            <li><i class="fas fa-clock"></i> Minimum <strong>7 days</strong>, maximum <strong>90 days</strong> per request</li>
+            <li><i class="fas fa-calendar-plus"></i> Your membership expiry is <strong>extended</strong> by the freeze duration — you don't lose time</li>
+            <li><i class="fas fa-door-closed"></i> Gym access is <strong>paused</strong> during the freeze; you can still log in to this dashboard</li>
+            <li><i class="fas fa-check-circle"></i> You must be <strong>Active</strong> with <strong>no outstanding payments</strong> to request a freeze</li>
+            <li><i class="fas fa-clock"></i> One freeze request at a time — admin approval required within 1–2 business days</li>
+        </ul>
+    </div>
+
+    <div class="freeze-date-grid">
+        <div class="input-group">
+            <label class="freeze-label" for="freeze-start-input">
+                <i class="fas fa-calendar-day"></i> Freeze Start Date
+            </label>
+            <input type="date" id="freeze-start-input" class="freeze-input" />
+        </div>
+        <div class="input-group">
+            <label class="freeze-label" for="freeze-end-input">
+                <i class="fas fa-calendar-day"></i> Freeze End Date
+            </label>
+            <input type="date" id="freeze-end-input" class="freeze-input" />
+        </div>
+    </div>
+
+    <div class="freeze-duration-preview" id="freeze-duration-preview"></div>
+
+    <div class="input-group">
+        <label class="freeze-label" for="freeze-reason-input">
+            <i class="fas fa-pen"></i> Reason for Freeze
+        </label>
+        <textarea id="freeze-reason-input" rows="3" class="freeze-textarea"
+                  placeholder="e.g. Recovering from knee surgery for 3 weeks, travelling overseas…"></textarea>
+        <div class="input-hint">
+            <i class="fas fa-info-circle"></i> Minimum 10 characters required
+        </div>
+    </div>
+
+    <div class="freeze-err-box" id="freeze-form-error"></div>
+
+    <button type="button" class="freeze-submit-btn" id="freeze-submit-btn" onclick="submitFreezeRequest()">
+        <i class="fas fa-paper-plane"></i> Submit Freeze Request
+    </button>
+</div>
+
+<!-- Freeze History Card -->
+<div class="dash-card">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fas fa-history"></i> My Freeze History
+        </div>
+        <button class="card-action-btn" onclick="loadFreezeHistory()">
+            <i class="fas fa-rotate-right"></i> Refresh
+        </button>
+    </div>
+    <div id="freeze-history-body">
+        <div class="loading">
+            <i class="fas fa-spinner fa-pulse"></i> Loading freeze history…
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+    var memberInfo = {
+        name:            '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(Model.FullName))',
+        firstName:       '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(Model.FirstName))',
+        memberNumber:    '@Model.MemberNumber',
+        plan:            '@Model.Plan',
+        status:          '@Model.Status',
+        nextBillingDate: '@nextBillingDate'
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var startInput = document.getElementById('freeze-start-input');
+        var endInput   = document.getElementById('freeze-end-input');
+        if (!startInput || !endInput) return;
+        var tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        var minStr = tomorrow.toISOString().split('T')[0];
+        startInput.min   = minStr;
+        startInput.value = minStr;
+        endInput.min     = minStr;
+        startInput.addEventListener('change', updateFreezeDurationPreview);
+        endInput.addEventListener('change',   updateFreezeDurationPreview);
+    });
+    </script>
+}

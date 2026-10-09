@@ -1,0 +1,299 @@
+﻿@model SwiftyS26.Models.StoreOrder
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.PageTitle = "Order Confirmed";
+}
+
+<style>
+    @@keyframes oc-pop {
+        0% {
+            transform: scale(0.5);
+            opacity: 0;
+        }
+
+        60% {
+            transform: scale(1.12);
+        }
+
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    @@keyframes oc-checkDraw {
+        to {
+            stroke-dashoffset: 0;
+        }
+    }
+
+    @@keyframes oc-fadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .oc-wrap {
+        max-width: 480px;
+        margin: 40px auto;
+        text-align: center;
+    }
+
+    .oc-icon-wrap {
+        width: 84px;
+        height: 84px;
+        border-radius: 50%;
+        background: #F0FDF4;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        animation: oc-pop .5s cubic-bezier(.34,1.56,.64,1) both;
+    }
+
+    .oc-check-svg circle {
+        fill: none;
+        stroke: #16A34A;
+        stroke-width: 3;
+    }
+
+    .oc-check-svg path {
+        fill: none;
+        stroke: #16A34A;
+        stroke-width: 4;
+        stroke-linecap: round;
+        stroke-dasharray: 30;
+        stroke-dashoffset: 30;
+        animation: oc-checkDraw .4s ease .35s forwards;
+    }
+
+    .oc-title {
+        font-family: 'Bebas Neue',sans-serif;
+        font-size: 26px;
+        letter-spacing: 1px;
+        color: #0F172A;
+        margin-bottom: 6px;
+        animation: oc-fadeUp .4s ease .2s both;
+    }
+
+    .oc-sub {
+        font-size: 13.5px;
+        color: #64748B;
+        margin-bottom: 24px;
+        animation: oc-fadeUp .4s ease .3s both;
+    }
+
+    .oc-ref-card {
+        background: #fff;
+        border: 1px solid rgba(0,0,0,.07);
+        border-radius: 14px;
+        padding: 20px;
+        margin-bottom: 18px;
+        text-align: left;
+        animation: oc-fadeUp .4s ease .4s both;
+    }
+
+    .oc-ref-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: #94A3B8;
+        font-weight: 700;
+    }
+
+    .oc-ref-value {
+        font-family: 'Bebas Neue',sans-serif;
+        font-size: 22px;
+        color: #2563EB;
+        letter-spacing: 1px;
+    }
+
+    .oc-items {
+        text-align: left;
+        margin-top: 14px;
+    }
+
+    .oc-item-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(0,0,0,.05);
+    }
+
+        .oc-item-row:last-child {
+            border-bottom: none;
+        }
+
+    .oc-total-row {
+        display: flex;
+        justify-content: space-between;
+        font-weight: 800;
+        font-size: 16px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px dashed rgba(0,0,0,.1);
+        color: #0F172A;
+    }
+
+    .oc-btn {
+        display: inline-block;
+        padding: 13px 28px;
+        background: #2563EB;
+        color: #fff;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 14px;
+        text-decoration: none;
+        animation: oc-fadeUp .4s ease .5s both;
+        border: none;
+        cursor: pointer;
+    }
+
+        .oc-btn.outline {
+            background: #fff;
+            color: #2563EB;
+            border: 2px solid #2563EB;
+            margin-top: 12px;
+            display: block;
+        }
+
+    .oc-pending-note {
+        margin-top: 12px;
+        font-size: 12.5px;
+        color: #94A3B8;
+        animation: oc-fadeUp .4s ease .5s both;
+    }
+
+    .oc-collected-note {
+        margin-top: 12px;
+        font-size: 13px;
+        color: #16A34A;
+        font-weight: 600;
+        animation: oc-fadeUp .4s ease .5s both;
+    }
+
+    @@keyframes qr-fadeIn {
+        from {
+            opacity: 0;
+            transform: scale(.9);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    .qr-modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.6);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .qr-modal-box {
+        background: #fff;
+        border-radius: 20px;
+        padding: 32px;
+        text-align: center;
+        max-width: 320px;
+        width: 90%;
+        animation: qr-fadeIn .3s ease both;
+    }
+
+    @@media (max-width: 480px) {
+        .oc-wrap {
+            margin: 20px auto;
+            padding: 0 8px;
+        }
+
+        .oc-title {
+            font-size: 22px;
+        }
+
+        .oc-ref-value {
+            font-size: 19px;
+        }
+    }
+</style>
+
+<div class="oc-wrap">
+    <div class="oc-icon-wrap">
+        <svg class="oc-check-svg" width="44" height="44" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="19" />
+            <path d="M13 22 L19 28 L31 15" />
+        </svg>
+    </div>
+
+    <div class="oc-title">Order Confirmed!</div>
+    <div class="oc-sub">We'll notify you the moment it's ready for pickup.</div>
+
+    <div class="oc-ref-card">
+        <div class="oc-ref-label">Order Reference</div>
+        <div class="oc-ref-value">@Model.ReferenceNumber</div>
+
+        <div class="oc-items">
+            @foreach (var item in Model.Items)
+            {
+                bool wasOnPromotion = item.Product != null && item.UnitPriceAtPurchase < item.Product.NormalPrice;
+                <div class="oc-item-row">
+                    <span>
+                        @(item.Product?.Name) &times; @item.Quantity
+                        @if (wasOnPromotion)
+                        {
+                            <span style="color:#7C3AED; font-weight:700; font-size:11px;"> · promo price</span>
+                        }
+                    </span>
+                    <span>R@(item.LineTotal.ToString("F2"))</span>
+                </div>
+            }
+        </div>
+
+        @if (Model.WasDiscounted)
+        {
+            <div class="oc-item-row" style="color:#16A34A;font-weight:700;">
+                <span>Premium Discount</span>
+                <span>-R@(Model.DiscountAmount.ToString("F2"))</span>
+            </div>
+        }
+
+        <div class="oc-total-row"><span>Total Paid</span><span>R@(Model.FinalTotal.ToString("F2"))</span></div>
+    </div>
+
+    @* FIXED: uses the order's own QR, only once it's actually ready — not the member's general QR, and not shown before there's anything to prove *@
+    @if (Model.Status == "ReadyForPickup" && !string.IsNullOrEmpty(Model.OrderQrBase64))
+    {
+        <button type="button" class="oc-btn outline" onclick="document.getElementById('qrModal').style.display='flex'">
+            <i class="fas fa-qrcode"></i> Show Pickup QR
+        </button>
+
+        <div class="qr-modal-overlay" id="qrModal" onclick="if(event.target===this)this.style.display='none'">
+            <div class="qr-modal-box">
+                <div style="font-weight:700;font-size:15px;margin-bottom:16px;">Show this to staff at pickup</div>
+                <img src="data:image/png;base64,@Model.OrderQrBase64" style="width:220px;height:220px;" />
+                <div style="margin-top:10px;font-size:12px;color:#94A3B8;">@Model.ReferenceNumber</div>
+                <button type="button" onclick="document.getElementById('qrModal').style.display='none'" style="margin-top:16px;padding:10px 24px;background:#F1F5F9;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Close</button>
+            </div>
+        </div>
+    }
+    else if (Model.Status == "Collected")
+    {
+        <div class="oc-collected-note"><i class="fas fa-check-circle"></i> This order has already been collected.</div>
+    }
+    else
+    {
+        <div class="oc-pending-note">Your pickup QR will appear here once your order is marked ready.</div>
+    }
+
+    <a href="@Url.Action("Index", "Store")" class="oc-btn" style="margin-top:16px;">Continue Shopping</a>
+</div>

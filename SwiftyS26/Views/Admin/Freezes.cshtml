@@ -1,0 +1,192 @@
+﻿@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="admin-stats-grid">
+    <div class="admin-stat-card gold">
+        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+        <div class="stat-number" id="freeze-pending-count">0</div>
+        <div class="stat-label">Pending</div>
+    </div>
+    <div class="admin-stat-card purple">
+        <div class="stat-icon"><i class="fas fa-snowflake"></i></div>
+        <div class="stat-number" id="freeze-active-count">0</div>
+        <div class="stat-label">Active Freezes</div>
+    </div>
+    <div class="admin-stat-card blue">
+        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-number" id="freeze-approved-count">0</div>
+        <div class="stat-label">Approved</div>
+    </div>
+    <div class="admin-stat-card red">
+        <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+        <div class="stat-number" id="freeze-rejected-count">0</div>
+        <div class="stat-label">Rejected</div>
+    </div>
+    <div class="admin-stat-card green">
+        <div class="stat-icon"><i class="fas fa-flag-checkered"></i></div>
+        <div class="stat-number" id="freeze-completed-count">0</div>
+        <div class="stat-label">Completed</div>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-header">
+        <div class="admin-card-title"><i class="fas fa-snowflake"></i> Freeze Requests</div>
+        <div class="admin-card-count" id="freeze-total-count">Loading…</div>
+    </div>
+    <div class="filter-tabs">
+        <button onclick="filterFreezes('all')" id="freeze-tab-all" class="filter-tab active">All</button>
+        <button onclick="filterFreezes('Pending')" id="freeze-tab-pending" class="filter-tab pending">Pending</button>
+        <button onclick="filterFreezes('Approved')" id="freeze-tab-approved" class="filter-tab approved">Approved</button>
+        <button onclick="filterFreezes('Rejected')" id="freeze-tab-rejected" class="filter-tab rejected">Rejected</button>
+        <button onclick="filterFreezes('Completed')" id="freeze-tab-completed" class="filter-tab completed">Completed</button>
+    </div>
+    <div class="admin-table-wrap">
+        <table class="admin-table" id="freezesTable">
+            <thead>
+                <tr><th>Member</th><th>Member ID</th><th>Freeze Period</th><th>Days</th><th>Reason</th><th>Requested</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="freezeTableBody">
+                <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted);">Loading freeze requests…</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Modals {
+    <div id="freezeModal" class="modal-overlay">
+        <div class="modal-box wide">
+            <div class="modal-icon">❄️</div>
+            <div class="modal-title">Review Freeze Request</div>
+            <div class="modal-info-card" style="background:#eff6ff;border-color:#bfdbfe;">
+                <div class="modal-info-row" style="border-color:#dbeafe;"><span class="modal-info-label" style="color:#1e40af;">Member</span>        <span class="modal-info-value" id="freeze-modal-member-name">—</span></div>
+                <div class="modal-info-row" style="border-color:#dbeafe;"><span class="modal-info-label" style="color:#1e40af;">Member ID</span>     <span class="modal-info-value" style="color:var(--blue);" id="freeze-modal-member-id">—</span></div>
+                <div class="modal-info-row" style="border-color:#dbeafe;"><span class="modal-info-label" style="color:#1e40af;">Freeze Period</span> <span class="modal-info-value" id="freeze-modal-period">—</span></div>
+                <div class="modal-info-row" style="border-color:#dbeafe;">
+                    <span class="modal-info-label" style="color:#1e40af;">Duration</span>
+                    <span style="font-family:'Bebas Neue';font-size:18px;color:#1d4ed8;letter-spacing:1px;" id="freeze-modal-days">—</span>
+                </div>
+                <div style="padding:10px 14px;font-size:13px;">
+                    <span style="color:#1e40af;font-weight:600;display:block;margin-bottom:4px;">Reason</span>
+                    <span style="font-weight:500;color:var(--text-sub);font-style:italic;" id="freeze-modal-reason">—</span>
+                </div>
+            </div>
+            <div class="modal-warning">
+                ⚠️ <strong>Approving</strong> this request will set member status to <strong>Frozen</strong> and extend the membership expiry by the freeze duration.
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="modal-notes-label">Admin Notes (optional)</label>
+                <textarea id="freezeAdminNotes" class="modal-textarea" placeholder="Add any notes about this decision..."></textarea>
+            </div>
+            <div id="freeze-modal-error" class="modal-error"></div>
+            <div class="modal-actions">
+                <button id="freezeApproveBtn" class="modal-btn approve-blue" onclick="submitFreezeDecision('approve')">❄️ Approve Freeze Request</button>
+                <button id="freezeRejectBtn" class="modal-btn reject" onclick="submitFreezeDecision('reject')">❌ Reject Freeze Request</button>
+                <button class="modal-btn cancel" onclick="closeFreezeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        var allFreezes = [], currentFreezeId = null;
+
+        function loadFreezes() {
+            fetch('/Admin/GetFreezes').then(function (r) { return r.json(); }).then(function (data) {
+                if (!data.success) return;
+                allFreezes = data.freezes;
+                renderFreezes(allFreezes);
+                var set = function (id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
+                set('freeze-pending-count', data.pendingCount || 0);
+                set('freeze-active-count', data.activeCount || 0);
+                set('freeze-approved-count', data.approvedCount || 0);
+                set('freeze-rejected-count', data.rejectedCount || 0);
+                set('freeze-completed-count', data.completedCount || 0);
+                set('freeze-total-count', (data.totalCount || 0) + ' requests');
+            }).catch(function () { console.error('Could not load freezes.'); });
+        }
+
+        function renderFreezes(freezes) {
+            var tbody = document.getElementById('freezeTableBody');
+            if (!tbody) return;
+            if (!freezes || freezes.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted);font-size:14px;">No freeze requests found.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = freezes.map(function (f) {
+                var statusLabel = f.isCurrentlyFrozen ? 'Active ❄️' : f.status;
+                var sc = f.isCurrentlyFrozen ? 'freeze-status-active' : 'freeze-status-' + f.status.toLowerCase();
+                var reasonTrunc = (f.reason || '—').length > 40 ? f.reason.substring(0, 40) + '…' : (f.reason || '—');
+                var actions = f.status === 'Pending'
+                    ? '<button onclick="openFreezeModal(' + f.freezeRequestId + ')" class="btn-primary" style="padding:7px 14px;font-size:12px;box-shadow:none;">❄️ Review</button>'
+                    : '<span style="font-size:12px;color:var(--muted);">' + (f.processedAt || '—') + '</span>';
+                return '<tr>'
+                    + '<td class="member-name">' + (f.memberName || '—') + '</td>'
+                    + '<td><span class="member-id-badge">' + (f.memberNumber || '—') + '</span></td>'
+                    + '<td style="font-size:12px;color:var(--muted);white-space:nowrap;">' + (f.freezeStart || '—') + ' → ' + (f.freezeEnd || '—') + '</td>'
+                    + '<td style="font-weight:700;color:var(--blue);font-family:\'Bebas Neue\';font-size:16px;">' + (f.days || 0) + '</td>'
+                    + '<td style="font-size:12px;color:var(--muted);max-width:160px;" title="' + (f.reason || '') + '">' + reasonTrunc + '</td>'
+                    + '<td style="font-size:12px;color:var(--muted);">' + (f.requestedAt || '—') + '</td>'
+                    + '<td><span class="' + sc + '">' + statusLabel + '</span></td>'
+                    + '<td>' + actions + '</td></tr>';
+            }).join('');
+        }
+
+        function filterFreezes(status) {
+            ['all', 'Pending', 'Approved', 'Rejected', 'Completed'].forEach(function (s) {
+                var tab = document.getElementById('freeze-tab-' + s.toLowerCase()); if (tab) tab.classList.remove('active');
+            });
+            var at = document.getElementById('freeze-tab-' + status.toLowerCase()); if (at) at.classList.add('active');
+            renderFreezes(status === 'all' ? allFreezes : allFreezes.filter(function (f) { return f.status === status; }));
+        }
+
+        function openFreezeModal(freezeId) {
+            currentFreezeId = freezeId;
+            var freeze = allFreezes.find(function (f) { return f.freezeRequestId === freezeId; }); if (!freeze) return;
+            document.getElementById('freeze-modal-member-name').textContent = freeze.memberName || '—';
+            document.getElementById('freeze-modal-member-id').textContent = freeze.memberNumber || '—';
+            document.getElementById('freeze-modal-period').textContent = (freeze.freezeStart || '—') + ' → ' + (freeze.freezeEnd || '—');
+            document.getElementById('freeze-modal-days').textContent = freeze.days + ' days';
+            document.getElementById('freeze-modal-reason').textContent = freeze.reason || '—';
+            document.getElementById('freezeAdminNotes').value = '';
+            document.getElementById('freeze-modal-error').style.display = 'none';
+            document.getElementById('freezeModal').style.display = 'flex';
+        }
+
+        function closeFreezeModal() { document.getElementById('freezeModal').style.display = 'none'; currentFreezeId = null; }
+
+        function submitFreezeDecision(action) {
+            if (!currentFreezeId) return;
+            var approveBtn = document.getElementById('freezeApproveBtn');
+            var rejectBtn = document.getElementById('freezeRejectBtn');
+            var notes = document.getElementById('freezeAdminNotes').value.trim();
+            var errEl = document.getElementById('freeze-modal-error');
+            approveBtn.disabled = rejectBtn.disabled = true;
+            approveBtn.textContent = action === 'approve' ? 'Processing…' : '❄️ Approve Freeze Request';
+            rejectBtn.textContent = action === 'reject' ? 'Processing…' : '❌ Reject Freeze Request';
+            var url = action === 'approve' ? '/Admin/ApproveFreeze' : '/Admin/RejectFreeze';
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ freezeRequestId: currentFreezeId, adminNotes: notes, __RequestVerificationToken: getToken() }).toString()
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    approveBtn.disabled = rejectBtn.disabled = false;
+                    approveBtn.textContent = '❄️ Approve Freeze Request';
+                    rejectBtn.textContent = '❌ Reject Freeze Request';
+                    if (data.success) {
+                        closeFreezeModal(); loadFreezes();
+                        showAdminSuccessBanner(action === 'approve'
+                            ? '❄️ Freeze approved for ' + data.memberName + '. Expiry extended to ' + data.extendedExpiry
+                            : '❌ Freeze rejected for ' + data.memberName);
+                    } else { errEl.innerHTML = data.message; errEl.style.display = 'block'; }
+                })
+                .catch(function () { errEl.textContent = 'Connection error.'; errEl.style.display = 'block'; approveBtn.disabled = rejectBtn.disabled = false; });
+        }
+
+        document.addEventListener('DOMContentLoaded', loadFreezes);
+    </script>
+}

@@ -1,0 +1,229 @@
+﻿@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.ActivePage = "fitness";
+    ViewBag.PageTitle = "Fitness Goals";
+}
+
+@section head {
+    <link href="~/Content/fitness.css" rel="stylesheet" />
+}
+
+<!-- Welcome Message -->
+<div id="fitness-no-profile-msg" class="fitness-msg" style="display: none;">
+    <i class="fas fa-heartbeat"></i> Welcome! Fill in your measurements below to get your personalised fitness plan.
+</div>
+
+<!-- Progress Panel -->
+<div id="fitness-progress-panel" style="display: none;">
+    <!-- Stats Row -->
+    <div class="stats-grid-fitness">
+        <div class="stat-card-fitness">
+            <div class="stat-icon-fitness blue"><i class="fas fa-chart-line"></i></div>
+            <div class="stat-info-fitness">
+                <div class="stat-value-fitness" id="fit-bmi-value">—</div>
+                <div class="stat-label-fitness">BMI</div>
+            </div>
+        </div>
+        <div class="stat-card-fitness">
+            <div class="stat-icon-fitness green"><i class="fas fa-fire"></i></div>
+            <div class="stat-info-fitness">
+                <div class="stat-value-fitness" id="fit-bmr-value">—</div>
+                <div class="stat-label-fitness">BMR (kcal/day)</div>
+            </div>
+        </div>
+        <div class="stat-card-fitness">
+            <div class="stat-icon-fitness purple"><i class="fas fa-utensils"></i></div>
+            <div class="stat-info-fitness">
+                <div class="stat-value-fitness" id="fit-tdee-value">—</div>
+                <div class="stat-label-fitness">Daily Calories (TDEE)</div>
+            </div>
+        </div>
+        <div class="stat-card-fitness">
+            <div class="stat-icon-fitness orange"><i class="fas fa-bullseye"></i></div>
+            <div class="stat-info-fitness">
+                <div class="stat-value-fitness" id="fit-goal-value">—</div>
+                <div class="stat-label-fitness">Current Goal</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Goal Progress -->
+    <div class="dash-card">
+        <div class="card-header">
+            <div class="card-title"><i class="fas fa-chart-simple"></i> Goal Progress</div>
+            <div id="fit-on-track-badge" class="track-badge"></div>
+        </div>
+        <div class="progress-wrap">
+            <div class="progress-info">
+                <span id="fit-weeks-completed">—</span>
+                <span id="fit-progress-badge"></span>
+            </div>
+            <div class="progress-bar">
+                <div id="fit-progress-bar"></div>
+            </div>
+        </div>
+        <div class="progress-grid-fitness">
+            <div class="progress-box-fitness">
+                <div class="progress-label-fitness">BMI Category</div>
+                <div class="progress-value-fitness" id="fit-bmi-category">—</div>
+            </div>
+            <div class="progress-box-fitness">
+                <div class="progress-label-fitness">Weight Change</div>
+                <div class="progress-value-fitness" id="fit-weight-change">—</div>
+            </div>
+            <div class="progress-box-fitness">
+                <div class="progress-label-fitness">Projected Goal Date</div>
+                <div class="progress-value-fitness green" id="fit-projected-date">—</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BMI Gauge + Weight Chart -->
+    <div class="fitness-chart-row">
+        <div class="dash-card">
+            <div class="card-header">
+                <div class="card-title"><i class="fas fa-gauge-high"></i> BMI Gauge</div>
+            </div>
+            <div id="fit-bmi-gauge" class="bmi-gauge-container"></div>
+        </div>
+        <div class="dash-card">
+            <div class="card-header">
+                <div class="card-title"><i class="fas fa-chart-line"></i> Weight Progress</div>
+                <div class="chart-legend">
+                    <span><i class="fas fa-circle" style="color: #3B82F6; font-size: 10px;"></i> On Track</span>
+                    <span><i class="fas fa-circle" style="color: #EF4444; font-size: 10px;"></i> Underperforming</span>
+                </div>
+            </div>
+            <div class="chart-wrap" id="fit-chart-wrap"></div>
+        </div>
+    </div>
+
+    <!-- Log Weekly Progress -->
+    <div class="dash-card">
+        <div class="card-header">
+            <div class="card-title"><i class="fas fa-calendar-week"></i> Log This Week's Progress</div>
+        </div>
+        <p class="card-desc">Log your measurements once per week. The system will track your trend and alert you if you're falling behind.</p>
+        <div class="form-grid-fitness">
+            <div class="input-group">
+                <label><i class="fas fa-weight-scale"></i> Current Weight (kg)</label>
+                <input type="number" id="fit-log-weight" step="0.1" min="30" max="300" placeholder="e.g. 80.5" />
+            </div>
+            <div class="input-group">
+                <label><i class="fas fa-percent"></i> Body Fat %</label>
+                <input type="number" id="fit-log-bodyfat" step="0.1" min="3" max="60" placeholder="e.g. 21.5" />
+            </div>
+            <div class="input-group">
+                <label><i class="fas fa-dumbbell"></i> Workouts This Week</label>
+                <input type="number" id="fit-log-workouts" step="1" min="0" max="21" placeholder="e.g. 4" />
+            </div>
+            <div class="input-group">
+                <label><i class="fas fa-pen"></i> Notes (optional)</label>
+                <input type="text" id="fit-log-notes" maxlength="200" placeholder="e.g. Skipped cardio, felt strong on legs…" />
+            </div>
+        </div>
+        <div id="fit-log-error" class="error-box" style="display: none;"></div>
+        <div id="fit-log-success" class="success-box" style="display: none;"></div>
+        <button onclick="logWeeklyProgress()" id="fit-log-btn" class="btn-primary">
+            <i class="fas fa-save"></i> Log This Week
+        </button>
+    </div>
+
+    <!-- Progress History -->
+    <div class="dash-card">
+        <div class="card-header">
+            <div class="card-title"><i class="fas fa-clock-rotate-left"></i> Progress History</div>
+            <button class="card-action-btn" onclick="loadFitnessSection()">
+                <i class="fas fa-rotate-right"></i> Refresh
+            </button>
+        </div>
+        <div id="fit-log-history">
+            <div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading history…</div>
+        </div>
+    </div>
+</div>
+
+<!-- Fitness Profile Setup -->
+<div class="dash-card" id="fitness-setup-panel">
+    <div class="card-header">
+        <div class="card-title"><i class="fas fa-user-circle"></i> My Fitness Profile</div>
+        <div class="card-sub">Update anytime</div>
+    </div>
+    <p class="card-desc">Enter your body measurements. The system will calculate your BMI, BMR, TDEE and recommend a realistic goal — just like a SA gym biokineticist would.</p>
+
+    <!-- Live BMI Preview -->
+    <div id="fit-bmi-preview" class="bmi-preview"></div>
+    <div id="fit-goal-recommendation" class="goal-recommendation" style="display: none;"></div>
+
+    <div class="form-grid-fitness">
+        <div class="input-group">
+            <label><i class="fas fa-ruler"></i> Height (cm) *</label>
+            <input type="number" id="fit-height" step="0.5" min="100" max="250" placeholder="e.g. 175" oninput="updateBMIPreview()" />
+        </div>
+        <div class="input-group">
+            <label><i class="fas fa-weight-scale"></i> Current Weight (kg) *</label>
+            <input type="number" id="fit-weight" step="0.1" min="30" max="300" placeholder="e.g. 82.0" oninput="updateBMIPreview()" />
+        </div>
+        <div class="input-group">
+            <label><i class="fas fa-percent"></i> Body Fat % *</label>
+            <input type="number" id="fit-bodyfat" step="0.1" min="3" max="60" placeholder="e.g. 22.5" oninput="updateBMIPreview()" />
+        </div>
+        <div class="input-group">
+            <label><i class="fas fa-person-walking"></i> Activity Level *</label>
+            <select id="fit-activity">
+                <option value="">Select activity level…</option>
+                <option value="Sedentary">Sedentary (desk job, little exercise)</option>
+                <option value="Lightly Active">Lightly Active (1–3 days/week)</option>
+                <option value="Moderately Active">Moderately Active (3–5 days/week)</option>
+                <option value="Very Active">Very Active (6–7 days/week)</option>
+                <option value="Extremely Active">Extremely Active (athlete / 2× per day)</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label><i class="fas fa-bullseye"></i> Fitness Goal *</label>
+            <select id="fit-goal" onchange="this.dataset.manuallyChanged='1'">
+                <option value="">System will recommend…</option>
+                <option value="Weight Loss">Weight Loss</option>
+                <option value="Muscle Gain">Muscle Gain</option>
+                <option value="Endurance">Endurance</option>
+                <option value="Maintenance">Maintenance</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label><i class="fas fa-arrow-down"></i> Target Weight (kg) *</label>
+            <input type="number" id="fit-target-weight" step="0.1" min="30" max="300" placeholder="e.g. 75.0" />
+        </div>
+        <div class="input-group">
+            <label><i class="fas fa-arrow-down"></i> Target Body Fat % *</label>
+            <input type="number" id="fit-target-bodyfat" step="0.1" min="3" max="60" placeholder="e.g. 18.0" />
+        </div>
+    </div>
+
+    <div class="info-notice">
+        <i class="fas fa-circle-info"></i>
+        <strong>How we calculate your plan:</strong><br />
+        BMI uses the WHO metric formula (kg ÷ m²). TDEE = BMR × your activity multiplier.
+        Timeline: Weight Loss at 0.5 kg/week safe deficit; Muscle Gain at 0.25 kg lean mass/week.
+    </div>
+
+    <div id="fit-form-error" class="error-box" style="display: none;"></div>
+    <div id="fit-form-success" class="success-box" style="display: none;"></div>
+
+    <button onclick="saveFitnessProfile()" id="fit-save-btn" class="btn-primary">
+        <i class="fas fa-save"></i> Save Profile
+    </button>
+</div>
+
+@section scripts {
+    <script src="~/Scripts/fitness.js"></script>
+    <script>
+        // Initialize memberInfo for fitness functions
+        var memberInfo = memberInfo || {};
+
+        // Add gender if available
+        @{
+            var gender = Session["LoggedInGender"] as string ?? "Male";
+        }
+        memberInfo.gender = '@gender';
+    </script>
+}

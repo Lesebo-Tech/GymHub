@@ -1,0 +1,1047 @@
+﻿@model IEnumerable<SwiftyS26.Models.Locker>
+@using SwiftyS26.Models
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewBag.Title = "Locker Management";
+    ViewBag.PageTitle = "LOCKER MANAGEMENT";
+    ViewBag.ActiveNav = "lockers";
+
+    int availableCount = Model.Count(l => l.IsReservable);
+    int occupiedCount = Model.Count(l => l.IsOccupied);
+
+    var reservations = ViewBag.ActiveReservations as Dictionary<int, LockerReservation>
+        ?? new Dictionary<int, LockerReservation>();
+
+    var openFaults = ViewBag.OpenFaults as List<LockerFault> ?? new List<LockerFault>();
+    var technicians = ViewBag.Technicians as List<Technician> ?? new List<Technician>();
+    int awaitingTriage = ViewBag.AwaitingTriageCount ?? 0;
+}
+
+@section Styles {
+    <style>
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+            .form-group label {
+                display: block;
+                font-size: 11px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: .7px;
+                color: var(--muted);
+                margin-bottom: 6px;
+            }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg3);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            color: var(--text);
+            outline: none;
+            transition: all var(--transition);
+        }
+
+            .form-control:focus {
+                border-color: var(--blue);
+                box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+                background: var(--white);
+            }
+
+        .form-textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .modal-btn.save {
+            background: var(--blue);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(37,99,235,.25);
+        }
+
+            .modal-btn.save:hover {
+                background: var(--blue-dark);
+            }
+
+        .btn-ghost:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+        }
+
+        .gender-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+        }
+
+            .gender-badge.male {
+                background: var(--blue-light);
+                color: var(--blue);
+            }
+
+            .gender-badge.female {
+                background: var(--purple-light);
+                color: var(--purple);
+            }
+
+        .op-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+        }
+
+            .op-badge.InService {
+                background: var(--green-light);
+                color: var(--green);
+            }
+
+            .op-badge.ReportedFaulty {
+                background: var(--gold-light);
+                color: var(--gold);
+            }
+
+            .op-badge.OutOfService {
+                background: var(--red-light);
+                color: var(--red);
+            }
+
+            .op-badge.UnderRepair {
+                background: var(--purple-light);
+                color: var(--purple);
+            }
+
+            .op-badge.Retired {
+                background: var(--bg3);
+                color: var(--muted);
+            }
+
+        .holder-name {
+            font-weight: 600;
+            color: var(--text);
+            font-size: 13px;
+        }
+
+        .holder-sub {
+            font-size: 11.5px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .holder-none {
+            font-size: 12px;
+            color: var(--muted);
+            font-style: italic;
+        }
+
+        .lockout-flag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: var(--red-light);
+            color: var(--red);
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: 50px;
+            margin-top: 4px;
+        }
+
+        .btn-force {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--gold-light);
+            color: var(--gold);
+            border: 1px solid rgba(217,119,6,.25);
+            border-radius: 6px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+            .btn-force:hover {
+                background: var(--gold);
+                color: #fff;
+            }
+
+        /* ===== TABS ===== */
+        .lk-admin-tabs {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .lk-admin-tab {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--muted);
+            padding: 10px 18px;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            transition: color .15s, border-color .15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+            .lk-admin-tab:hover {
+                color: var(--text);
+            }
+
+            .lk-admin-tab.active {
+                color: var(--blue);
+                border-bottom-color: var(--blue);
+            }
+
+        .lk-admin-tab-count {
+            background: rgba(37,99,235,.1);
+            color: var(--blue);
+            font-size: 10.5px;
+            padding: 1px 8px;
+            border-radius: 50px;
+        }
+
+            .lk-admin-tab-count.urgent {
+                background: var(--red-light);
+                color: var(--red);
+            }
+
+        .lk-admin-panel {
+            display: none;
+        }
+
+            .lk-admin-panel.active {
+                display: block;
+            }
+
+        /* ===== FAULT CARDS ===== */
+        .fault-list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .fault-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+            .fault-card.sev-Critical {
+                border-left: 4px solid var(--red);
+            }
+
+            .fault-card.sev-Major {
+                border-left: 4px solid var(--gold);
+            }
+
+            .fault-card.sev-Minor {
+                border-left: 4px solid var(--muted);
+            }
+
+        .fault-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg3);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .fault-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .fault-locker {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 18px;
+            letter-spacing: .5px;
+            color: var(--text);
+        }
+
+        .fault-ref {
+            font-size: 11px;
+            color: var(--muted);
+            font-family: monospace;
+        }
+
+        .sev-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+        }
+
+            .sev-badge.Critical {
+                background: var(--red-light);
+                color: var(--red);
+            }
+
+            .sev-badge.Major {
+                background: var(--gold-light);
+                color: var(--gold);
+            }
+
+            .sev-badge.Minor {
+                background: var(--bg3);
+                color: var(--muted);
+            }
+
+            .sev-badge.unset {
+                background: var(--bg3);
+                color: var(--muted);
+                font-style: italic;
+            }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+        }
+
+            .status-pill.Reported {
+                background: var(--gold-light);
+                color: var(--gold);
+            }
+
+            .status-pill.Triaged {
+                background: var(--blue-light);
+                color: var(--blue);
+            }
+
+            .status-pill.Assigned {
+                background: var(--purple-light);
+                color: var(--purple);
+            }
+
+            .status-pill.InProgress {
+                background: var(--purple-light);
+                color: var(--purple);
+            }
+
+        .belongings-flag {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: var(--red-light);
+            color: var(--red);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 10.5px;
+            font-weight: 700;
+        }
+
+        .fault-body {
+            padding: 16px 20px;
+        }
+
+        .fault-desc {
+            font-size: 13px;
+            color: var(--text-sub);
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+
+        .fault-meta {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            font-size: 11.5px;
+            color: var(--muted);
+            margin-bottom: 12px;
+        }
+
+        .fault-reporters {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11.5px;
+            color: var(--muted);
+            margin-bottom: 12px;
+        }
+
+        .reporter-count {
+            background: var(--bg3);
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .fault-photo-link {
+            font-size: 11.5px;
+            color: var(--blue);
+            font-weight: 600;
+        }
+
+        .fault-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 0 20px 16px;
+        }
+
+        .fault-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+            .fault-btn.triage {
+                background: var(--blue);
+                color: #fff;
+            }
+
+            .fault-btn.assign {
+                background: var(--purple);
+                color: #fff;
+            }
+
+            .fault-btn.start {
+                background: var(--purple-light);
+                color: var(--purple);
+                border: 1px solid rgba(124,58,237,.25);
+            }
+
+            .fault-btn.resolve {
+                background: var(--green);
+                color: #fff;
+            }
+
+            .fault-btn.override {
+                background: var(--red-light);
+                color: var(--red);
+                border: 1px solid rgba(220,38,38,.25);
+            }
+
+            .fault-btn:hover {
+                transform: translateY(-1px);
+            }
+
+        .empty-faults {
+            text-align: center;
+            padding: 50px 20px;
+            color: var(--muted);
+        }
+
+            .empty-faults i {
+                font-size: 32px;
+                opacity: .3;
+                display: block;
+                margin-bottom: 12px;
+            }
+    </style>
+}
+
+<div class="page-content">
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="admin-card" style="border-left:4px solid var(--green); background:var(--green-light); padding:14px 20px; color:var(--green); font-weight:600;">
+            @TempData["Success"]
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="admin-card" style="border-left:4px solid var(--red); background:var(--red-light); padding:14px 20px; color:var(--red); font-weight:600;">
+            @TempData["Error"]
+        </div>
+    }
+
+    <!-- STAT CARDS -->
+    <div class="admin-stats-grid">
+        <div class="admin-stat-card blue">
+            <div class="stat-icon"><i class="fas fa-lock"></i></div>
+            <div class="stat-number">@Model.Count()</div>
+            <div class="stat-label">Total Lockers</div>
+        </div>
+        <div class="admin-stat-card green">
+            <div class="stat-icon"><i class="fas fa-lock-open"></i></div>
+            <div class="stat-number">@availableCount</div>
+            <div class="stat-label">Available</div>
+        </div>
+        <div class="admin-stat-card red">
+            <div class="stat-icon"><i class="fas fa-user-lock"></i></div>
+            <div class="stat-number">@occupiedCount</div>
+            <div class="stat-label">Occupied</div>
+        </div>
+        <div class="admin-stat-card gold">
+            <div class="stat-icon"><i class="fas fa-triangle-exclamation"></i></div>
+            <div class="stat-number">@openFaults.Count</div>
+            <div class="stat-label">Open Faults</div>
+        </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="lk-admin-tabs">
+        <button class="lk-admin-tab active" data-tab="lockers" onclick="lkaSwitchTab('lockers')">
+            <i class="fas fa-lock"></i> Lockers
+        </button>
+        <button class="lk-admin-tab" data-tab="faults" onclick="lkaSwitchTab('faults')">
+            <i class="fas fa-screwdriver-wrench"></i> Faults
+            @if (openFaults.Any())
+            {
+                <span class="lk-admin-tab-count @(awaitingTriage > 0 ? "urgent" : "")">@openFaults.Count</span>
+            }
+        </button>
+        <a href="@Url.Action("AccessAudit", "LockerFault")" class="lk-admin-tab" style="text-decoration:none;">
+            <i class="fas fa-shield-halved"></i> Access Audit
+        </a>
+    </div>
+
+    <!-- ===== TAB: LOCKERS ===== -->
+    <div class="lk-admin-panel active" id="lka-panel-lockers">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div class="admin-card-title"><i class="fas fa-lock"></i> All Lockers</div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <span class="admin-card-count">@Model.Count() total</span>
+                    <button class="btn-primary" onclick="openAddLockerModal()">
+                        <i class="fas fa-plus"></i> Add Locker
+                    </button>
+                </div>
+            </div>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Locker</th>
+                            <th>Section</th>
+                            <th>Location</th>
+                            <th>Status</th>
+                            <th>Held By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var locker in Model)
+                        {
+                            LockerReservation res = null;
+                            reservations.TryGetValue(locker.LockerId, out res);
+
+                            <tr>
+                                <td class="member-id">@locker.LockerNumber</td>
+                                <td>
+                                    @if (locker.Gender == "Male")
+                                    {
+                                        <span class="gender-badge male"><i class="fas fa-mars"></i> Male</span>
+                                    }
+                                    else if (locker.Gender == "Female")
+                                    {
+                                        <span class="gender-badge female"><i class="fas fa-venus"></i> Female</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="gender-badge" style="background:var(--bg3);color:var(--muted);">—</span>
+                                    }
+                                </td>
+                                <td class="member-email">@locker.Location</td>
+                                <td>
+                                    <span class="op-badge @locker.OperationalStatus">@locker.OperationalStatusDisplay</span>
+                                    @if (locker.IsOccupied)
+                                    {
+                                        <div class="holder-sub" style="margin-top:4px;"><i class="fas fa-user"></i> Occupied</div>
+                                    }
+                                </td>
+                                <td>
+                                    @if (res != null)
+                                    {
+                                        <div class="holder-name">@(res.Member != null ? res.Member.FullName : "Unknown member")</div>
+                                        <div class="holder-sub">
+                                            Since @res.ReservedAt.ToString("dd MMM yyyy, HH:mm")
+                                            @{
+                                                var held = DateTime.Now - res.ReservedAt;
+                                                var heldText = held.TotalDays >= 1 ? (int)held.TotalDays + "d" : (int)held.TotalHours + "h";
+                                            }
+                                            · @heldText
+                                        </div>
+                                        if (res.LockoutCount >= 2)
+                                        {
+                                            <span class="lockout-flag"><i class="fas fa-triangle-exclamation"></i> @res.LockoutCount lockouts</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="holder-none">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (locker.IsOccupied && res != null)
+                                    {
+                                        <button type="button" class="btn-force"
+                                                onclick="openForceModal(@locker.LockerId, '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(locker.LockerNumber))', '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(res.Member != null ? res.Member.FullName : "this member"))')">
+                                            <i class="fas fa-unlock"></i> Force Release
+                                        </button>
+                                    }
+                                    else if (locker.OperationalStatus == "InService" || locker.OperationalStatus == "Retired")
+                                    {
+                                        using (Html.BeginForm("DeleteLocker", "Admin", new { id = locker.LockerId }, FormMethod.Post))
+                                        {
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn-ghost" style="color:var(--red);"
+                                                    onclick="return confirm('Delete this locker?');">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="holder-none">See Faults tab</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                @if (!Model.Any())
+                {
+                    <div style="padding:40px; text-align:center; color:var(--muted);">
+                        No lockers have been set up yet.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TAB: FAULTS ===== -->
+    <div class="lk-admin-panel" id="lka-panel-faults">
+        @if (!openFaults.Any())
+        {
+            <div class="admin-card">
+                <div class="empty-faults">
+                    <i class="fas fa-circle-check"></i>
+                    No open locker faults. Everything's running smoothly.
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="fault-list">
+                @foreach (var f in openFaults)
+                {
+                    int reporterCount = f.Reports != null ? f.Reports.Count : 0;
+                    string sevClass = string.IsNullOrEmpty(f.EffectiveSeverity) ? "unset" : f.EffectiveSeverity;
+                    string lockerNumber = f.Locker != null ? f.Locker.LockerNumber : "—";
+                    string technicianName = f.Technician != null ? f.Technician.FullName : null;
+                    var latestReport = f.Reports != null ? f.Reports.OrderByDescending(r => r.ReportedDate).FirstOrDefault() : null;
+                    var photoReport = f.Reports != null ? f.Reports.FirstOrDefault(r => !string.IsNullOrEmpty(r.PhotoPath)) : null;
+
+                    <div class="fault-card sev-@(f.Severity != null ? f.Severity : "Minor")">
+                        <div class="fault-head">
+                            <div class="fault-title">
+                                <span class="fault-locker">Locker @lockerNumber</span>
+                                <span class="fault-ref">@f.ReferenceNumber</span>
+                                <span class="sev-badge @sevClass">
+                                    @if (f.Severity == null)
+                                    {
+                                        <text>Reported: @f.ReportedSeverity</text>
+                                    }
+                                    else
+                                    {
+                                        @f.Severity
+                                    }
+                                </span>
+                                <span class="status-pill @f.Status">@f.Status</span>
+                                @if (f.BelongingsInside)
+                                {
+                                    <span class="belongings-flag"><i class="fas fa-triangle-exclamation"></i> Belongings inside</span>
+                                }
+                            </div>
+                            <div style="font-size:11.5px; color:var(--muted);">@f.ReportedDate.ToString("dd MMM yyyy, HH:mm")</div>
+                        </div>
+
+                        <div class="fault-body">
+                            <div class="fault-desc">
+                                <strong>@f.FaultTypeDisplay</strong>
+                                @if (latestReport != null)
+                                {
+                                    <text> — @latestReport.Description</text>
+                                }
+                            </div>
+                            <div class="fault-meta">
+                                @if (technicianName != null)
+                                {
+                                    <span><i class="fas fa-user-gear"></i> @technicianName</span>
+                                }
+                                @if (!string.IsNullOrEmpty(f.TriageNotes))
+                                {
+                                    <span><i class="fas fa-clipboard"></i> @f.TriageNotes</span>
+                                }
+                            </div>
+                            @if (reporterCount > 0)
+                            {
+                                <div class="fault-reporters">
+                                    <i class="fas fa-users"></i> <span class="reporter-count">@reporterCount</span> report@(reporterCount == 1 ? "" : "s")
+                                    @if (photoReport != null)
+                                    {
+                                        <a href="@photoReport.PhotoPath" target="_blank" class="fault-photo-link">
+                                            <i class="fas fa-image"></i> View photo
+                                        </a>
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        <div class="fault-actions">
+                            @if (f.Status == "Reported")
+                            {
+                                <button type="button" class="fault-btn triage"
+                                        onclick="openTriageModal(@f.LockerFaultId, '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(lockerNumber))', '@f.ReportedSeverity', @(f.BelongingsInside ? "true" : "false"))">
+                                    <i class="fas fa-magnifying-glass"></i> Triage
+                                </button>
+                            }
+                            @if (f.Status == "Triaged" || f.Status == "Assigned")
+                            {
+                                <button type="button" class="fault-btn assign"
+                                        onclick="openAssignFaultModal(@f.LockerFaultId, '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(lockerNumber))')">
+                                    <i class="fas fa-user-plus"></i> @(f.Status == "Assigned" ? "Reassign" : "Assign") Technician
+                                </button>
+                            }
+                            @if (f.Status == "Assigned" || f.Status == "InProgress")
+                            {
+                                <button type="button" class="fault-btn resolve"
+                                        onclick="openResolveFaultModal(@f.LockerFaultId, '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(lockerNumber))')">
+                                    <i class="fas fa-check"></i> Resolve
+                                </button>
+                            }
+                            @if (f.BelongingsInside && reservations.ContainsKey(f.LockerId))
+                            {
+                                string overrideMemberName = reservations[f.LockerId].Member != null ? reservations[f.LockerId].Member.FullName : "the member";
+                                <button type="button" class="fault-btn override"
+                                        onclick="openOverrideModal(@f.LockerFaultId, '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(lockerNumber))', '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(overrideMemberName))')">
+                                    <i class="fas fa-key"></i> Override Open
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+</div><!-- /page-content -->
+
+@section Modals {
+    <!-- ===== ADD LOCKER MODAL ===== -->
+    <div id="addLockerModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title"><i class="fas fa-lock" style="color:var(--blue);font-size:20px;"></i> Add New Locker</div>
+            @if (TempData["Error"] != null)
+            {
+                <div style="background:var(--red-light);color:var(--red);padding:10px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;margin-bottom:16px;">
+                    @TempData["Error"]
+                </div>
+            }
+            @using (Html.BeginForm("AddLocker", "Admin", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <div class="form-group">
+                    <label>Locker Number <span style="color:var(--red)">*</span></label>
+                    <input type="text" name="lockerNumber" class="form-control" placeholder="e.g. A01" required />
+                </div>
+                <div class="form-group">
+                    <label>Section <span style="color:var(--red)">*</span></label>
+                    <select name="gender" class="form-control" required>
+                        <option value="">Select a section</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Location</label>
+                    <input type="text" name="location" class="form-control" placeholder="e.g. Men's Change Room" />
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn save"><i class="fas fa-plus"></i> Add Locker</button>
+                    <button type="button" class="modal-btn cancel" onclick="closeAddLockerModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ===== FORCE RELEASE MODAL ===== -->
+    <div id="forceModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title" style="color:var(--gold);"><i class="fas fa-unlock" style="font-size:20px;"></i> Force Release Locker</div>
+            <p style="color:var(--text-sub); font-size:13px; margin-bottom:8px;">
+                Locker <strong id="forceLockerNumber"></strong> is held by <strong id="forceMemberName"></strong>.
+            </p>
+            <div class="modal-warning">
+                This ends their reservation immediately and permanently deletes their PIN.
+                They'll be notified with the reason you give below.
+            </div>
+            @using (Html.BeginForm("ForceReleaseLocker", "Admin", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="force_LockerId" />
+                <div class="form-group">
+                    <label>Reason <span style="color:var(--red)">*</span></label>
+                    <input type="text" name="reason" class="form-control" required
+                           placeholder="e.g. Membership cancelled, belongings moved to reception" />
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn approve" style="background:var(--gold);"><i class="fas fa-unlock"></i> Force Release</button>
+                    <button type="button" class="modal-btn cancel" onclick="closeForceModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ===== TRIAGE MODAL ===== -->
+    <div id="triageModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title" style="color:var(--blue);"><i class="fas fa-magnifying-glass" style="font-size:20px;"></i> Triage Fault</div>
+            <p style="color:var(--text-sub); font-size:13px; margin-bottom:16px;">
+                Locker <strong id="triageLockerNumber"></strong> — member reported this as
+                <strong id="triageReportedSeverity"></strong>. Set the real severity.
+            </p>
+            @using (Html.BeginForm("Triage", "LockerFault", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="lockerFaultId" id="triage_FaultId" />
+                <div class="form-group">
+                    <label>Actual Severity <span style="color:var(--red)">*</span></label>
+                    <select name="severity" class="form-control" required>
+                        <option value="">Select severity</option>
+                        <option value="Minor">Minor — stays in service</option>
+                        <option value="Major">Major — take out of service</option>
+                        <option value="Critical">Critical — out of service, urgent</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" name="belongingsInside" id="triage_Belongings" value="true" style="width:auto;margin-right:6px;" />
+                        Member belongings confirmed inside
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>Triage Notes</label>
+                    <textarea name="triageNotes" class="form-control form-textarea" placeholder="What you observed, any context"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn save"><i class="fas fa-check"></i> Confirm Triage</button>
+                    <button type="button" class="modal-btn cancel" onclick="closeTriageModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ===== ASSIGN TECHNICIAN (FAULT) MODAL ===== -->
+    <div id="assignFaultModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title" style="color:var(--purple);"><i class="fas fa-user-plus" style="font-size:20px;"></i> Assign Technician</div>
+            <p style="color:var(--text-sub); font-size:13px; margin-bottom:16px;">Locker <strong id="assignFaultLockerNumber"></strong></p>
+            @using (Html.BeginForm("Assign", "LockerFault", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="lockerFaultId" id="assignFault_FaultId" />
+                <div class="form-group">
+                    <label>Technician <span style="color:var(--red)">*</span></label>
+                    <select name="technicianId" class="form-control" required>
+                        <option value="">Select a technician</option>
+                        @foreach (var t in technicians)
+                        {
+                            <option value="@t.TechnicianId">@t.FullName — @t.Specialization</option>
+                        }
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn save" style="background:var(--purple);"><i class="fas fa-check"></i> Assign</button>
+                    <button type="button" class="modal-btn cancel" onclick="closeAssignFaultModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ===== RESOLVE FAULT MODAL ===== -->
+    <div id="resolveFaultModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title" style="color:var(--green);"><i class="fas fa-check" style="font-size:20px;"></i> Resolve Fault</div>
+            <p style="color:var(--text-sub); font-size:13px; margin-bottom:16px;">Locker <strong id="resolveFaultLockerNumber"></strong></p>
+            @using (Html.BeginForm("Resolve", "LockerFault", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="lockerFaultId" id="resolveFault_FaultId" />
+                <div class="form-group">
+                    <label>Outcome <span style="color:var(--red)">*</span></label>
+                    <select name="outcome" class="form-control" required>
+                        <option value="">Select outcome</option>
+                        <option value="Resolved">Resolved — back in service</option>
+                        <option value="Unrepairable">Unrepairable — retire locker</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>What was done <span style="color:var(--red)">*</span></label>
+                    <textarea name="resolutionNotes" class="form-control form-textarea" required placeholder="Describe the fix or why it couldn't be repaired"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Parts Used</label>
+                    <input type="text" name="partsUsed" class="form-control" placeholder="Optional" />
+                </div>
+                <div class="form-group">
+                    <label>Cost (R)</label>
+                    <input type="number" name="repairCost" step="0.01" min="0" class="form-control" placeholder="Optional" />
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn save" style="background:var(--green);"><i class="fas fa-check"></i> Submit</button>
+                    <button type="button" class="modal-btn cancel" onclick="closeResolveFaultModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ===== OVERRIDE OPEN MODAL ===== -->
+    <div id="overrideModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title" style="color:var(--red);"><i class="fas fa-key" style="font-size:20px;"></i> Override Open</div>
+            <p style="color:var(--text-sub); font-size:13px; margin-bottom:8px;">
+                Locker <strong id="overrideLockerNumber"></strong>, held by <strong id="overrideMemberName"></strong>.
+            </p>
+            <div class="modal-warning">
+                <i class="fas fa-triangle-exclamation"></i>
+                This opens the member's locker WITHOUT ending their reservation or PIN.
+                The member is notified immediately and this action is permanently logged
+                to the Access Audit trail. Only use this for legitimate belongings retrieval.
+            </div>
+            @using (Html.BeginForm("OverrideOpen", "LockerFault", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="lockerFaultId" id="override_FaultId" />
+                <div class="form-group">
+                    <label>Reason <span style="color:var(--red)">*</span></label>
+                    <input type="text" name="reason" class="form-control" required
+                           placeholder="e.g. Member locked out, retrieving wallet with staff present" />
+                </div>
+                <div class="form-group">
+                    <label>How was the member informed? <span style="color:var(--red)">*</span></label>
+                    <input type="text" name="acknowledgement" class="form-control" required
+                           placeholder="e.g. Member present in person / Called and confirmed" />
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn save" style="background:var(--red);"
+                            onclick="return confirm('This will be permanently logged and the member notified immediately. Continue?');">
+                        <i class="fas fa-key"></i> Confirm Override
+                    </button>
+                    <button type="button" class="modal-btn cancel" onclick="closeOverrideModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function lkaSwitchTab(tab) {
+            document.querySelectorAll('.lk-admin-panel').forEach(function (p) { p.classList.remove('active'); });
+            document.querySelectorAll('.lk-admin-tab').forEach(function (b) { b.classList.remove('active'); });
+            document.getElementById('lka-panel-' + tab).classList.add('active');
+            document.querySelector('.lk-admin-tab[data-tab="' + tab + '"]').classList.add('active');
+        }
+
+        function openAddLockerModal() { document.getElementById('addLockerModal').style.display = 'flex'; }
+        function closeAddLockerModal() { document.getElementById('addLockerModal').style.display = 'none'; }
+
+        function openForceModal(lockerId, lockerNumber, memberName) {
+            document.getElementById('force_LockerId').value = lockerId;
+            document.getElementById('forceLockerNumber').textContent = lockerNumber;
+            document.getElementById('forceMemberName').textContent = memberName;
+            document.getElementById('forceModal').style.display = 'flex';
+        }
+        function closeForceModal() { document.getElementById('forceModal').style.display = 'none'; }
+
+        function openTriageModal(faultId, lockerNumber, reportedSeverity, belongingsAlreadyFlagged) {
+            document.getElementById('triage_FaultId').value = faultId;
+            document.getElementById('triageLockerNumber').textContent = lockerNumber;
+            document.getElementById('triageReportedSeverity').textContent = reportedSeverity;
+            document.getElementById('triage_Belongings').checked = belongingsAlreadyFlagged;
+            document.getElementById('triageModal').style.display = 'flex';
+        }
+        function closeTriageModal() { document.getElementById('triageModal').style.display = 'none'; }
+
+        function openAssignFaultModal(faultId, lockerNumber) {
+            document.getElementById('assignFault_FaultId').value = faultId;
+            document.getElementById('assignFaultLockerNumber').textContent = lockerNumber;
+            document.getElementById('assignFaultModal').style.display = 'flex';
+        }
+        function closeAssignFaultModal() { document.getElementById('assignFaultModal').style.display = 'none'; }
+
+        function openResolveFaultModal(faultId, lockerNumber) {
+            document.getElementById('resolveFault_FaultId').value = faultId;
+            document.getElementById('resolveFaultLockerNumber').textContent = lockerNumber;
+            document.getElementById('resolveFaultModal').style.display = 'flex';
+        }
+        function closeResolveFaultModal() { document.getElementById('resolveFaultModal').style.display = 'none'; }
+
+        function openOverrideModal(faultId, lockerNumber, memberName) {
+            document.getElementById('override_FaultId').value = faultId;
+            document.getElementById('overrideLockerNumber').textContent = lockerNumber;
+            document.getElementById('overrideMemberName').textContent = memberName;
+            document.getElementById('overrideModal').style.display = 'flex';
+        }
+        function closeOverrideModal() { document.getElementById('overrideModal').style.display = 'none'; }
+
+        document.querySelectorAll('.modal-overlay').forEach(function (overlay) {
+            overlay.addEventListener('click', function (e) {
+                if (e.target === overlay) overlay.style.display = 'none';
+            });
+        });
+
+        @if (TempData["Error"] != null)
+        {
+            <text>
+            document.addEventListener('DOMContentLoaded', function () { openAddLockerModal(); });
+            </text>
+        }
+    </script>
+}

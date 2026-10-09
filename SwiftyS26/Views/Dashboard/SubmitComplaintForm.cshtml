@@ -1,0 +1,623 @@
+﻿@model SwiftyS26.Models.ComplaintTicket
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.ActivePage = "complaint";
+    ViewBag.PageTitle = "Submit a Complaint";
+    var categories = ViewBag.Categories as string[] ?? new string[0];
+}
+
+@section head {
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <style>
+        :root {
+            --blue: #2563eb;
+            --blue-dark: #1d4ed8;
+            --blue-light: #eff6ff;
+            --blue-mid: #dbeafe;
+            --green: #16a34a;
+            --green-light: #f0fdf4;
+            --red: #dc2626;
+            --red-light: #fef2f2;
+            --gold: #d97706;
+            --gold-light: #fffbeb;
+            --text: #0f172a;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --bg2: #ffffff;
+            --bg3: #f1f5f9;
+            --radius: 14px;
+            --radius-sm: 10px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,.06);
+            --shadow-md: 0 4px 16px rgba(0,0,0,.08);
+        }
+
+        .pg-wrap {
+            max-width: 1080px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .pg-header {
+            margin-bottom: 26px;
+        }
+
+        .pg-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 28px;
+            letter-spacing: 1.5px;
+            color: var(--text);
+        }
+
+        .pg-sub {
+            font-size: 13.5px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .pg-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .pg-card-head {
+            padding: 16px 22px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pg-card-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+            .pg-card-title i {
+                color: var(--blue);
+            }
+
+        .pg-card-body {
+            padding: 24px;
+        }
+
+        .complaint-layout {
+            display: grid;
+            grid-template-columns: 1.6fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        @@media (max-width: 900px) {
+            .complaint-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+            .form-group label {
+                display: block;
+                font-size: 11px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.6px;
+                color: var(--muted);
+                margin-bottom: 8px;
+            }
+
+        .optional-tag {
+            font-weight: 500;
+            text-transform: none;
+            letter-spacing: 0;
+            color: #94a3b8;
+            margin-left: 4px;
+        }
+
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            padding: 12px 14px;
+            border-radius: var(--radius-sm);
+            border: 1.5px solid var(--border);
+            background: var(--bg3);
+            color: var(--text);
+            outline: none;
+            transition: all 0.18s ease;
+        }
+
+            .form-group select:focus,
+            .form-group textarea:focus {
+                border-color: var(--blue);
+                box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+                background: #fff;
+            }
+
+        .form-group textarea {
+            min-height: 130px;
+            resize: vertical;
+            line-height: 1.55;
+        }
+
+        .char-count {
+            text-align: right;
+            font-size: 11.5px;
+            color: #94a3b8;
+            margin-top: 6px;
+        }
+
+        .evidence-drop {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1.5px dashed var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            font-size: 13px;
+            color: var(--muted);
+            background: var(--bg3);
+            transition: all 0.18s ease;
+        }
+
+            .evidence-drop i {
+                color: #94a3b8;
+                font-size: 15px;
+            }
+
+            .evidence-drop.has-file {
+                color: var(--blue);
+                font-weight: 600;
+                border-color: var(--blue-mid);
+                background: var(--blue-light);
+            }
+
+                .evidence-drop.has-file i {
+                    color: var(--blue);
+                }
+
+        #evidenceFile {
+            margin-top: 10px;
+            font-size: 13px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .btn-submit-complaint {
+            width: 100%;
+            font-weight: 700;
+            font-size: 14px;
+            padding: 14px;
+            border-radius: var(--radius-sm);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: var(--blue);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(37,99,235,.25);
+            transition: all 0.18s ease;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+            .btn-submit-complaint:hover {
+                background: var(--blue-dark);
+                transform: translateY(-1px);
+            }
+
+            .btn-submit-complaint:disabled {
+                opacity: .6;
+                cursor: not-allowed;
+                transform: none;
+            }
+
+        .modal-error {
+            display: none;
+            background: var(--red-light);
+            border: 1px solid rgba(220,38,38,.2);
+            color: var(--red);
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 18px;
+        }
+
+        /* Steps timeline */
+        .complaint-steps {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .complaint-step {
+            display: flex;
+            gap: 14px;
+            padding-bottom: 24px;
+            position: relative;
+        }
+
+            .complaint-step:last-child {
+                padding-bottom: 0;
+            }
+
+            .complaint-step:not(:last-child)::after {
+                content: '';
+                position: absolute;
+                left: 17px;
+                top: 38px;
+                bottom: -4px;
+                width: 2px;
+                background: var(--border);
+            }
+
+        .step-icon {
+            flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        .complaint-step.active .step-icon {
+            background: var(--blue-light);
+            color: var(--blue);
+            border-color: var(--blue-mid);
+        }
+
+        .step-title {
+            font-weight: 700;
+            font-size: 13.5px;
+            color: var(--text);
+            margin-bottom: 2px;
+        }
+
+        .step-desc {
+            font-size: 12.5px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .complaint-steps-footer {
+            margin-top: 20px;
+            padding-top: 18px;
+            border-top: 1px solid var(--border);
+            font-size: 12.5px;
+            color: var(--muted);
+        }
+
+            .complaint-steps-footer a {
+                font-weight: 700;
+                color: var(--blue);
+                text-decoration: none;
+            }
+
+                .complaint-steps-footer a:hover {
+                    text-decoration: underline;
+                }
+
+        /* Success modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15,23,42,.55);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+            .modal-overlay.open {
+                display: flex;
+            }
+
+        .modal-box {
+            background: #fff;
+            border-radius: 20px;
+            padding: 36px 32px;
+            max-width: 440px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,.15);
+            text-align: center;
+        }
+
+        .modal-icon-lg {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--green-light);
+            color: var(--green);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            margin: 0 auto 16px;
+        }
+
+        .modal-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 22px;
+            letter-spacing: 1.5px;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .modal-body {
+            font-size: 13.5px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .reference-chip {
+            font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+            font-size: 20px;
+            font-weight: 700;
+            padding: 12px 20px;
+            border-radius: var(--radius-sm);
+            display: inline-block;
+            margin-top: 14px;
+            letter-spacing: 0.03em;
+            background: var(--blue-light);
+            color: var(--blue);
+        }
+
+        .modal-notice {
+            font-size: 12.5px;
+            color: #94a3b8;
+            margin-top: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 22px;
+        }
+
+        .btn-primary {
+            flex: 1;
+            background: var(--blue);
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: var(--radius-sm);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+
+            .btn-primary:hover {
+                background: var(--blue-dark);
+                color: #fff;
+            }
+
+        .btn-secondary {
+            flex: 1;
+            border: 1.5px solid var(--border);
+            padding: 12px 18px;
+            border-radius: var(--radius-sm);
+            text-decoration: none;
+            color: var(--muted);
+            background: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.18s ease;
+        }
+
+            .btn-secondary:hover {
+                background: var(--bg3);
+            }
+    </style>
+}
+
+<div class="pg-wrap">
+    <div class="pg-header">
+        <div class="pg-title">SUBMIT A COMPLAINT</div>
+        <div class="pg-sub">Tell us what happened — you'll get a reference number to track progress</div>
+    </div>
+
+    <div class="complaint-layout">
+        <!-- Complaint Form -->
+        <div class="pg-card">
+            <div class="pg-card-head">
+                <span class="pg-card-title"><i class="fas fa-comment-medical"></i> Complaint Details</span>
+            </div>
+            <div class="pg-card-body">
+                <div id="complaint-form-error" class="modal-error"></div>
+
+                <form id="complaint-form">
+                    <div class="form-group">
+                        <label for="Category">Category</label>
+                        <select name="Category" id="Category" required>
+                            <option value="" disabled selected>Select a category…</option>
+                            @foreach (var cat in categories)
+                            {
+                                <option value="@cat">@cat</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="Details">What happened?</label>
+                        <textarea name="Details" id="Details" maxlength="2000" required
+                                  placeholder="Include dates, locations, and names where relevant — the more detail, the faster we can help."></textarea>
+                        <div class="char-count"><span id="char-count">0</span>/2000</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="evidenceFile">Evidence <span class="optional-tag">Optional</span></label>
+                        <div class="evidence-drop" id="evidence-drop">
+                            <i class="fas fa-paperclip"></i>
+                            <span id="evidence-label">JPG, PNG, PDF or DOCX — up to 5MB</span>
+                        </div>
+                        <input type="file" name="evidenceFile" id="evidenceFile" accept=".jpg,.jpeg,.png,.pdf,.docx" />
+                    </div>
+
+                    <button type="submit" class="btn-submit-complaint" id="complaint-submit-btn">
+                        <i class="fas fa-paper-plane"></i> Submit Complaint
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- What Happens Next -->
+        <div class="pg-card">
+            <div class="pg-card-head">
+                <span class="pg-card-title"><i class="fas fa-route"></i> What Happens Next</span>
+            </div>
+            <div class="pg-card-body">
+                <ul class="complaint-steps">
+                    <li class="complaint-step active">
+                        <div class="step-icon"><i class="fas fa-paper-plane"></i></div>
+                        <div>
+                            <div class="step-title">Submitted</div>
+                            <div class="step-desc">You'll receive a reference number immediately.</div>
+                        </div>
+                    </li>
+                    <li class="complaint-step">
+                        <div class="step-icon"><i class="fas fa-magnifying-glass"></i></div>
+                        <div>
+                            <div class="step-title">Under Investigation</div>
+                            <div class="step-desc">A staff member reviews the details and follows up if needed.</div>
+                        </div>
+                    </li>
+                    <li class="complaint-step">
+                        <div class="step-icon"><i class="fas fa-check-circle"></i></div>
+                        <div>
+                            <div class="step-title">Resolved</div>
+                            <div class="step-desc">We record what was done and let you know the outcome.</div>
+                        </div>
+                    </li>
+                    <li class="complaint-step">
+                        <div class="step-icon"><i class="fas fa-lock"></i></div>
+                        <div>
+                            <div class="step-title">Closed</div>
+                            <div class="step-desc">The complaint is complete. View its history anytime.</div>
+                        </div>
+                    </li>
+                </ul>
+                <div class="complaint-steps-footer">
+                    Already have a reference number? <a href="@Url.Action("MyComplaints", "Dashboard")">Track it here <i class="fas fa-arrow-right"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success Modal -->
+<div class="modal-overlay" id="successModal">
+    <div class="modal-box">
+        <div class="modal-icon-lg"><i class="fas fa-check-circle"></i></div>
+        <div class="modal-title">Complaint Submitted</div>
+        <div class="modal-body">
+            Keep this reference number to track progress:
+            <div class="reference-chip" id="successRefNumber"></div>
+        </div>
+        <div class="modal-notice"><i class="fas fa-envelope"></i> We'll also notify you by email as your complaint progresses.</div>
+        <div class="modal-actions">
+            <a href="@Url.Action("MyComplaints", "Dashboard")" class="btn-primary">Track This Complaint</a>
+            <button class="btn-secondary" onclick="closeSuccessModal()">Submit Another</button>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        var detailsEl = document.getElementById('Details');
+        var charCountEl = document.getElementById('char-count');
+        detailsEl.addEventListener('input', function () {
+            charCountEl.textContent = detailsEl.value.length;
+        });
+
+        var fileInput = document.getElementById('evidenceFile');
+        var evidenceDrop = document.getElementById('evidence-drop');
+        var evidenceLabel = document.getElementById('evidence-label');
+        fileInput.addEventListener('change', function () {
+            if (fileInput.files && fileInput.files[0]) {
+                evidenceLabel.textContent = fileInput.files[0].name;
+                evidenceDrop.classList.add('has-file');
+            } else {
+                evidenceLabel.textContent = 'JPG, PNG, PDF or DOCX — up to 5MB';
+                evidenceDrop.classList.remove('has-file');
+            }
+        });
+
+        var form = document.getElementById('complaint-form');
+        var errorBox = document.getElementById('complaint-form-error');
+        var submitBtn = document.getElementById('complaint-submit-btn');
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            errorBox.style.display = 'none';
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting…';
+
+            var formData = new FormData(form);
+
+            fetch('@Url.Action("SubmitComplaint", "Dashboard")', { method: 'POST', body: formData })
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Complaint';
+
+                    if (data.success) {
+                        document.getElementById('successRefNumber').textContent = data.referenceNumber;
+                        openSuccessModal();
+                        form.reset();
+                        charCountEl.textContent = '0';
+                        evidenceLabel.textContent = 'JPG, PNG, PDF or DOCX — up to 5MB';
+                        evidenceDrop.classList.remove('has-file');
+                    } else {
+                        errorBox.textContent = data.message || 'Something went wrong. Please try again.';
+                        errorBox.style.display = 'block';
+                    }
+                })
+                .catch(function () {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Complaint';
+                    errorBox.textContent = 'Network error. Please check your connection and try again.';
+                    errorBox.style.display = 'block';
+                });
+        });
+
+        function openSuccessModal() { document.getElementById('successModal').classList.add('open'); }
+        function closeSuccessModal() { document.getElementById('successModal').classList.remove('open'); }
+
+        document.getElementById('successModal').addEventListener('click', function (e) {
+            if (e.target === this) closeSuccessModal();
+        });
+    </script>
+}

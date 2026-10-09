@@ -1,0 +1,1125 @@
+﻿@model List<SwiftyS26.Models.ReturnRequest>
+
+@using System.Collections.Generic
+@using System.Linq
+
+@{
+    Layout =
+        Session["LoggedInAdmin"] != null
+            ? "~/Views/Shared/_AdminLayout.cshtml"
+            : "~/Views/Shared/_StoreStaffLayout.cshtml";
+
+    ViewBag.Title = "Returns";
+    ViewBag.PageTitle = "RETURNS";
+
+    var history =
+        ViewBag.History
+        as List<SwiftyS26.Models.ReturnRequest>
+        ?? new List<SwiftyS26.Models.ReturnRequest>();
+
+    bool isAdmin =
+        ViewBag.IsAdmin != null &&
+        (bool)ViewBag.IsAdmin;
+
+    int pendingInspectionCount =
+        Model.Count(r => r.Status == "Pending");
+
+    int awaitingAdminCount =
+        Model.Count(r =>
+            r.Status == "StaffReviewed" ||
+            r.Status == "PendingAdminApproval");
+
+    int awaitingPaymentCount =
+        Model.Count(r =>
+            r.Status == "AwaitingExchangePayment");
+
+    int readyForExchangeCount =
+        Model.Count(r =>
+            r.Status == "ReadyForExchange");
+}
+
+<style>
+    @@keyframes rtFadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .rt-page,
+    .rt-page * {
+        box-sizing: border-box;
+    }
+
+    .rt-page {
+        max-width: 1220px;
+        margin: 0 auto;
+        padding-bottom: 45px;
+        color: #0f172a;
+    }
+
+    .rt-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+        .rt-header h2 {
+            margin: 0;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 26px;
+            letter-spacing: 1px;
+        }
+
+    .rt-scan-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 11px 18px;
+        background: #2563eb;
+        color: #fff;
+        border: 1px solid #2563eb;
+        border-radius: 9px;
+        font-size: 12.5px;
+        font-weight: 800;
+        text-decoration: none;
+        transition: .2s ease;
+    }
+
+        .rt-scan-btn:hover,
+        .rt-scan-btn:focus {
+            background: #1d4ed8;
+            color: #fff;
+            text-decoration: none;
+            transform: translateY(-1px);
+            box-shadow: 0 7px 16px rgba(37, 99, 235, .22);
+        }
+
+    .rt-title {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        margin: 0;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 29px;
+        letter-spacing: 1px;
+    }
+
+    .rt-title-icon {
+        width: 39px;
+        height: 39px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 11px;
+        background: #eff6ff;
+        color: #2563eb;
+        font-family: Arial, sans-serif;
+        font-size: 17px;
+    }
+
+    .rt-subtitle {
+        margin: 5px 0 0 50px;
+        color: #64748b;
+        font-size: 12.5px;
+    }
+
+    .rt-role {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 8px 12px;
+        border: 1px solid #dbe3ee;
+        border-radius: 20px;
+        background: #fff;
+        color: #475569;
+        font-size: 10.5px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .rt-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    /* Alerts */
+
+    .rt-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        margin-bottom: 17px;
+        padding: 13px 15px;
+        border-radius: 10px;
+        font-size: 12.5px;
+        font-weight: 600;
+    }
+
+        .rt-alert.success {
+            border: 1px solid #bbf7d0;
+            background: #f0fdf4;
+            color: #15803d;
+        }
+
+        .rt-alert.error {
+            border: 1px solid #fecaca;
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+    /* Statistics */
+
+    .rt-stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 13px;
+        margin-bottom: 22px;
+    }
+
+    .rt-stat {
+        padding: 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #fff;
+    }
+
+    .rt-stat-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .rt-stat-number {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 29px;
+        line-height: 1;
+    }
+
+    .rt-stat-icon {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9px;
+        font-size: 14px;
+    }
+
+    .rt-stat-label {
+        margin-top: 8px;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .rt-stat.inspection .rt-stat-number {
+        color: #d97706;
+    }
+
+    .rt-stat.inspection .rt-stat-icon {
+        background: #fffbeb;
+        color: #d97706;
+    }
+
+    .rt-stat.admin .rt-stat-number {
+        color: #7c3aed;
+    }
+
+    .rt-stat.admin .rt-stat-icon {
+        background: #f5f3ff;
+        color: #7c3aed;
+    }
+
+    .rt-stat.payment .rt-stat-number {
+        color: #dc2626;
+    }
+
+    .rt-stat.payment .rt-stat-icon {
+        background: #fef2f2;
+        color: #dc2626;
+    }
+
+    .rt-stat.ready .rt-stat-number {
+        color: #059669;
+    }
+
+    .rt-stat.ready .rt-stat-icon {
+        background: #ecfdf5;
+        color: #059669;
+    }
+
+    /* Section */
+
+    .rt-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin: 25px 0 13px;
+    }
+
+    .rt-section-title {
+        margin: 0;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 20px;
+        letter-spacing: .8px;
+    }
+
+    .rt-section-count {
+        padding: 4px 9px;
+        border-radius: 20px;
+        background: #f1f5f9;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 800;
+    }
+
+    /* Return cards */
+
+    .rt-list {
+        display: grid;
+        gap: 13px;
+    }
+
+    .rt-card {
+        overflow: hidden;
+        border: 1px solid #dbe3ee;
+        border-radius: 14px;
+        background: #fff;
+        animation: rtFadeUp .35s ease both;
+    }
+
+    .rt-card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 15px;
+        padding: 16px 18px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+
+    .rt-reference {
+        margin-bottom: 3px;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 17px;
+        letter-spacing: .6px;
+    }
+
+    .rt-date {
+        color: #64748b;
+        font-size: 10.5px;
+    }
+
+    .rt-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        border-radius: 20px;
+        white-space: nowrap;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+        .rt-status.pending {
+            background: #fffbeb;
+            color: #d97706;
+        }
+
+        .rt-status.admin {
+            background: #f5f3ff;
+            color: #7c3aed;
+        }
+
+        .rt-status.payment {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .rt-status.ready {
+            background: #ecfdf5;
+            color: #059669;
+        }
+
+        .rt-status.processing {
+            background: #eff6ff;
+            color: #2563eb;
+        }
+
+        .rt-status.refunded,
+        .rt-status.completed {
+            background: #f0fdf4;
+            color: #15803d;
+        }
+
+        .rt-status.rejected {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .rt-status.cancelled {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+    .rt-card-body {
+        padding: 17px 18px;
+    }
+
+    .rt-details {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 11px;
+    }
+
+    .rt-detail {
+        min-width: 0;
+        padding: 11px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 9px;
+        background: #fff;
+    }
+
+    .rt-detail-label {
+        display: block;
+        margin-bottom: 4px;
+        color: #64748b;
+        font-size: 9.5px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .rt-detail-value {
+        display: block;
+        color: #0f172a;
+        font-size: 12px;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    .rt-description {
+        margin-top: 12px;
+        padding: 11px 13px;
+        border-left: 3px solid #2563eb;
+        border-radius: 0 8px 8px 0;
+        background: #eff6ff;
+        color: #334155;
+        font-size: 11.5px;
+        line-height: 1.55;
+    }
+
+    .rt-inspection {
+        margin-top: 11px;
+        padding: 11px 13px;
+        border-radius: 9px;
+        background: #f8fafc;
+        color: #475569;
+        font-size: 11.5px;
+        line-height: 1.55;
+    }
+
+    .rt-financial {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 18px;
+        margin-top: 12px;
+        padding: 11px 13px;
+        border: 1px solid #e2e8f0;
+        border-radius: 9px;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 11px;
+    }
+
+        .rt-financial strong {
+            color: #0f172a;
+        }
+
+    .rt-payment-due {
+        color: #dc2626 !important;
+    }
+
+    .rt-refund-due {
+        color: #16a34a !important;
+    }
+
+    .rt-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 14px;
+        flex-wrap: wrap;
+    }
+
+    .rt-btn {
+        min-height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 8px 14px;
+        border: none;
+        border-radius: 8px;
+        font-size: 11.5px;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+        .rt-btn.inspect {
+            background: #2563eb;
+            color: #fff;
+        }
+
+        .rt-btn.decide {
+            background: #7c3aed;
+            color: #fff;
+        }
+
+        .rt-btn.complete {
+            background: #059669;
+            color: #fff;
+        }
+
+    .rt-waiting {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 12px;
+        border-radius: 8px;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+        .rt-waiting.warning {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+
+    .rt-history-card {
+        opacity: .94;
+    }
+
+    .rt-empty {
+        padding: 50px 20px;
+        border: 1px dashed #cbd5e1;
+        border-radius: 14px;
+        background: #fff;
+        color: #64748b;
+        text-align: center;
+    }
+
+        .rt-empty i {
+            display: block;
+            margin-bottom: 10px;
+            color: #94a3b8;
+            font-size: 28px;
+        }
+
+    @@media (max-width: 1000px) {
+        .rt-details {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 800px) {
+        .rt-stats {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 560px) {
+        .rt-header {
+            flex-direction: column;
+        }
+
+        .rt-subtitle {
+            margin-left: 0;
+        }
+
+        .rt-stats,
+        .rt-details {
+            grid-template-columns: 1fr;
+        }
+
+        .rt-card-top {
+            flex-direction: column;
+        }
+    }
+
+    .rt-status.expired {
+        background: #f1f5f9;
+        color: #64748b;
+    }
+
+    .rt-header-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .rt-scan-btn {
+        flex: 1;
+    }
+</style>
+
+<div class="rt-page">
+    <header class="rt-header">
+        <div>
+            <h2 class="rt-title">
+                <span class="rt-title-icon">
+                    <i class="fas fa-rotate-left"></i>
+                </span>
+
+                Returns and Exchanges
+            </h2>
+
+            <p class="rt-subtitle">
+                Inspect returned products, review requests and complete
+                approved in-store exchanges.
+            </p>
+        </div>
+
+        <div class="rt-header-actions">
+
+            <a href="@Url.Action("ScanReturn", "StoreAdmin")" class="rt-scan-btn">
+                <i class="fas fa-camera"></i>
+                Scan Return QR
+            </a>
+
+            <span class="rt-role">
+                <i class="fas @(isAdmin ? "fa-user-shield" : "fa-user-check")"></i>
+                @(isAdmin ? "Admin View" : "Store Staff View")
+            </span>
+
+        </div>
+    </header>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="rt-alert success">
+            <i class="fas fa-circle-check"></i>
+            <span>@TempData["Success"]</span>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="rt-alert error">
+            <i class="fas fa-circle-exclamation"></i>
+            <span>@TempData["Error"]</span>
+        </div>
+    }
+
+    <section class="rt-stats">
+        <div class="rt-stat inspection">
+            <div class="rt-stat-top">
+                <span class="rt-stat-number">@pendingInspectionCount</span>
+                <span class="rt-stat-icon"><i class="fas fa-magnifying-glass"></i></span>
+            </div>
+            <div class="rt-stat-label">Awaiting Inspection</div>
+        </div>
+
+        <div class="rt-stat admin">
+            <div class="rt-stat-top">
+                <span class="rt-stat-number">@awaitingAdminCount</span>
+                <span class="rt-stat-icon"><i class="fas fa-user-shield"></i></span>
+            </div>
+            <div class="rt-stat-label">Awaiting Admin</div>
+        </div>
+
+        <div class="rt-stat payment">
+            <div class="rt-stat-top">
+                <span class="rt-stat-number">@awaitingPaymentCount</span>
+                <span class="rt-stat-icon"><i class="fas fa-credit-card"></i></span>
+            </div>
+            <div class="rt-stat-label">Awaiting Payment</div>
+        </div>
+
+        <div class="rt-stat ready">
+            <div class="rt-stat-top">
+                <span class="rt-stat-number">@readyForExchangeCount</span>
+                <span class="rt-stat-icon"><i class="fas fa-box-open"></i></span>
+            </div>
+            <div class="rt-stat-label">Ready for Exchange</div>
+        </div>
+    </section>
+
+    <div class="rt-section-header">
+        <h3 class="rt-section-title">Active Requests</h3>
+        <span class="rt-section-count">@Model.Count active</span>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="rt-empty">
+            <i class="fas fa-clipboard-check"></i>
+            No active return or exchange requests.
+        </div>
+    }
+    else
+    {
+        <div class="rt-list">
+            @foreach (var request in Model)
+            {
+                string statusClass;
+                string statusText;
+                string statusIcon;
+
+                switch (request.Status)
+                {
+                    case "Pending":
+                        statusClass = "pending";
+                        statusText = "Awaiting Inspection";
+                        statusIcon = "fa-magnifying-glass";
+                        break;
+
+                    case "StaffReviewed":
+                    case "PendingAdminApproval":
+                        statusClass = "admin";
+                        statusText = "Awaiting Admin";
+                        statusIcon = "fa-user-shield";
+                        break;
+
+                    case "AwaitingExchangePayment":
+                        statusClass = "payment";
+                        statusText = "Awaiting Payment";
+                        statusIcon = "fa-credit-card";
+                        break;
+
+                    case "ReadyForExchange":
+                        statusClass = "ready";
+                        statusText = "Ready for Exchange";
+                        statusIcon = "fa-box-open";
+                        break;
+
+                    case "RefundProcessing":
+                        statusClass = "processing";
+                        statusText = "Refund Processing";
+                        statusIcon = "fa-spinner";
+                        break;
+
+                    case "ExchangeApproved":
+                        statusClass = "processing";
+                        statusText = "Exchange Approved";
+                        statusIcon = "fa-right-left";
+                        break;
+
+                    default:
+                        statusClass = "processing";
+                        statusText = request.Status;
+                        statusIcon = "fa-circle-info";
+                        break;
+                }
+
+                bool isExchange =
+                    string.Equals(request.RequestedResolution, "Exchange", StringComparison.OrdinalIgnoreCase);
+
+                decimal returnCredit =
+                    request.ReturnCreditAmount ?? request.RefundAmount ?? 0m;
+
+                decimal additionalPayment =
+                    request.AdditionalPaymentAmount ?? 0m;
+
+                decimal exchangeRefund =
+                    request.ExchangeRefundAmount ?? 0m;
+
+                <article class="rt-card">
+                    <div class="rt-card-top">
+                        <div>
+                            <div class="rt-reference">@request.ReferenceNumber</div>
+                            <div class="rt-date">Requested @request.RequestedAt.ToString("dd MMM yyyy, HH:mm")</div>
+                        </div>
+
+                        <span class="rt-status @statusClass">
+                            <i class="fas @statusIcon"></i>
+                            @statusText
+                        </span>
+                    </div>
+
+                    <div class="rt-card-body">
+                        <div class="rt-details">
+                            <div class="rt-detail">
+                                <span class="rt-detail-label">Member</span>
+                                <span class="rt-detail-value">@(request.Member != null ? request.Member.FullName : "—")</span>
+                            </div>
+
+                            <div class="rt-detail">
+                                <span class="rt-detail-label">Original Product</span>
+                                <span class="rt-detail-value">
+                                    @(request.StoreOrderItem != null && request.StoreOrderItem.Product != null
+                                        ? request.StoreOrderItem.Product.Name
+                                        : "—")
+                                    × @request.Quantity
+                                </span>
+                            </div>
+
+                            <div class="rt-detail">
+                                <span class="rt-detail-label">Reason</span>
+                                <span class="rt-detail-value">@request.Reason</span>
+                            </div>
+
+                            <div class="rt-detail">
+                                <span class="rt-detail-label">Requested Resolution</span>
+                                <span class="rt-detail-value">@(isExchange ? "Exchange" : "Refund")</span>
+                            </div>
+
+                            @if (isExchange)
+                            {
+                                <div class="rt-detail">
+                                    <span class="rt-detail-label">Replacement</span>
+                                    <span class="rt-detail-value">
+                                        @(request.ExchangeProduct != null ? request.ExchangeProduct.Name : "Unavailable")
+                                        × @(request.ExchangeQuantity ?? 0)
+                                    </span>
+                                </div>
+
+                                <div class="rt-detail">
+                                    <span class="rt-detail-label">Exchange Type</span>
+                                    <span class="rt-detail-value">
+                                        @(request.ExchangeType == "SameProduct" ? "Like-for-like" : "Different product")
+                                    </span>
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrWhiteSpace(request.StaffRecommendation))
+                            {
+                                <div class="rt-detail">
+                                    <span class="rt-detail-label">Staff Recommendation</span>
+                                    <span class="rt-detail-value">
+                                        @request.StaffRecommendation
+                                        @if (!string.IsNullOrWhiteSpace(request.StaffRecommendedResolution))
+                                        {
+                                            <text> — @request.StaffRecommendedResolution</text>
+                                        }
+                                    </span>
+                                </div>
+
+                                <div class="rt-detail">
+                                    <span class="rt-detail-label">Item Disposition</span>
+                                    <span class="rt-detail-value">@(request.ItemDisposition ?? "—")</span>
+                                </div>
+                            }
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(request.Description))
+                        {
+                            <div class="rt-description">
+                                <strong>Member description:</strong>
+                                @request.Description
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(request.StaffReviewNotes))
+                        {
+                            <div class="rt-inspection">
+                                <strong>Inspection notes:</strong>
+                                @request.StaffReviewNotes
+                            </div>
+                        }
+
+                        <div class="rt-financial">
+                            <span>Return credit: <strong>R@(returnCredit.ToString("F2"))</strong></span>
+
+                            @if (isExchange)
+                            {
+                                <span>
+                                    Replacement total:
+                                    <strong>R@((request.ExchangeTotalAmount ?? 0m).ToString("F2"))</strong>
+                                </span>
+
+                                if (additionalPayment > 0)
+                                {
+                                    <span>
+                                        Payment due:
+                                        <strong class="rt-payment-due">R@(additionalPayment.ToString("F2"))</strong>
+                                    </span>
+                                }
+                                else if (exchangeRefund > 0)
+                                {
+                                    <span>
+                                        Difference refund:
+                                        <strong class="rt-refund-due">R@(exchangeRefund.ToString("F2"))</strong>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span>
+                                        Difference:
+                                        <strong class="rt-refund-due">R0.00</strong>
+                                    </span>
+                                }
+                            }
+                        </div>
+
+                        <div class="rt-actions">
+                            @if (request.Status == "Pending")
+                            {
+                                <a href="@Url.Action("InspectReturn", "StoreAdmin", new { id = request.ReturnRequestId })"
+                                   class="rt-btn inspect">
+                                    <i class="fas fa-magnifying-glass"></i>
+                                    Inspect Returned Item
+                                </a>
+                            }
+                            else if (request.Status == "StaffReviewed" || request.Status == "PendingAdminApproval")
+                            {
+                                if (isAdmin)
+                                {
+                                    <a href="@Url.Action("ReviewReturnDecision", "StoreAdmin", new { id = request.ReturnRequestId })"
+                                       class="rt-btn decide">
+                                        <i class="fas fa-user-shield"></i>
+                                        Review and Decide
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="rt-waiting">
+                                        <i class="fas fa-clock"></i>
+                                        Waiting for Admin&rsquo;s final decision
+                                    </span>
+                                }
+                            }
+                            else if (request.Status == "AwaitingExchangePayment")
+                            {
+                                <span class="rt-waiting warning">
+                                    <i class="fas fa-credit-card"></i>
+                                    Waiting for member payment of R@(additionalPayment.ToString("F2"))
+                                </span>
+
+                                if (request.ExchangeReservationExpiresAt.HasValue)
+                                {
+                                    <span class="rt-waiting">
+                                        <i class="fas fa-calendar-xmark"></i>
+                                        Reserved until @request.ExchangeReservationExpiresAt.Value.ToString("dd MMM yyyy, HH:mm")
+                                    </span>
+                                }
+                            }
+                            else if (request.Status == "ReadyForExchange")
+                            {
+                                <a href="@Url.Action("CompleteExchange", "StoreAdmin", new { id = request.ReturnRequestId })"
+                                   class="rt-btn complete">
+                                    <i class="fas fa-right-left"></i>
+                                    Complete In-Store Exchange
+                                </a>
+
+                                if (request.ExchangeReservationExpiresAt.HasValue)
+                                {
+                                    <span class="rt-waiting">
+                                        <i class="fas fa-clock"></i>
+                                        Reservation expires @request.ExchangeReservationExpiresAt.Value.ToString("dd MMM yyyy, HH:mm")
+                                    </span>
+                                }
+                            }
+                            else if (request.Status == "RefundProcessing")
+                            {
+                                <span class="rt-waiting">
+                                    <i class="fas fa-spinner"></i>
+                                    Paystack refund is being processed
+                                </span>
+                            }
+                            else if (request.Status == "ExchangeApproved")
+                            {
+                                <span class="rt-waiting">
+                                    <i class="fas fa-box"></i>
+                                    Replacement is being prepared
+                                </span>
+                            }
+                        </div>
+                    </div>
+                </article>
+            }
+        </div>
+    }
+
+    <div class="rt-section-header">
+        <h3 class="rt-section-title">Completed History</h3>
+        <span class="rt-section-count">@history.Count records</span>
+    </div>
+
+    @if (!history.Any())
+    {
+        <div class="rt-empty">
+            <i class="fas fa-clock-rotate-left"></i>
+            No completed return or exchange records.
+        </div>
+    }
+    else
+    {
+        <div class="rt-list">
+            @foreach (var request in history)
+            {
+                string statusClass;
+                string statusText;
+                string statusIcon;
+
+                switch (request.Status)
+                {
+                    case "Approved":
+                    case "Refunded":
+                        statusClass = "refunded";
+                        statusText = "Refunded";
+                        statusIcon = "fa-money-bill-transfer";
+                        break;
+
+                    case "ExchangeCompleted":
+                        statusClass = "completed";
+                        statusText = "Exchange Completed";
+                        statusIcon = "fa-circle-check";
+                        break;
+
+                    case "Rejected":
+                        statusClass = "rejected";
+                        statusText = "Rejected";
+                        statusIcon = "fa-circle-xmark";
+                        break;
+
+                    case "ExchangeExpired":
+                        statusClass = "expired";
+                        statusText = "Exchange Expired";
+                        statusIcon = "fa-calendar-xmark";
+                        break;
+
+                    case "Cancelled":
+                        statusClass = "cancelled";
+                        statusText = "Cancelled";
+                        statusIcon = "fa-ban";
+                        break;
+
+                    default:
+                        statusClass = "cancelled";
+                        statusText = request.Status;
+                        statusIcon = "fa-circle-info";
+                        break;
+                }
+
+                bool completedExchange = request.Status == "ExchangeCompleted";
+
+                <article class="rt-card rt-history-card">
+                    <div class="rt-card-top">
+                        <div>
+                            <div class="rt-reference">@request.ReferenceNumber</div>
+                            <div class="rt-date">Requested @request.RequestedAt.ToString("dd MMM yyyy")</div>
+                        </div>
+
+                        <span class="rt-status @statusClass">
+                            <i class="fas @statusIcon"></i>
+                            @statusText
+                        </span>
+                    </div>
+
+                    <div class="rt-card-body">
+                        <div class="rt-details">
+                            <div class="rt-detail">
+                                <span class="rt-detail-label">Member</span>
+                                <span class="rt-detail-value">@(request.Member != null ? request.Member.FullName : "—")</span>
+                            </div>
+
+                            <div class="rt-detail">
+                                <span class="rt-detail-label">Returned Product</span>
+                                <span class="rt-detail-value">
+                                    @(request.StoreOrderItem != null && request.StoreOrderItem.Product != null
+                                        ? request.StoreOrderItem.Product.Name
+                                        : "—")
+                                    × @request.Quantity
+                                </span>
+                            </div>
+
+                            <div class="rt-detail">
+                                <span class="rt-detail-label">Final Resolution</span>
+                                <span class="rt-detail-value">
+                                    @(request.ApprovedResolution ?? request.RequestedResolution ?? "—")
+                                </span>
+                            </div>
+
+                            <div class="rt-detail">
+                                <span class="rt-detail-label">Item Disposition</span>
+                                <span class="rt-detail-value">@(request.ItemDisposition ?? "—")</span>
+                            </div>
+
+                            @if (completedExchange)
+                            {
+                                <div class="rt-detail">
+                                    <span class="rt-detail-label">Replacement</span>
+                                    <span class="rt-detail-value">
+                                        @(request.ExchangeProduct != null ? request.ExchangeProduct.Name : "—")
+                                        × @(request.ExchangeQuantityReserved ?? request.ExchangeQuantity ?? 0)
+                                    </span>
+                                </div>
+
+                                <div class="rt-detail">
+                                    <span class="rt-detail-label">Completed</span>
+                                    <span class="rt-detail-value">
+                                        @(request.ExchangeCompletedAt.HasValue
+                                            ? request.ExchangeCompletedAt.Value.ToString("dd MMM yyyy, HH:mm")
+                                            : "—")
+                                    </span>
+                                </div>
+                            }
+                            else if (request.Status == "Approved" || request.Status == "Refunded")
+                            {
+                                <div class="rt-detail">
+                                    <span class="rt-detail-label">Refund Amount</span>
+                                    <span class="rt-detail-value" style="color:#15803d;">
+                                        R@((request.RefundAmount ?? 0m).ToString("F2"))
+                                    </span>
+                                </div>
+
+                                <div class="rt-detail">
+                                    <span class="rt-detail-label">Restocked</span>
+                                    <span class="rt-detail-value">@(request.WasRestocked ? "Yes" : "No")</span>
+                                </div>
+                            }
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(request.AdminDecisionReason))
+                        {
+                            <div class="rt-inspection">
+                                <strong>Admin decision:</strong>
+                                @request.AdminDecisionReason
+                            </div>
+                        }
+                        @if (request.Status == "ExchangeExpired" && !string.IsNullOrWhiteSpace(request.ExchangeCancellationReason))
+                        {
+                            <div class="rt-inspection">
+                                <strong>Expiry reason:</strong>
+                                @request.ExchangeCancellationReason
+                            </div>
+                        }
+
+                        @if (completedExchange && request.ExchangeRefundAmount.HasValue && request.ExchangeRefundAmount.Value > 0)
+                        {
+                            <div class="rt-financial">
+                                <span>
+                                    Difference refund:
+                                    <strong class="rt-refund-due">R@(request.ExchangeRefundAmount.Value.ToString("F2"))</strong>
+                                </span>
+
+                                <span>
+                                    Refund reference:
+                                    <strong>@(request.ExchangeRefundReference ?? "Pending")</strong>
+                                </span>
+                            </div>
+                        }
+                    </div>
+                </article>
+            }
+        </div>
+    }
+</div>

@@ -1,0 +1,164 @@
+@model SwiftyS26.Models.StoreStaff
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewBag.Title = "Store Staff Management";
+    ViewBag.PageTitle = "STORE STAFF MANAGEMENT";
+    ViewBag.ActiveNav = "storestaff";
+    var staffList = ViewBag.StoreStaffList as List<SwiftyS26.Models.StoreStaff> ?? new List<SwiftyS26.Models.StoreStaff>();
+}
+
+@section Styles {
+    <style>
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); margin-bottom: 6px; }
+        .form-control { width: 100%; padding: 10px 14px; background: var(--bg3); border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--text); outline: none; }
+        .form-control:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.1); background: var(--white); }
+        .modal-btn.save { background: var(--blue); color: #fff; }
+        .status-badge.status-inactive { background: var(--bg3); color: var(--muted); }
+    </style>
+}
+
+<div class="page-content">
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="admin-card" style="border-left:4px solid var(--green); background:var(--green-light); padding:14px 20px; color:var(--green); font-weight:600;">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="admin-card" style="border-left:4px solid var(--red); background:var(--red-light); padding:14px 20px; color:var(--red); font-weight:600;">@TempData["Error"]</div>
+    }
+    @if (TempData["Warning"] != null)
+    {
+        <div class="admin-card" style="border-left:4px solid var(--gold); background:var(--gold-light); padding:14px 20px; color:var(--gold); font-weight:600;">@TempData["Warning"]</div>
+    }
+
+    <div class="admin-stats-grid">
+        <div class="admin-stat-card blue">
+            <div class="stat-icon"><i class="fas fa-store"></i></div>
+            <div class="stat-number">@staffList.Count</div>
+            <div class="stat-label">Total Store Staff</div>
+        </div>
+        <div class="admin-stat-card green">
+            <div class="stat-icon"><i class="fas fa-user-check"></i></div>
+            <div class="stat-number">@staffList.Count(s => s.IsActive)</div>
+            <div class="stat-label">Active</div>
+        </div>
+    </div>
+
+    <div class="admin-card">
+        <div class="admin-card-header">
+            <div class="admin-card-title"><i class="fas fa-store"></i> Store Staff</div>
+            <button class="btn-primary" onclick="openAddStaffModal()"><i class="fas fa-plus"></i> Add Store Staff</button>
+        </div>
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Code</th><th>Name</th><th>Email</th><th>Phone</th><th>Status</th><th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in staffList)
+                    {
+                        <tr>
+                            <td class="member-id">@s.StoreStaffCode</td>
+                            <td class="member-name">@s.FullName</td>
+                            <td class="member-email">@s.Email</td>
+                            <td class="member-email">@(s.PhoneNumber ?? "—")</td>
+                            <td>
+                                @if (s.IsActive)
+                                {
+                                    <span class="status-badge status-active">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-inactive">Inactive</span>
+                                }
+                            </td>
+                            <td>
+                                <button class="btn-ghost" onclick="openEditStaffModal(@s.StoreStaffId, '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(s.FullName))', '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(s.Email))', '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(s.PhoneNumber ?? string.Empty))')">
+                                    <i class="fas fa-pen"></i> Edit
+                                </button>
+                                @using (Html.BeginForm("DeleteStoreStaff", "Admin", new { id = s.StoreStaffId }, FormMethod.Post, new { style = "display:inline;" }))
+                                {
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn-ghost" style="color:var(--red);" onclick="return confirm('Delete this store staff member?');">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if (!staffList.Any())
+            {
+                <div style="padding:40px;text-align:center;color:var(--muted);">No store staff added yet.</div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Modals {
+    <div id="addStaffModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title"><i class="fas fa-store" style="color:var(--blue);font-size:20px;"></i> Add Store Staff</div>
+            @using (Html.BeginForm("CreateStoreStaff", "Admin", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <div class="form-group"><label>Full Name *</label><input type="text" name="FullName" class="form-control" required /></div>
+                <div class="form-group"><label>Email *</label><input type="email" name="Email" class="form-control" required /></div>
+                <div class="form-group"><label>Phone Number</label><input type="text" name="PhoneNumber" class="form-control" /></div>
+                <div class="form-group">
+                    <label>Gender</label>
+                    <select name="Gender" class="form-control">
+                        <option value="">Select</option><option value="Male">Male</option><option value="Female">Female</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn save"><i class="fas fa-plus"></i> Add Store Staff</button>
+                    <button type="button" class="modal-btn cancel" onclick="closeAddStaffModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div id="editStaffModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title"><i class="fas fa-pen" style="color:var(--blue);font-size:20px;"></i> Edit Store Staff</div>
+            @using (Html.BeginForm("EditStoreStaff", "Admin", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="StoreStaffId" id="edit_StoreStaffId" />
+                <div class="form-group"><label>Full Name *</label><input type="text" name="FullName" id="edit_FullName" class="form-control" required /></div>
+                <div class="form-group"><label>Email *</label><input type="email" name="Email" id="edit_Email" class="form-control" required /></div>
+                <div class="form-group"><label>Phone Number</label><input type="text" name="PhoneNumber" id="edit_PhoneNumber" class="form-control" /></div>
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn save"><i class="fas fa-check"></i> Save Changes</button>
+                    <button type="button" class="modal-btn cancel" onclick="closeEditStaffModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function openAddStaffModal() { document.getElementById('addStaffModal').style.display = 'flex'; }
+        function closeAddStaffModal() { document.getElementById('addStaffModal').style.display = 'none'; }
+
+        function openEditStaffModal(id, name, email, phone) {
+            document.getElementById('edit_StoreStaffId').value = id;
+            document.getElementById('edit_FullName').value = name;
+            document.getElementById('edit_Email').value = email;
+            document.getElementById('edit_PhoneNumber').value = phone;
+            document.getElementById('editStaffModal').style.display = 'flex';
+        }
+        function closeEditStaffModal() { document.getElementById('editStaffModal').style.display = 'none'; }
+
+        document.querySelectorAll('.modal-overlay').forEach(function (overlay) {
+            overlay.addEventListener('click', function (e) { if (e.target === overlay) overlay.style.display = 'none'; });
+        });
+    </script>
+}

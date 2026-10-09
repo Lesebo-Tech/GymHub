@@ -1,0 +1,109 @@
+﻿@model SwiftyS26.Models.Product
+
+@{
+    Layout = Session["LoggedInAdmin"] != null
+        ? "~/Views/Shared/_AdminLayout.cshtml"
+        : "~/Views/Shared/_StoreStaffLayout.cshtml";
+
+    ViewBag.Title = "Product QR";
+    ViewBag.PageTitle = "PRODUCT QR LABEL";
+}
+
+<style>
+    .pq-page {
+        max-width: 620px;
+        margin: auto;
+    }
+
+    .pq-card {
+        background: #fff;
+        border: 1px solid #E2E8F0;
+        border-radius: 14px;
+        padding: 26px;
+        text-align: center;
+    }
+
+        .pq-card h2 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 27px;
+            letter-spacing: 1px;
+            margin: 8px 0;
+        }
+
+    .pq-image {
+        width: 260px;
+        height: 260px;
+    }
+
+    .pq-sku {
+        font-size: 17px;
+        font-weight: 800;
+        margin: 8px;
+    }
+
+    .pq-note {
+        color: #64748B;
+        font-size: 12.5px;
+    }
+
+    .pq-actions {
+        display: flex;
+        justify-content: center;
+        gap: 9px;
+        margin-top: 18px;
+    }
+
+    .pq-btn {
+        padding: 11px 18px;
+        border: 0;
+        border-radius: 9px;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .primary {
+        background: #2563EB;
+        color: #fff;
+    }
+
+    .secondary {
+        background: #fff;
+        color: #334155;
+        border: 1px solid #CBD5E1;
+    }
+
+    @@media print {
+        aside,
+        header,
+        .pq-actions {
+            display: none !important;
+        }
+
+        .pq-card {
+            border: 0;
+        }
+
+        .pq-page {
+            margin-top: 50px;
+        }
+    }
+</style>
+
+<div class="pq-page">
+    <div class="pq-card">
+        <div style="color:#2563EB;font-weight:800;font-size:11px;letter-spacing:1px">GYMHUB PRODUCT</div>
+        <h2>@Model.Name</h2>
+        <img class="pq-image" src="data:image/png;base64,@Model.ProductQrBase64" alt="@Model.Name QR" />
+        <div class="pq-sku">@Model.SKU</div>
+        <div class="pq-note">
+            Attach this label to the product or supplier delivery packaging. It identifies the product type, not a specific unit.
+        </div>
+        <div class="pq-actions">
+            <button class="pq-btn primary" type="button" onclick="window.print()">
+                <i class="fas fa-print"></i> Print Label
+            </button>
+            <a class="pq-btn secondary" href="@Url.Action("Index")">Back to Products</a>
+        </div>
+    </div>
+</div>

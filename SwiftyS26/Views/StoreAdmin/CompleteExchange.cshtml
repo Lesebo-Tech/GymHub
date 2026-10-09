@@ -1,0 +1,1357 @@
+﻿@model SwiftyS26.Models.ReturnRequest
+
+@{
+    Layout =
+        Session["LoggedInAdmin"] != null
+            ? "~/Views/Shared/_AdminLayout.cshtml"
+            : "~/Views/Shared/_StoreStaffLayout.cshtml";
+
+    ViewBag.Title = "Complete Exchange";
+    ViewBag.PageTitle = "EXCHANGE HANDOVER";
+
+    var orderItem = Model.StoreOrderItem;
+    var originalProduct =
+        orderItem != null ? orderItem.Product : null;
+
+    var originalOrder =
+        orderItem != null ? orderItem.StoreOrder : null;
+
+    int exchangeQuantity =
+        Model.ExchangeQuantityReserved ??
+        Model.ExchangeQuantity ??
+        0;
+
+    decimal additionalPayment =
+        Model.AdditionalPaymentAmount ?? 0m;
+
+    decimal differenceRefund =
+        Model.ExchangeRefundAmount ?? 0m;
+
+    bool paymentRequired =
+        additionalPayment > 0;
+
+    bool paymentCompleted =
+        Model.ExchangePaymentCompletedAt.HasValue;
+
+    string replacementImagePath = null;
+
+    if (Model.ExchangeProduct != null &&
+        !string.IsNullOrWhiteSpace(
+            Model.ExchangeProduct.ImagePath))
+    {
+        replacementImagePath =
+            Model.ExchangeProduct.ImagePath.StartsWith("~")
+                ? Url.Content(Model.ExchangeProduct.ImagePath)
+                : Url.Content(
+                    "~/" +
+                    Model.ExchangeProduct.ImagePath.TrimStart('/'));
+    }
+}
+
+<style>
+    @@keyframes ehFadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .eh-page,
+    .eh-page * {
+        box-sizing: border-box;
+    }
+
+    .eh-page {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding-bottom: 45px;
+        color: #0f172a;
+    }
+
+    .eh-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .eh-title {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        margin: 0;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 29px;
+        letter-spacing: 1px;
+    }
+
+    .eh-title-icon {
+        width: 39px;
+        height: 39px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 11px;
+        background: #ecfdf5;
+        color: #059669;
+        font-family: Arial, sans-serif;
+        font-size: 17px;
+    }
+
+    .eh-subtitle {
+        margin: 5px 0 0 50px;
+        color: #64748b;
+        font-size: 12.5px;
+    }
+
+    .eh-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 10px 14px;
+        border: 1px solid #dbe3ee;
+        border-radius: 9px;
+        background: #fff;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .eh-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        margin-bottom: 18px;
+        padding: 13px 15px;
+        border: 1px solid #fecaca;
+        border-radius: 10px;
+        background: #fef2f2;
+        color: #dc2626;
+        font-size: 12.5px;
+        font-weight: 600;
+    }
+
+    .eh-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 330px;
+        gap: 20px;
+        align-items: start;
+    }
+
+    .eh-main {
+        min-width: 0;
+    }
+
+    .eh-card {
+        margin-bottom: 18px;
+        overflow: hidden;
+        border: 1px solid #dbe3ee;
+        border-radius: 15px;
+        background: #fff;
+        animation: ehFadeUp .35s ease both;
+    }
+
+    .eh-card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+
+    .eh-card-icon {
+        flex: 0 0 36px;
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        background: #eff6ff;
+        color: #2563eb;
+    }
+
+    .eh-card-header h3 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .eh-card-header p {
+        margin: 3px 0 0;
+        color: #64748b;
+        font-size: 11.5px;
+    }
+
+    .eh-card-body {
+        padding: 20px;
+    }
+
+    /* Reference information */
+
+    .eh-reference-banner {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 17px;
+        padding: 15px;
+        border: 1px solid #bbf7d0;
+        border-radius: 11px;
+        background: #f0fdf4;
+    }
+
+    .eh-reference-label {
+        display: block;
+        margin-bottom: 3px;
+        color: #15803d;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .eh-reference-number {
+        color: #14532d;
+        font-size: 18px;
+        font-weight: 900;
+    }
+
+    .eh-ready-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 11px;
+        border-radius: 20px;
+        background: #dcfce7;
+        color: #15803d;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .eh-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .eh-detail {
+        padding: 12px 13px;
+        border: 1px solid #e2e8f0;
+        border-radius: 9px;
+        background: #f8fafc;
+    }
+
+    .eh-detail-label {
+        display: block;
+        margin-bottom: 4px;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .eh-detail-value {
+        display: block;
+        color: #0f172a;
+        font-size: 12.5px;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    /* Product */
+
+    .eh-product {
+        display: grid;
+        grid-template-columns: 90px minmax(0, 1fr);
+        gap: 17px;
+        align-items: center;
+    }
+
+    .eh-image-wrap {
+        position: relative;
+        width: 90px;
+        height: 90px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        border-radius: 11px;
+        background: #f8fafc;
+    }
+
+    .eh-product-image {
+        display: block;
+        width: 100%;
+        height: 100%;
+        padding: 4px;
+        object-fit: contain;
+    }
+
+    .eh-placeholder {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8fafc;
+        color: #94a3b8;
+        font-size: 26px;
+    }
+
+    .eh-product-name {
+        margin-bottom: 5px;
+        font-size: 17px;
+        font-weight: 800;
+    }
+
+    .eh-product-meta {
+        color: #64748b;
+        font-size: 12px;
+        line-height: 1.8;
+    }
+
+        .eh-product-meta strong {
+            color: #334155;
+        }
+
+    /* Checklist */
+
+    .eh-checklist {
+        display: grid;
+        gap: 10px;
+    }
+
+    .eh-check {
+        display: flex;
+        align-items: flex-start;
+        gap: 11px;
+        margin: 0;
+        padding: 14px;
+        border: 1px solid #dbe3ee;
+        border-radius: 10px;
+        background: #fff;
+        cursor: pointer;
+    }
+
+        .eh-check:hover {
+            border-color: #93c5fd;
+            background: #f8fbff;
+        }
+
+        .eh-check input {
+            flex: 0 0 auto;
+            width: 17px;
+            height: 17px;
+            margin: 1px 0 0;
+            accent-color: #2563eb;
+        }
+
+    .eh-check-title {
+        display: block;
+        margin-bottom: 3px;
+        color: #0f172a;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .eh-check-text {
+        display: block;
+        color: #64748b;
+        font-size: 10.5px;
+        line-height: 1.5;
+    }
+
+    /* Signature */
+
+    .eh-signature-wrap {
+        padding: 14px;
+        border: 1px solid #dbe3ee;
+        border-radius: 11px;
+        background: #f8fafc;
+    }
+
+    .eh-signature-instruction {
+        margin-bottom: 10px;
+        color: #64748b;
+        font-size: 11px;
+    }
+
+    .eh-canvas-wrap {
+        overflow: hidden;
+        border: 2px dashed #cbd5e1;
+        border-radius: 9px;
+        background: #fff;
+        touch-action: none;
+    }
+
+    #signatureCanvas {
+        display: block;
+        width: 100%;
+        height: 190px;
+        cursor: crosshair;
+        touch-action: none;
+    }
+
+    .eh-signature-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 9px;
+    }
+
+    .eh-clear-button {
+        padding: 7px 12px;
+        border: 1px solid #dbe3ee;
+        border-radius: 7px;
+        background: #fff;
+        color: #475569;
+        font-size: 10.5px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    /* Payment */
+
+    .eh-payment {
+        padding: 14px;
+        border-radius: 10px;
+        font-size: 11.5px;
+        line-height: 1.6;
+    }
+
+        .eh-payment.success {
+            border: 1px solid #bbf7d0;
+            background: #f0fdf4;
+            color: #15803d;
+        }
+
+        .eh-payment.refund {
+            border: 1px solid #bfdbfe;
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .eh-payment.neutral {
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            color: #475569;
+        }
+
+    /* Sidebar */
+
+    .eh-sidebar {
+        position: sticky;
+        top: 20px;
+    }
+
+    .eh-summary {
+        overflow: hidden;
+        border: 1px solid #dbe3ee;
+        border-radius: 15px;
+        background: #fff;
+    }
+
+    .eh-summary-header {
+        padding: 17px 19px;
+        background: #0f172a;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    .eh-summary-body {
+        padding: 19px;
+    }
+
+    .eh-summary-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 0;
+        color: #64748b;
+        font-size: 11.5px;
+    }
+
+        .eh-summary-row strong {
+            max-width: 180px;
+            color: #0f172a;
+            text-align: right;
+            overflow-wrap: anywhere;
+        }
+
+    .eh-notice {
+        margin-top: 14px;
+        padding: 13px;
+        border-radius: 9px;
+        background: #fffbeb;
+        color: #92400e;
+        font-size: 10.5px;
+        line-height: 1.6;
+    }
+
+    .eh-actions {
+        display: grid;
+        grid-template-columns: 1fr 1.45fr;
+        gap: 9px;
+        margin-top: 16px;
+    }
+
+    .eh-button {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 10px 12px;
+        border-radius: 9px;
+        font-size: 11.5px;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .eh-cancel {
+        border: 1px solid #dbe3ee;
+        background: #fff;
+        color: #475569;
+    }
+
+    .eh-complete {
+        border: none;
+        background: #059669;
+        color: #fff;
+    }
+
+        .eh-complete:hover {
+            background: #047857;
+        }
+
+    @@media (max-width: 900px) {
+        .eh-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .eh-sidebar {
+            position: static;
+        }
+    }
+
+    @@media (max-width: 620px) {
+        .eh-header {
+            flex-direction: column;
+        }
+
+        .eh-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .eh-product {
+            grid-template-columns: 75px minmax(0, 1fr);
+        }
+
+        .eh-image-wrap {
+            width: 75px;
+            height: 75px;
+        }
+
+        .eh-actions {
+            grid-template-columns: 1fr;
+        }
+
+        .eh-subtitle {
+            margin-left: 0;
+        }
+    }
+</style>
+
+<div class="eh-page">
+    <header class="eh-header">
+        <div>
+            <h2 class="eh-title">
+                <span class="eh-title-icon">
+                    <i class="fas fa-right-left"></i>
+                </span>
+
+                Complete In-Store Exchange
+            </h2>
+
+            <p class="eh-subtitle">
+                Verify the member, hand over the reserved replacement
+                and capture confirmation.
+            </p>
+        </div>
+
+        <a href="@Url.Action("Returns", "StoreAdmin")"
+           class="eh-back">
+            <i class="fas fa-arrow-left"></i>
+            Return Queue
+        </a>
+    </header>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="eh-alert">
+            <i class="fas fa-circle-exclamation"></i>
+            <span>@TempData["Error"]</span>
+        </div>
+    }
+
+    @using (Html.BeginForm(
+        "CompleteExchange",
+        "StoreAdmin",
+        FormMethod.Post,
+        new { id = "completeExchangeForm" }))
+    {
+        @Html.AntiForgeryToken()
+
+        <input type="hidden"
+               name="returnRequestId"
+               value="@Model.ReturnRequestId" />
+
+        <input type="hidden"
+               id="signatureData"
+               name="signatureData" />
+
+        <div class="eh-layout">
+            <main class="eh-main">
+                <!-- EXCHANGE DETAILS -->
+                <section class="eh-card">
+                    <div class="eh-card-header">
+                        <div class="eh-card-icon">
+                            <i class="fas fa-file-circle-check"></i>
+                        </div>
+
+                        <div>
+                            <h3>Approved Exchange</h3>
+                            <p>
+                                Exchange reference and member information
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="eh-card-body">
+                        <div class="eh-reference-banner">
+                            <div>
+                                <span class="eh-reference-label">
+                                    Exchange Reference
+                                </span>
+
+                                <span class="eh-reference-number">
+                                    @Model.ReferenceNumber
+                                </span>
+                            </div>
+
+                            <span class="eh-ready-badge">
+                                <i class="fas fa-circle-check"></i>
+                                Ready for Exchange
+                            </span>
+                        </div>
+
+                        <div class="eh-grid">
+                            <div class="eh-detail">
+                                <span class="eh-detail-label">
+                                    Member
+                                </span>
+
+                                <span class="eh-detail-value">
+                                    @(Model.Member != null
+                                        ? Model.Member.FullName
+                                        : "—")
+                                </span>
+                            </div>
+
+                            <div class="eh-detail">
+                                <span class="eh-detail-label">
+                                    Member Number
+                                </span>
+
+                                <span class="eh-detail-value">
+                                    @(Model.Member != null
+                                        ? Model.Member.MemberNumber
+                                        : "—")
+                                </span>
+                            </div>
+
+                            <div class="eh-detail">
+                                <span class="eh-detail-label">
+                                    Original Order
+                                </span>
+
+                                <span class="eh-detail-value">
+                                    @(originalOrder != null
+                                        ? originalOrder.ReferenceNumber
+                                        : "—")
+                                </span>
+                            </div>
+
+                            <div class="eh-detail">
+                                <span class="eh-detail-label">
+                                    Reservation Expires
+                                </span>
+
+                                <span class="eh-detail-value">
+                                    @(Model.ExchangeReservationExpiresAt
+                                        .HasValue
+                                            ? Model
+                                                .ExchangeReservationExpiresAt
+                                                .Value.ToString(
+                                                    "dd MMM yyyy, HH:mm")
+                                            : "No expiry recorded")
+                                </span>
+                            </div>
+
+                            <div class="eh-detail">
+                                <span class="eh-detail-label">
+                                    Original Item
+                                </span>
+
+                                <span class="eh-detail-value">
+                                    @(originalProduct != null
+                                        ? originalProduct.Name
+                                        : "—")
+                                    × @Model.Quantity
+                                </span>
+                            </div>
+
+                            <div class="eh-detail">
+                                <span class="eh-detail-label">
+                                    Original Item Disposition
+                                </span>
+
+                                <span class="eh-detail-value">
+                                    @(Model.ItemDisposition ?? "—")
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- REPLACEMENT -->
+                <section class="eh-card">
+                    <div class="eh-card-header">
+                        <div class="eh-card-icon">
+                            <i class="fas fa-box-open"></i>
+                        </div>
+
+                        <div>
+                            <h3>Reserved Replacement</h3>
+                            <p>
+                                Confirm the product being handed to the
+                                member
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="eh-card-body">
+                        <div class="eh-product">
+                            <div class="eh-image-wrap">
+                                @if (!string.IsNullOrWhiteSpace(
+                                    replacementImagePath))
+                                {
+                                    <img class="eh-product-image"
+                                         src="@replacementImagePath"
+                                         alt=""
+                                         onerror="hideReplacementImage(this)" />
+
+                                    <div class="eh-placeholder"
+                                         style="display:none;">
+                                        <i class="fas fa-box-open"></i>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="eh-placeholder">
+                                        <i class="fas fa-box-open"></i>
+                                    </div>
+                                }
+                            </div>
+
+                            <div>
+                                <div class="eh-product-name">
+                                    @(Model.ExchangeProduct != null
+                                        ? Model.ExchangeProduct.Name
+                                        : "Replacement unavailable")
+                                </div>
+
+                                <div class="eh-product-meta">
+                                    Quantity reserved:
+                                    <strong>@exchangeQuantity</strong>
+                                    <br />
+
+                                    Exchange type:
+                                    <strong>
+                                        @(Model.ExchangeType ==
+                                            "SameProduct"
+                                                ? "Like-for-like"
+                                                : "Different product")
+                                    </strong>
+                                    <br />
+
+                                    Reservation status:
+                                    <strong style="color:#059669;">
+                                        Reserved
+                                    </strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- PAYMENT -->
+                <section class="eh-card">
+                    <div class="eh-card-header">
+                        <div class="eh-card-icon">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+
+                        <div>
+                            <h3>Financial Confirmation</h3>
+                            <p>
+                                Verify additional payment or difference
+                                refund
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="eh-card-body">
+                        @if (paymentRequired)
+                        {
+                            if (paymentCompleted)
+                            {
+                                <div class="eh-payment success">
+                                    <i class="fas fa-circle-check"></i>
+
+                                    Additional payment of
+                                    <strong>
+                                        R@(additionalPayment.ToString("F2"))
+                                    </strong>
+                                    was verified through Paystack.
+
+                                    <br />
+
+                                    Reference:
+                                    <strong>
+                                        @Model.ExchangePaymentReference
+                                    </strong>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="eh-payment neutral">
+                                    <i class="fas fa-triangle-exclamation"></i>
+
+                                    The required payment of
+                                    <strong>
+                                        R@(additionalPayment.ToString("F2"))
+                                    </strong>
+                                    has not been verified. The exchange
+                                    cannot be completed.
+                                </div>
+                            }
+                        }
+                        else if (differenceRefund > 0)
+                        {
+                            <div class="eh-payment refund">
+                                <i class="fas fa-money-bill-transfer"></i>
+
+                                The replacement is cheaper. A difference
+                                refund of
+                                <strong>
+                                    R@(differenceRefund.ToString("F2"))
+                                </strong>
+                                will be submitted through Paystack when
+                                this exchange is completed.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="eh-payment success">
+                                <i class="fas fa-circle-check"></i>
+
+                                This is an equal-value exchange. No
+                                additional payment or refund is required.
+                            </div>
+                        }
+                    </div>
+                </section>
+
+                <!-- VERIFICATION -->
+                <section class="eh-card">
+                    <div class="eh-card-header">
+                        <div class="eh-card-icon">
+                            <i class="fas fa-clipboard-check"></i>
+                        </div>
+
+                        <div>
+                            <h3>Handover Verification</h3>
+                            <p>
+                                Complete all checks before handing over
+                                the replacement
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="eh-card-body">
+                        <div class="eh-checklist">
+                            <label class="eh-check">
+                                @Html.CheckBox(
+                                         "memberIdentityVerified",
+                                         false)
+
+                                <span>
+                                    <span class="eh-check-title">
+                                        Member identity verified
+                                    </span>
+
+                                    <span class="eh-check-text">
+                                        The member’s identity or membership
+                                        details match this exchange request.
+                                    </span>
+                                </span>
+                            </label>
+
+                            <label class="eh-check">
+                                @Html.CheckBox(
+                                         "returnedItemConfirmed",
+                                         false)
+
+                                <span>
+                                    <span class="eh-check-title">
+                                        Returned item confirmed
+                                    </span>
+
+                                    <span class="eh-check-text">
+                                        The inspected returned item remains
+                                        in GymHub’s possession and matches
+                                        this request.
+                                    </span>
+                                </span>
+                            </label>
+
+                            <label class="eh-check">
+                                @Html.CheckBox(
+                                         "replacementHandedOver",
+                                         false)
+
+                                <span>
+                                    <span class="eh-check-title">
+                                        Replacement handed over
+                                    </span>
+
+                                    <span class="eh-check-text">
+                                        The reserved replacement and correct
+                                        quantity were physically handed to
+                                        the member.
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SIGNATURE -->
+                <section class="eh-card">
+                    <div class="eh-card-header">
+                        <div class="eh-card-icon">
+                            <i class="fas fa-signature"></i>
+                        </div>
+
+                        <div>
+                            <h3>Member Confirmation</h3>
+                            <p>
+                                Capture the member’s signature to confirm
+                                receipt
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="eh-card-body">
+                        <div class="eh-signature-wrap">
+                            <div class="eh-signature-instruction">
+                                Ask the member to sign inside the box below.
+                            </div>
+
+                            <div class="eh-canvas-wrap">
+                                <canvas id="signatureCanvas"></canvas>
+                            </div>
+
+                            <div class="eh-signature-actions">
+                                <button type="button"
+                                        id="clearSignature"
+                                        class="eh-clear-button">
+                                    <i class="fas fa-eraser"></i>
+                                    Clear Signature
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            <!-- SUMMARY -->
+            <aside class="eh-sidebar">
+                <div class="eh-summary">
+                    <div class="eh-summary-header">
+                        Handover Summary
+                    </div>
+
+                    <div class="eh-summary-body">
+                        <div class="eh-summary-row">
+                            <span>Exchange</span>
+                            <strong>@Model.ReferenceNumber</strong>
+                        </div>
+
+                        <div class="eh-summary-row">
+                            <span>Member</span>
+
+                            <strong>
+                                @(Model.Member != null
+                                    ? Model.Member.FullName
+                                    : "—")
+                            </strong>
+                        </div>
+
+                        <div class="eh-summary-row">
+                            <span>Replacement</span>
+
+                            <strong>
+                                @(Model.ExchangeProduct != null
+                                    ? Model.ExchangeProduct.Name
+                                    : "—")
+                            </strong>
+                        </div>
+
+                        <div class="eh-summary-row">
+                            <span>Quantity</span>
+                            <strong>@exchangeQuantity</strong>
+                        </div>
+
+                        <div class="eh-summary-row">
+                            <span>Payment</span>
+
+                            <strong>
+                                @if (paymentRequired)
+                                {
+                                    @(paymentCompleted
+                                        ? "Paid"
+                                        : "Outstanding")
+                                }
+                                else
+                                {
+                                    @:Not required
+                                }
+                            </strong>
+                        </div>
+
+                        @if (differenceRefund > 0)
+                        {
+                            <div class="eh-summary-row">
+                                <span>Difference refund</span>
+
+                                <strong style="color:#2563eb;">
+                                    R@(differenceRefund.ToString("F2"))
+                                </strong>
+                            </div>
+                        }
+
+                        <div class="eh-notice">
+                            <i class="fas fa-triangle-exclamation"></i>
+
+                            Complete the exchange only after the replacement
+                            has physically been handed to the correct
+                            member. This action finalises the process.
+                        </div>
+
+                        <div class="eh-actions">
+                            <a href="@Url.Action(
+                                    "Returns",
+                                    "StoreAdmin")"
+                               class="eh-button eh-cancel">
+                                Cancel
+                            </a>
+
+                            <button type="submit"
+                                    class="eh-button eh-complete"
+                                    @(paymentRequired && !paymentCompleted ? "disabled" : "")>
+                                <i class="fas fa-circle-check"></i>
+                                Complete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    }
+</div>
+
+<script>(function () {
+        var form =
+            document.getElementById("completeExchangeForm");
+
+        var canvas =
+            document.getElementById("signatureCanvas");
+
+        var context =
+            canvas.getContext("2d");
+
+        var clearButton =
+            document.getElementById("clearSignature");
+
+        var signatureInput =
+            document.getElementById("signatureData");
+
+        var drawing = false;
+        var hasSignature = false;
+
+        function resizeCanvas() {
+            var ratio =
+                Math.max(
+                    window.devicePixelRatio || 1,
+                    1
+                );
+
+            var rectangle =
+                canvas.getBoundingClientRect();
+
+            var savedSignature = null;
+
+            if (hasSignature &&
+                canvas.width > 0 &&
+                canvas.height > 0) {
+                savedSignature =
+                    canvas.toDataURL("image/png");
+            }
+
+            canvas.width =
+                Math.floor(rectangle.width * ratio);
+
+            canvas.height =
+                Math.floor(190 * ratio);
+
+            context =
+                canvas.getContext("2d");
+
+            context.scale(ratio, ratio);
+            context.lineWidth = 2.2;
+            context.lineCap = "round";
+            context.lineJoin = "round";
+            context.strokeStyle = "#0f172a";
+
+            if (savedSignature) {
+                var image = new Image();
+
+                image.onload = function () {
+                    context.drawImage(
+                        image,
+                        0,
+                        0,
+                        rectangle.width,
+                        190
+                    );
+                };
+
+                image.src = savedSignature;
+            }
+        }
+
+        function getPosition(event) {
+            var rectangle =
+                canvas.getBoundingClientRect();
+
+            var clientX;
+            var clientY;
+
+            if (event.touches &&
+                event.touches.length > 0) {
+                clientX = event.touches[0].clientX;
+                clientY = event.touches[0].clientY;
+            } else {
+                clientX = event.clientX;
+                clientY = event.clientY;
+            }
+
+            return {
+                x: clientX - rectangle.left,
+                y: clientY - rectangle.top
+            };
+        }
+
+        function startDrawing(event) {
+            event.preventDefault();
+
+            drawing = true;
+
+            var position =
+                getPosition(event);
+
+            context.beginPath();
+            context.moveTo(
+                position.x,
+                position.y
+            );
+        }
+
+        function draw(event) {
+            if (!drawing) {
+                return;
+            }
+
+            event.preventDefault();
+
+            var position =
+                getPosition(event);
+
+            context.lineTo(
+                position.x,
+                position.y
+            );
+
+            context.stroke();
+            hasSignature = true;
+        }
+
+        function stopDrawing(event) {
+            if (event) {
+                event.preventDefault();
+            }
+
+            drawing = false;
+            context.beginPath();
+        }
+
+        canvas.addEventListener(
+            "mousedown",
+            startDrawing
+        );
+
+        canvas.addEventListener(
+            "mousemove",
+            draw
+        );
+
+        canvas.addEventListener(
+            "mouseup",
+            stopDrawing
+        );
+
+        canvas.addEventListener(
+            "mouseleave",
+            stopDrawing
+        );
+
+        canvas.addEventListener(
+            "touchstart",
+            startDrawing,
+            { passive: false }
+        );
+
+        canvas.addEventListener(
+            "touchmove",
+            draw,
+            { passive: false }
+        );
+
+        canvas.addEventListener(
+            "touchend",
+            stopDrawing,
+            { passive: false }
+        );
+
+        clearButton.addEventListener(
+            "click",
+            function () {
+                context.clearRect(
+                    0,
+                    0,
+                    canvas.width,
+                    canvas.height
+                );
+
+                hasSignature = false;
+                signatureInput.value = "";
+            }
+        );
+
+        form.addEventListener(
+            "submit",
+            function (event) {
+                var identityVerified =
+                    document.querySelector(
+                        'input[name="memberIdentityVerified"]' +
+                        '[type="checkbox"]'
+                    );
+
+                var returnedItemConfirmed =
+                    document.querySelector(
+                        'input[name="returnedItemConfirmed"]' +
+                        '[type="checkbox"]'
+                    );
+
+                var replacementHandedOver =
+                    document.querySelector(
+                        'input[name="replacementHandedOver"]' +
+                        '[type="checkbox"]'
+                    );
+
+                if (!identityVerified.checked ||
+                    !returnedItemConfirmed.checked ||
+                    !replacementHandedOver.checked) {
+                    event.preventDefault();
+
+                    alert(
+                        "Complete all handover verification checks."
+                    );
+
+                    return;
+                }
+
+                if (!hasSignature) {
+                    event.preventDefault();
+
+                    alert(
+                        "The member must sign before the exchange " +
+                        "can be completed."
+                    );
+
+                    return;
+                }
+
+                var confirmed = confirm(
+                    "Confirm that the replacement was handed over " +
+                    "and complete this exchange?"
+                );
+
+                if (!confirmed) {
+                    event.preventDefault();
+                    return;
+                }
+
+                signatureInput.value =
+                    canvas.toDataURL("image/png");
+            }
+        );
+
+        resizeCanvas();
+
+        window.addEventListener(
+            "resize",
+            resizeCanvas
+        );
+    })();
+
+    function hideReplacementImage(image) {
+        image.style.display = "none";
+
+        var placeholder =
+            image.nextElementSibling;
+
+        if (placeholder) {
+            placeholder.style.display = "flex";
+        }
+    }</script>

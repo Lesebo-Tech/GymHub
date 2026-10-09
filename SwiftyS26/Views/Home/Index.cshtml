@@ -1,0 +1,436 @@
+﻿@{ Layout = null; }
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GymHub – Train. Transform. Triumph.</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+    <link href="~/Content/layout.css?v=2" rel="stylesheet" />
+    <style>
+        /* ================================================
+           Mobile Login Button Fix
+        ================================================ */
+
+        @@media (max-width: 768px) {
+
+            .nav-cta {
+                display: none;
+            }
+
+            .mobile-menu {
+                padding-bottom: 32px;
+            }
+
+            .mobile-menu-auth {
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                padding: 20px 24px 0;
+                border-top: 1px solid rgba(255, 255, 255, 0.08);
+                margin-top: 8px;
+            }
+
+            .mobile-menu-auth-label {
+                font-size: 11px;
+                letter-spacing: 0.12em;
+                text-transform: uppercase;
+                color: rgba(255, 255, 255, 0.35);
+                margin-bottom: 4px;
+            }
+
+            .mobile-signin-option {
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                padding: 14px 16px;
+                background: rgba(255, 255, 255, 0.04);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 12px;
+                text-decoration: none;
+                transition: background 0.2s ease, border-color 0.2s ease;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+                .mobile-signin-option:active {
+                    background: rgba(255, 255, 255, 0.08);
+                    border-color: rgba(255, 255, 255, 0.18);
+                }
+
+            .mobile-signin-icon {
+                width: 40px;
+                height: 40px;
+                border-radius: 10px;
+                background: rgba(255, 255, 255, 0.07);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 18px;
+                flex-shrink: 0;
+            }
+
+            .mobile-signin-text-title {
+                font-size: 14px;
+                font-weight: 600;
+                color: #ffffff;
+                line-height: 1.2;
+            }
+
+            .mobile-signin-text-sub {
+                font-size: 12px;
+                color: rgba(255, 255, 255, 0.45);
+                margin-top: 2px;
+            }
+
+            .mobile-menu-join {
+                display: block;
+                margin: 16px 24px 0;
+                padding: 15px;
+                text-align: center;
+                background: #2563eb;
+                color: #ffffff;
+                font-size: 15px;
+                font-weight: 600;
+                border-radius: 12px;
+                text-decoration: none;
+                letter-spacing: 0.02em;
+                transition: background 0.2s ease;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+                .mobile-menu-join:active {
+                    background: #1d4ed8;
+                }
+
+            .signin-dropdown,
+            .signin-menu {
+                display: none !important;
+            }
+        }
+
+        @@media (min-width: 769px) {
+            .mobile-menu-auth,
+            .mobile-signin-option,
+            .mobile-menu-join {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==================== NAVBAR ==================== -->
+    <nav id="navbar">
+        <div class="nav-logo">
+            <div class="logo-icon">GH</div>
+            <div class="logo-text">Gym<span>Hub</span></div>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#home">Home</a></li>
+            <li><a href="#memberships">Memberships</a></li>
+            <li><a href="#classes">Classes</a></li>
+            <li><a href="#contact">Contact</a></li>
+        </ul>
+        <div class="nav-cta">
+            <div class="signin-dropdown">
+                <button class="btn-outline dropdown-toggle">
+                    Sign In ▾
+                </button>
+                <div class="signin-menu" id="signinMenu">
+                    <a href="/Forms/Login" class="signin-option">
+                        <span class="signin-icon">👤</span>
+                        <div>
+                            <div class="signin-option-title">Member Login</div>
+                            <div class="signin-option-sub">Access your dashboard</div>
+                        </div>
+                    </a>
+                    <a href="/Admin/Login" class="signin-option">
+                        <span class="signin-icon">🔐</span>
+                        <div>
+                            <div class="signin-option-title">Staff Login</div>
+                            <div class="signin-option-sub">Staff & management</div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            <a href="/Forms/Register" class="btn-primary">Join Now</a>
+        </div>
+        <div class="hamburger" id="hamburger" onclick="toggleMenu()">
+            <span></span><span></span><span></span>
+        </div>
+    </nav>
+
+    <!-- ==================== MOBILE MENU ==================== -->
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="#home" onclick="toggleMenu()">Home</a>
+        <a href="#memberships" onclick="toggleMenu()">Memberships</a>
+        <a href="#classes" onclick="toggleMenu()">Classes</a>
+        <a href="#contact" onclick="toggleMenu()">Contact</a>
+
+        <!-- Auth block -->
+        <div class="mobile-menu-auth">
+            <div class="mobile-menu-auth-label">Sign In</div>
+
+            <a href="/Forms/Login" class="mobile-signin-option" onclick="toggleMenu()">
+                <div class="mobile-signin-icon">👤</div>
+                <div>
+                    <div class="mobile-signin-text-title">Member Login</div>
+                    <div class="mobile-signin-text-sub">Access your dashboard</div>
+                </div>
+            </a>
+
+            <a href="/Admin/Login" class="mobile-signin-option" onclick="toggleMenu()">
+                <div class="mobile-signin-icon">🔐</div>
+                <div>
+                    <div class="mobile-signin-text-title">Staff Login</div>
+                    <div class="mobile-signin-text-sub">Staff &amp; management</div>
+                </div>
+            </a>
+        </div>
+
+        <a href="/Forms/Register" class="mobile-menu-join" onclick="toggleMenu()">
+            Join Now — It's Time →
+        </a>
+    </div>
+
+    <!-- ==================== HERO ==================== -->
+    <section class="hero" id="home">
+
+        <div class="hero-slides">
+            <div class="hero-slide active" style="background-image:url('/Content/images/hero1.jpg')"></div>
+            <div class="hero-slide" style="background-image:url('/Content/images/hero2.jpg')"></div>
+            <div class="hero-slide" style="background-image:url('/Content/images/hero3.jpg')"></div>
+            <div class="hero-slide" style="background-image:url('/Content/images/hero4.jpg')"></div>
+        </div>
+        <div class="hero-overlay"></div>
+
+        <div class="slide-dots">
+            <span class="dot active" onclick="goToSlide(0)"></span>
+            <span class="dot" onclick="goToSlide(1)"></span>
+            <span class="dot" onclick="goToSlide(2)"></span>
+            <span class="dot" onclick="goToSlide(3)"></span>
+        </div>
+
+        <div class="hero-grid">
+            <div class="hero-content">
+                <h1>YOUR HUB<br />FOR PEAK<br /><span>FITNESS</span></h1>
+                <p class="hero-sub">GymHub is where champions are made. State-of-the-art equipment, world-class trainers, and a community that pushes you beyond your limits.</p>
+                <div class="hero-actions">
+                    <a href="#contact" class="btn-hero-primary">Join Now — It's Time</a>
+                    <a href="#memberships" class="btn-hero-outline">See Plans</a>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="hero-card-main">
+                    <div class="hero-card-title">STANDARD<br />MEMBERSHIP</div>
+                    <div class="hero-card-desc">Full access to all gym facilities, group classes, and locker rooms. Everything you need to crush your goals.</div>
+                    <div class="hero-card-price">
+                        <span class="price-currency">R</span>
+                        <span class="price-amount">399</span>
+                        <span class="price-period">/month</span>
+                    </div>
+                    <a href="/Forms/Register" class="hero-card-btn">Get Started Today →</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== MEMBERSHIPS ==================== -->
+    <section class="memberships" id="memberships">
+        <div class="memberships-header">
+            <div>
+                <div class="section-tag">Memberships</div>
+                <h2 class="section-title">Choose Your <span>Plan</span></h2>
+                <p class="section-sub">Flexible options built around your lifestyle. No hidden fees, just results.</p>
+            </div>
+            <a href="#contact" class="btn-primary" style="height:fit-content;">Compare All Plans</a>
+        </div>
+        <div class="plans-grid">
+
+            <!-- BASIC -->
+            <div class="plan-card">
+                <div class="plan-name">Basic</div>
+                <div class="plan-price">
+                    <span class="plan-currency">R</span>
+                    <span class="plan-amount">199</span>
+                    <span class="plan-period">/month</span>
+                </div>
+                <div class="plan-divider"></div>
+                <ul class="plan-features">
+                    <li class="plan-feature"><span class="check">✓</span>Access to gym floor</li>
+                    <li class="plan-feature"><span class="check">✓</span>Free weights & machines</li>
+                    <li class="plan-feature"><span class="check">✓</span>Locker room access</li>
+                    <li class="plan-feature"><span class="check">✓</span>1 guest pass/month</li>
+                    <li class="plan-feature"><span class="check">✗</span>Group classes</li>
+                    <li class="plan-feature"><span class="check">✗</span>Personal trainer session</li>
+                </ul>
+                <a href="#contact" class="plan-btn plan-btn-light">Get Started</a>
+            </div>
+
+            <!-- STANDARD (featured) -->
+            <div class="plan-card featured">
+                <div class="plan-popular">Most Popular</div>
+                <div class="plan-name">Standard</div>
+                <div class="plan-price">
+                    <span class="plan-currency">R</span>
+                    <span class="plan-amount">399</span>
+                    <span class="plan-period">/month</span>
+                </div>
+                <div class="plan-divider"></div>
+                <ul class="plan-features">
+                    <li class="plan-feature"><span class="check">✓</span>Everything in Basic</li>
+                    <li class="plan-feature"><span class="check">✓</span>Unlimited group classes</li>
+                    <li class="plan-feature"><span class="check">✓</span>Nutrition guide access</li>
+                    <li class="plan-feature"><span class="check">✓</span>3 guest passes/month</li>
+                    <li class="plan-feature"><span class="check">✓</span>Progress tracking</li>
+                    <li class="plan-feature"><span class="check">✗</span>Personal trainer session</li>
+                </ul>
+                <a href="#contact" class="plan-btn plan-btn-featured">Get Started</a>
+            </div>
+
+            <!-- PREMIUM -->
+            <div class="plan-card">
+                <div class="plan-name">Premium</div>
+                <div class="plan-price">
+                    <span class="plan-currency">R</span>
+                    <span class="plan-amount">699</span>
+                    <span class="plan-period">/month</span>
+                </div>
+                <div class="plan-divider"></div>
+                <ul class="plan-features">
+                    <li class="plan-feature"><span class="check">✓</span>Everything in Standard</li>
+                    <li class="plan-feature"><span class="check">✓</span>2 PT sessions/month</li>
+                    <li class="plan-feature"><span class="check">✓</span>Custom workout plan</li>
+                    <li class="plan-feature"><span class="check">✓</span>Unlimited guest passes</li>
+                    <li class="plan-feature"><span class="check">✓</span>Priority class booking</li>
+                    <li class="plan-feature"><span class="check">✓</span>Spa & sauna access</li>
+                </ul>
+                <a href="#contact" class="plan-btn plan-btn-light">Get Started</a>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ==================== CLASSES ==================== -->
+    <section class="classes" id="classes">
+        <div class="section-header">
+            <div class="section-tag">Our Classes</div>
+            <h2 class="section-title">Train Your Way.<br /><span>Every Day.</span></h2>
+            <p class="section-sub">From high-energy cardio sessions to mindful yoga flows — we have something for every goal and fitness level.</p>
+        </div>
+        <div class="classes-grid">
+
+            <div class="class-card">
+                <img src="~/Content/images/cardio.jpg" alt="Cardio Class" class="class-img" />
+                <div class="class-overlay">
+                    <div class="class-tag">High Energy</div>
+                    <div class="class-name">CARDIO</div>
+                    <div class="class-desc">Burn calories and boost endurance with our fast-paced cardio sessions designed for all levels.</div>
+                    <a href="#contact" class="class-link">Book a Class →</a>
+                </div>
+            </div>
+
+            <div class="class-card">
+                <img src="~/Content/images/strenght.png" class="class-img" />
+                <div class="class-overlay">
+                    <div class="class-tag">Build Muscle</div>
+                    <div class="class-name">STRENGTH</div>
+                    <div class="class-desc">Power through guided strength training with expert coaches to build lean, strong muscle.</div>
+                    <a href="#contact" class="class-link">Book a Class →</a>
+                </div>
+            </div>
+
+            <div class="class-card">
+                <img src="~/Content/images/yoga.png" class="class-img" />
+                <div class="class-overlay">
+                    <div class="class-tag">Mind & Body</div>
+                    <div class="class-name">YOGA</div>
+                    <div class="class-desc">Find balance, flexibility, and inner peace through our guided yoga and mindfulness sessions.</div>
+                    <a href="#contact" class="class-link">Book a Class →</a>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ==================== CONTACT + FOOTER ==================== -->
+    <section class="contact-section" id="contact">
+        <div class="contact-inner">
+            <div class="contact-grid">
+                <div class="contact-left">
+                    <div class="section-tag">Get In Touch</div>
+                    <h2 class="section-title">Ready to Start<br /><span>Your Journey?</span></h2>
+                    <p class="section-sub">Fill in your details and one of our team members will get back to you within 24 hours. Your transformation starts here.</p>
+                    <div class="contact-info">
+                        <div class="contact-info-item">
+                            <div class="contact-info-text">
+                                <strong>Our Location</strong>
+                                <span>123 Fitness Street, Durban, KZN</span>
+                            </div>
+                        </div>
+                        <div class="contact-info-item">
+                            <div class="contact-info-text">
+                                <strong>Call Us</strong>
+                                <span>+27 31 008 0800</span>
+                            </div>
+                        </div>
+                        <div class="contact-info-item">
+                            <div class="contact-info-text">
+                                <strong>Email Us</strong>
+                                <span>info@@gymhub.co.za</span>
+                            </div>
+                        </div>
+                        <div class="contact-info-item">
+                            <div class="contact-info-text">
+                                <strong>Opening Hours</strong>
+                                <span>Mon–Fri: 5am–10pm | Sat–Sun: 6am–8pm</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="contact-form">
+                    <div class="form-title">BECOME A MEMBER</div>
+                    <p style="color:rgba(255,255,255,0.5);font-size:14px;font-weight:300;line-height:1.7;margin-bottom:28px;">
+                        Ready to start your journey? Click below to begin your full membership registration. It only takes a few minutes and you'll be part of the GymHub family in no time.
+                    </p>
+
+                    <div class="form-group">
+                        <label>Choose Your Plan First</label>
+                        <select id="planSelect">
+                            <option value="standard">Standard – R399/month Most Popular</option>
+                            <option value="basic">Basic – R199/month</option>
+                            <option value="premium">Premium – R699/month</option>
+                        </select>
+                    </div>
+
+                    <div style="margin:20px 0 28px;display:flex;flex-direction:column;gap:10px;">
+                        <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,0.6);">
+                            <span style="color:var(--blue-bright);font-size:16px;">✓</span> Personal Information & ID Verification
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,0.6);">
+                            <span style="color:var(--blue-bright);font-size:16px;">✓</span> Email Confirmation & OTP Verification
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,0.6);">
+                            <span style="color:var(--blue-bright);font-size:16px;">✓</span> Payment & Terms of Service
+                        </div>
+                    </div>
+
+                    <a href="/Forms/Register" class="hero-card-btn">Start Registration →</a>
+                    <p style="text-align:center;margin-top:14px;font-size:12px;color:rgba(255,255,255,0.25);">
+                        Takes less than 5 minutes
+                    </p>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div class="footer-logo">Gym<span>Hub</span></div>
+                <div class="footer-copy">© 2025 GymHub. All rights reserved.</div>
+            </div>
+        </div>
+    </section>
+
+    <script src="~/Scripts/layout.js"></script>
+</body>
+</html>

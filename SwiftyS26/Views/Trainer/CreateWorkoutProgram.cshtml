@@ -1,0 +1,594 @@
+﻿@model SwiftyS26.Models.WorkoutProgram
+@{
+    Layout = "~/Views/Shared/_TrainerLayout.cshtml";
+    ViewBag.Title = "Create Workout Program";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+    <style>
+        /* ── Page Header ── */
+        .page-header {
+            max-width: 780px;
+            margin: 0 auto 2rem;
+        }
+
+        .breadcrumb-trail {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            font-weight: 500;
+            letter-spacing: 0.01em;
+            list-style: none;
+            padding: 0;
+        }
+
+            .breadcrumb-trail i {
+                font-size: 11px;
+            }
+
+            .breadcrumb-trail .crumb-link {
+                color: var(--text-secondary);
+                text-decoration: none;
+            }
+
+                .breadcrumb-trail .crumb-link:hover {
+                    text-decoration: underline;
+                }
+
+            .breadcrumb-trail .crumb-current {
+                color: var(--text-primary);
+                font-weight: 600;
+            }
+
+        .page-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 28px;
+            color: var(--text-primary);
+            font-weight: 400;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+
+        .page-sub {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        /* ── Form Card ── */
+        .form-card {
+            background: var(--surface, #fff);
+            border: 0.5px solid var(--border-strong, rgba(0,0,0,0.14));
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+            max-width: 780px;
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        /* ── Card Header ── */
+        .form-card-header {
+            padding: 1.25rem 1.75rem;
+            border-bottom: 0.5px solid var(--border, rgba(0,0,0,0.08));
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-header-icon {
+            width: 34px;
+            height: 34px;
+            background: var(--blue-light);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--blue);
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .card-title-group {
+            flex: 1;
+        }
+
+            .card-title-group .card-title {
+                font-size: 15px;
+                font-weight: 600;
+                color: var(--text-primary);
+                line-height: 1.3;
+            }
+
+            .card-title-group .card-subtitle {
+                font-size: 12px;
+                color: var(--text-muted);
+                margin-top: 1px;
+            }
+
+        /* ── Step Indicator ── */
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg3, #F8F9FA);
+            border: 0.5px solid var(--border, rgba(0,0,0,0.08));
+            border-radius: 20px;
+            padding: 5px 14px;
+            margin-left: auto;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+        }
+
+        .step-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            font-size: 10px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step-item.active .step-dot {
+            background: var(--blue);
+            color: #fff;
+        }
+
+        .step-item.inactive .step-dot {
+            background: var(--border, rgba(0,0,0,0.1));
+            color: var(--text-muted);
+        }
+
+        .step-item.active .step-label {
+            color: var(--blue);
+            font-weight: 600;
+        }
+
+        .step-item.inactive .step-label {
+            color: var(--text-muted);
+        }
+
+        .step-sep {
+            color: var(--border-strong, rgba(0,0,0,0.2));
+            font-size: 12px;
+        }
+
+        /* ── Card Body ── */
+        .form-card-body {
+            padding: 1.75rem;
+        }
+
+        /* ── Info Banner ── */
+        .info-banner {
+            background: var(--blue-light);
+            border: 0.5px solid rgba(59, 130, 246, 0.25);
+            border-radius: 8px;
+            padding: 10px 14px;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            font-size: 13px;
+            color: #1E40AF;
+            margin-bottom: 1.75rem;
+            font-weight: 500;
+        }
+
+            .info-banner i {
+                font-size: 15px;
+                flex-shrink: 0;
+            }
+
+        /* ── Alert ── */
+        .alert-danger {
+            background: var(--red-light);
+            border: 0.5px solid rgba(239, 68, 68, 0.2);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--red);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* ── Form Grid ── */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+            .form-group.full {
+                grid-column: 1 / -1;
+            }
+
+            .form-group label {
+                font-size: 11.5px;
+                font-weight: 600;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+                color: var(--text-secondary, #5A6175);
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+                .form-group label i {
+                    font-size: 12px;
+                    color: var(--blue);
+                }
+
+            .form-group input[type="text"],
+            .form-group input[type="date"],
+            .form-group select,
+            .form-group textarea {
+                font-family: 'DM Sans', sans-serif;
+                font-size: 14px;
+                color: var(--text-primary);
+                background: var(--surface, #fff);
+                border: 0.5px solid var(--border-strong, rgba(0,0,0,0.14));
+                border-radius: 8px;
+                padding: 9px 13px;
+                outline: none;
+                width: 100%;
+                transition: border-color 0.15s, box-shadow 0.15s;
+                -webkit-appearance: none;
+                appearance: none;
+            }
+
+            .form-group select {
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239AA0B0' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                background-position: right 12px center;
+                padding-right: 38px;
+                cursor: pointer;
+            }
+
+                .form-group input:focus,
+                .form-group select:focus,
+                .form-group textarea:focus {
+                    border-color: var(--blue);
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                }
+
+            .form-group textarea {
+                resize: vertical;
+                min-height: 90px;
+                line-height: 1.6;
+            }
+
+        /* ── Label extras ── */
+        .req {
+            color: var(--red);
+            font-size: 13px;
+            line-height: 1;
+        }
+
+        .opt {
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        /* ── Field Error ── */
+        .field-error {
+            font-size: 11.5px;
+            color: var(--red);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* ── Goal Pill ── */
+        .goal-pill {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 9px 14px;
+            border-radius: 8px;
+            font-size: 13.5px;
+            font-weight: 500;
+            border: 0.5px solid var(--border-strong, rgba(0,0,0,0.14));
+            min-height: 40px;
+            background: var(--bg3, #F8F9FA);
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+
+            .goal-pill.active {
+                background: #FEF3C7;
+                border-color: rgba(217, 119, 6, 0.25);
+                color: #92400E;
+            }
+
+            .goal-pill i {
+                font-size: 14px;
+                flex-shrink: 0;
+            }
+
+        /* ── Divider ── */
+        .form-divider {
+            border: none;
+            border-top: 0.5px solid var(--border, rgba(0,0,0,0.08));
+            margin: 1.5rem 0;
+        }
+
+        /* ── Actions ── */
+        .form-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 22px;
+            background: var(--blue);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13.5px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.15s, transform 0.1s;
+        }
+
+            .btn-primary:hover {
+                background: #1D4ED8;
+                transform: translateY(-1px);
+                color: #fff;
+            }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 10px 18px;
+            background: transparent;
+            border: 0.5px solid var(--border-strong, rgba(0,0,0,0.14));
+            color: var(--text-secondary);
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13.5px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+
+            .btn-secondary:hover {
+                background: var(--bg3, #F8F9FA);
+                color: var(--text-primary);
+                border-color: rgba(0,0,0,0.2);
+            }
+
+        /* ── Responsive ── */
+        @@media (max-width: 640px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .step-indicator {
+                display: none;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .btn-primary,
+            .btn-secondary {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+}
+
+<!-- Page Header -->
+<div class="page-header">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb-trail">
+            <li><i class="fas fa-home"></i></li>
+            <li><i class="fas fa-chevron-right"></i></li>
+            <li><a class="crumb-link" href="@Url.Action("Dashboard", "Trainer")">Dashboard</a></li>
+            <li><i class="fas fa-chevron-right"></i></li>
+            <li><a class="crumb-link" href="@Url.Action("WorkoutPrograms", "Trainer")">Workout Programs</a></li>
+            <li><i class="fas fa-chevron-right"></i></li>
+            <li><span class="crumb-current">Create Program</span></li>
+        </ol>
+    </nav>
+    <div class="page-title">Create Workout Program</div>
+    <div class="page-sub">Build a new program and assign it to one of your members</div>
+</div>
+
+<div class="form-card">
+
+    <!-- Card Header -->
+    <div class="form-card-header">
+        <div class="card-header-icon">
+            <i class="fas fa-dumbbell"></i>
+        </div>
+        <div class="card-title-group">
+            <div class="card-title">Program Details</div>
+            <div class="card-subtitle">Step 1 of 2</div>
+        </div>
+        <div class="step-indicator" aria-label="Progress step 1 of 2">
+            <div class="step-item active">
+                <div class="step-dot">1</div>
+                <span class="step-label">Details</span>
+            </div>
+            <span class="step-sep">›</span>
+            <div class="step-item inactive">
+                <div class="step-dot">2</div>
+                <span class="step-label">Exercises</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card Body -->
+    <div class="form-card-body">
+
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert-danger">
+                <i class="fas fa-exclamation-circle"></i> @TempData["Error"]
+            </div>
+        }
+
+        <div class="info-banner">
+            <i class="fas fa-info-circle"></i>
+            Fill in the details below to create a new workout program and assign it to one of your members.
+        </div>
+
+        @using (Html.BeginForm("CreateWorkoutProgram", "Trainer", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            @Html.HiddenFor(m => m.TrainerId)
+            @Html.HiddenFor(m => m.CreatedDate)
+
+            <div class="form-grid">
+
+                <!-- Member Select -->
+                <div class="form-group">
+                    <label>
+                        <i class="fas fa-user"></i>
+                        Assign to member <span class="req">*</span>
+                    </label>
+                    @Html.DropDownListFor(m => m.MemberId,
+                                  (SelectList)ViewBag.Members,
+                                  "— Select member —",
+                                  new { id = "memberSelect" })
+                    @Html.ValidationMessageFor(m => m.MemberId, "", new { @class = "field-error" })
+                </div>
+
+                <!-- Goal Display -->
+                <div class="form-group">
+                    <label>
+                        <i class="fas fa-bullseye"></i>
+                        Member's fitness goal
+                    </label>
+                    <div id="goalDisplay" class="goal-pill" role="status" aria-live="polite">
+                        <i class="fas fa-info-circle"></i>
+                        <span>Select a member to see their goal</span>
+                    </div>
+                </div>
+
+                <!-- Program Name -->
+                <div class="form-group">
+                    <label>
+                        <i class="fas fa-tag"></i>
+                        Program name <span class="req">*</span>
+                    </label>
+                    @Html.TextBoxFor(m => m.ProgramName, new { placeholder = "e.g. 8-Week Strength Builder" })
+                    @Html.ValidationMessageFor(m => m.ProgramName, "", new { @class = "field-error" })
+                </div>
+
+                <!-- Spacer -->
+                <div class="form-group"></div>
+
+                <!-- Start Date -->
+                <div class="form-group">
+                    <label>
+                        <i class="fas fa-calendar-alt"></i>
+                        Start date <span class="req">*</span>
+                    </label>
+                    @Html.TextBoxFor(m => m.StartDate, "{0:yyyy-MM-dd}", new { type = "date" })
+                    @Html.ValidationMessageFor(m => m.StartDate, "", new { @class = "field-error" })
+                </div>
+
+                <!-- End Date -->
+                <div class="form-group">
+                    <label>
+                        <i class="fas fa-calendar-check"></i>
+                        End date <span class="opt">(optional)</span>
+                    </label>
+                    @Html.TextBoxFor(m => m.EndDate, "{0:yyyy-MM-dd}", new { type = "date" })
+                    @Html.ValidationMessageFor(m => m.EndDate, "", new { @class = "field-error" })
+                </div>
+
+                <!-- Description -->
+                <div class="form-group full">
+                    <label>
+                        <i class="fas fa-align-left"></i>
+                        Description
+                    </label>
+                    @Html.TextAreaFor(m => m.Description, new { placeholder = "Briefly describe the program goals and structure…", rows = 3 })
+                </div>
+
+            </div>
+
+            <hr class="form-divider" />
+
+            <div class="form-actions">
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-arrow-right"></i> Continue to Add Exercises
+                </button>
+                <a href="@Url.Action("WorkoutPrograms", "Trainer")" class="btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
+            </div>
+        }
+
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('memberSelect').addEventListener('change', function () {
+            var memberId = this.value;
+            var goalEl = document.getElementById('goalDisplay');
+
+            if (!memberId) {
+                goalEl.className = 'goal-pill';
+                goalEl.innerHTML = '<i class="fas fa-info-circle"></i><span>Select a member to see their goal</span>';
+                return;
+            }
+
+            goalEl.className = 'goal-pill';
+            goalEl.innerHTML = '<i class="fas fa-spinner fa-pulse"></i><span>Loading…</span>';
+
+            fetch('@Url.Action("GetMemberFitnessProfile", "Trainer")?memberId=' + memberId)
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    if (data.found && data.goalType) {
+                        goalEl.className = 'goal-pill active';
+                        goalEl.innerHTML = '<i class="fas fa-star"></i><span>' + data.goalType + '</span>';
+                    } else {
+                        goalEl.className = 'goal-pill';
+                        goalEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i><span>No fitness profile found</span>';
+                    }
+                })
+                .catch(function () {
+                    goalEl.className = 'goal-pill';
+                    goalEl.innerHTML = '<i class="fas fa-exclamation-circle"></i><span>Could not load goal</span>';
+                });
+        });
+    </script>
+}

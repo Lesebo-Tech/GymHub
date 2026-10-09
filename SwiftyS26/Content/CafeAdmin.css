@@ -1,0 +1,805 @@
+﻿/* =====================================================================
+   CAFE ADMIN CSS — GymHub
+   Standalone stylesheet for /Views/Cafe/Index.cshtml
+   Import alongside admin.css:  <link href="~/Content/cafe.css" rel="stylesheet" />
+   ===================================================================== */
+
+/* ── CSS variables (mirrors admin.css — keeps colours consistent) ─── */
+:root {
+    --cafe-orange: #EA580C;
+    --cafe-orange-lt: rgba(234,88,12,0.08);
+    --cafe-brown: #92400E;
+    --cafe-cream: #FFFBEB;
+    --cafe-green: #16A34A;
+    --cafe-green-lt: rgba(22,163,74,0.08);
+    --cafe-blue: #2563EB;
+    --cafe-blue-lt: rgba(37,99,235,0.08);
+    --cafe-purple: #7C3AED;
+    --cafe-purple-lt: rgba(124,58,237,0.08);
+    --cafe-red: #DC2626;
+    --cafe-red-lt: rgba(220,38,38,0.08);
+    --cafe-gold: #D97706;
+    --cafe-gold-lt: rgba(217,119,6,0.08);
+    --cafe-border: #E2E8F0;
+    --cafe-bg: #F7F9FC;
+    --cafe-bg3: #F1F5F9;
+    --cafe-white: #FFFFFF;
+    --cafe-text: #0F172A;
+    --cafe-muted: #64748B;
+    --cafe-radius: 12px;
+    --cafe-radius-sm: 8px;
+    --cafe-shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+    --cafe-shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+/* ── Tab bar ──────────────────────────────────────────────────────── */
+.cafe-tab-bar {
+    display: flex;
+    gap: 6px;
+    padding: 20px 28px 0;
+    border-bottom: 1px solid var(--cafe-border);
+    background: var(--cafe-white);
+    flex-wrap: wrap;
+}
+
+.cafe-tab {
+    padding: 10px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--cafe-muted);
+    cursor: pointer;
+    transition: all .2s;
+    white-space: nowrap;
+    margin-bottom: -1px;
+}
+
+    .cafe-tab:hover {
+        color: var(--cafe-text);
+    }
+
+    .cafe-tab.active {
+        color: var(--cafe-orange);
+        border-bottom-color: var(--cafe-orange);
+    }
+
+/* ── Section show / hide ─────────────────────────────────────────── */
+.cafe-section {
+    display: none;
+}
+
+    .cafe-section.active {
+        display: block;
+        animation: cafeFadeUp .3s ease both;
+    }
+
+@keyframes cafeFadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Stats grid ──────────────────────────────────────────────────── */
+.cafe-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 24px 28px 0;
+}
+
+.cafe-stat-card {
+    background: var(--cafe-white);
+    border: 1px solid var(--cafe-border);
+    border-radius: var(--cafe-radius);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: var(--cafe-shadow-sm);
+    position: relative;
+    overflow: hidden;
+    transition: transform .2s, box-shadow .2s;
+}
+
+    .cafe-stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--cafe-shadow-md);
+    }
+
+    .cafe-stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+    }
+
+    .cafe-stat-card.orange::before {
+        background: var(--cafe-orange);
+    }
+
+    .cafe-stat-card.green::before {
+        background: var(--cafe-green);
+    }
+
+    .cafe-stat-card.blue::before {
+        background: var(--cafe-blue);
+    }
+
+    .cafe-stat-card.purple::before {
+        background: var(--cafe-purple);
+    }
+
+    .cafe-stat-card.gold::before {
+        background: var(--cafe-gold);
+    }
+
+    .cafe-stat-card.red::before {
+        background: var(--cafe-red);
+    }
+
+.cafe-stat-number {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    line-height: 1;
+    color: var(--cafe-text);
+    letter-spacing: 1px;
+}
+
+.cafe-stat-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--cafe-muted);
+}
+
+/* ── Card wrapper ────────────────────────────────────────────────── */
+.cafe-card {
+    background: var(--cafe-white);
+    border: 1px solid var(--cafe-border);
+    border-radius: var(--cafe-radius);
+    margin: 24px 28px;
+    box-shadow: var(--cafe-shadow-sm);
+    overflow: hidden;
+}
+
+.cafe-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--cafe-border);
+    background: var(--cafe-bg3);
+}
+
+.cafe-card-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--cafe-text);
+}
+
+.cafe-card-count {
+    font-size: 13px;
+    color: var(--cafe-muted);
+    font-weight: 600;
+    background: var(--cafe-white);
+    border: 1px solid var(--cafe-border);
+    padding: 4px 12px;
+    border-radius: 50px;
+}
+
+/* ── Table ───────────────────────────────────────────────────────── */
+.cafe-table-wrap {
+    overflow-x: auto;
+}
+
+.cafe-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+    .cafe-table th {
+        padding: 11px 16px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: var(--cafe-muted);
+        border-bottom: 1px solid var(--cafe-border);
+        background: var(--cafe-bg3);
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    .cafe-table td {
+        padding: 13px 16px;
+        border-bottom: 1px solid var(--cafe-border);
+        color: var(--cafe-text);
+        vertical-align: middle;
+    }
+
+    .cafe-table tbody tr {
+        transition: background .15s;
+    }
+
+        .cafe-table tbody tr:hover {
+            background: var(--cafe-bg3);
+        }
+
+        .cafe-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+/* ── Badges ──────────────────────────────────────────────────────── */
+.cafe-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 50px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    white-space: nowrap;
+}
+
+    /* product visibility */
+    .cafe-badge.visible {
+        background: var(--cafe-green-lt);
+        color: var(--cafe-green);
+        border: 1px solid rgba(22,163,74,.25);
+    }
+
+    .cafe-badge.hidden {
+        background: var(--cafe-bg3);
+        color: var(--cafe-muted);
+        border: 1px solid var(--cafe-border);
+    }
+    /* stock */
+    .cafe-badge.instock {
+        background: var(--cafe-blue-lt);
+        color: var(--cafe-blue);
+        border: 1px solid rgba(37,99,235,.25);
+    }
+
+    .cafe-badge.outstock {
+        background: var(--cafe-red-lt);
+        color: var(--cafe-red);
+        border: 1px solid rgba(220,38,38,.25);
+    }
+    /* order status */
+    .cafe-badge.pending {
+        background: var(--cafe-gold-lt);
+        color: var(--cafe-gold);
+        border: 1px solid rgba(217,119,6,.25);
+    }
+
+    .cafe-badge.ready {
+        background: var(--cafe-blue-lt);
+        color: var(--cafe-blue);
+        border: 1px solid rgba(37,99,235,.25);
+    }
+
+    .cafe-badge.collected {
+        background: var(--cafe-green-lt);
+        color: var(--cafe-green);
+        border: 1px solid rgba(22,163,74,.25);
+    }
+
+    .cafe-badge.cancelled {
+        background: var(--cafe-red-lt);
+        color: var(--cafe-red);
+        border: 1px solid rgba(220,38,38,.25);
+    }
+    /* category pill */
+    .cafe-badge.category {
+        background: var(--cafe-orange-lt);
+        color: var(--cafe-orange);
+        border: 1px solid rgba(234,88,12,.2);
+    }
+
+/* member id */
+.cafe-member-id {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 14px;
+    letter-spacing: 1px;
+    color: var(--cafe-blue);
+    background: var(--cafe-blue-lt);
+    padding: 3px 10px;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+
+/* ── Action buttons (table row) ──────────────────────────────────── */
+.cafe-action-btn {
+    padding: 6px 14px;
+    border-radius: var(--cafe-radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all .2s;
+}
+
+    .cafe-action-btn.edit {
+        background: var(--cafe-blue-lt);
+        color: var(--cafe-blue);
+        border: 1.5px solid rgba(37,99,235,.2);
+    }
+
+    .cafe-action-btn.icon {
+        padding: 6px 10px;
+        background: var(--cafe-bg3);
+        border: 1px solid var(--cafe-border);
+    }
+
+    .cafe-action-btn.danger {
+        background: var(--cafe-red-lt);
+        border: 1px solid rgba(220,38,38,.2);
+    }
+
+/* ── Status action dropdown ──────────────────────────────────────── */
+.cafe-status-select {
+    padding: 5px 10px;
+    border: 1.5px solid var(--cafe-border);
+    border-radius: var(--cafe-radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--cafe-text);
+    background: var(--cafe-white);
+    cursor: pointer;
+    outline: none;
+    transition: border-color .2s;
+}
+
+    .cafe-status-select:focus {
+        border-color: var(--cafe-orange);
+    }
+
+/* ── Filter bar ──────────────────────────────────────────────────── */
+.cafe-filter-bar {
+    display: flex;
+    gap: 8px;
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--cafe-border);
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.cafe-filter-btn {
+    padding: 7px 16px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1.5px solid var(--cafe-border);
+    background: transparent;
+    color: var(--cafe-muted);
+    transition: all .2s;
+}
+
+    .cafe-filter-btn:hover,
+    .cafe-filter-btn.active {
+        background: var(--cafe-orange);
+        color: #fff;
+        border-color: var(--cafe-orange);
+    }
+
+    .cafe-filter-btn.pending.active {
+        background: #D97706;
+        border-color: #D97706;
+    }
+
+    .cafe-filter-btn.ready.active {
+        background: #2563EB;
+        border-color: #2563EB;
+    }
+
+    .cafe-filter-btn.collected.active {
+        background: #16A34A;
+        border-color: #16A34A;
+    }
+
+    .cafe-filter-btn.cancelled.active {
+        background: #DC2626;
+        border-color: #DC2626;
+    }
+
+/* ── Toggle switch ───────────────────────────────────────────────── */
+.cafe-toggle-wrap {
+    position: relative;
+    display: inline-block;
+    width: 42px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+    .cafe-toggle-wrap input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+.cafe-toggle-track {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: #E2E8F0;
+    border-radius: 50px;
+    transition: .3s;
+}
+
+    .cafe-toggle-track::after {
+        content: '';
+        position: absolute;
+        left: 3px;
+        top: 3px;
+        width: 18px;
+        height: 18px;
+        background: #fff;
+        border-radius: 50%;
+        transition: .3s;
+        box-shadow: 0 1px 4px rgba(0,0,0,.15);
+    }
+
+.cafe-toggle-wrap input:checked + .cafe-toggle-track {
+    background: var(--cafe-orange);
+}
+
+    .cafe-toggle-wrap input:checked + .cafe-toggle-track::after {
+        transform: translateX(18px);
+    }
+
+/* ── Revenue chart placeholder bars ─────────────────────────────── */
+.cafe-bar-wrap {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 120px;
+    padding: 0 4px;
+}
+
+.cafe-bar {
+    flex: 1;
+    background: var(--cafe-orange-lt);
+    border: 1px solid rgba(234,88,12,.2);
+    border-radius: 4px 4px 0 0;
+    transition: background .2s;
+    position: relative;
+    min-width: 20px;
+}
+
+    .cafe-bar:hover {
+        background: var(--cafe-orange);
+    }
+
+.cafe-bar-label {
+    position: absolute;
+    bottom: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    color: var(--cafe-muted);
+    white-space: nowrap;
+}
+
+/* ── Modal ───────────────────────────────────────────────────────── */
+.cafe-modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    backdrop-filter: blur(4px);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+}
+
+    .cafe-modal-backdrop.open {
+        display: flex;
+    }
+
+.cafe-modal {
+    background: var(--cafe-white);
+    border-radius: 20px;
+    padding: 40px;
+    width: 100%;
+    max-width: 540px;
+    margin: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.15);
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.cafe-modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px;
+    letter-spacing: 2px;
+    color: var(--cafe-text);
+    margin-bottom: 6px;
+}
+
+.cafe-modal-sub {
+    font-size: 13px;
+    color: var(--cafe-muted);
+    margin-bottom: 20px;
+}
+
+/* form rows */
+.cafe-form-row {
+    margin-bottom: 16px;
+}
+
+.cafe-form-grid {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+    .cafe-form-grid.cols-2 {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .cafe-form-grid.cols-3 {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+
+.cafe-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--cafe-muted);
+    margin-bottom: 7px;
+}
+
+.cafe-input,
+.cafe-textarea,
+.cafe-select {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--cafe-bg3);
+    border: 1.5px solid var(--cafe-border);
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--cafe-text);
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+}
+
+    .cafe-input:focus,
+    .cafe-textarea:focus,
+    .cafe-select:focus {
+        border-color: var(--cafe-orange);
+        box-shadow: 0 0 0 3px var(--cafe-orange-lt);
+        background: var(--cafe-white);
+    }
+
+.cafe-textarea {
+    resize: vertical;
+    min-height: 70px;
+}
+
+.cafe-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--cafe-bg3);
+    border: 1.5px solid var(--cafe-border);
+    border-radius: 10px;
+    padding: 14px;
+}
+
+.cafe-toggle-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--cafe-text);
+}
+
+/* image preview */
+.cafe-img-preview {
+    width: 100%;
+    max-height: 160px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid var(--cafe-border);
+    margin-bottom: 10px;
+    display: none;
+}
+
+/* error box */
+.cafe-error-box {
+    display: none;
+    background: rgba(220,38,38,.08);
+    border: 1px solid rgba(220,38,38,.2);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: var(--cafe-red);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+/* modal buttons */
+.cafe-btn-primary {
+    width: 100%;
+    padding: 14px;
+    background: var(--cafe-orange);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .2s, transform .1s;
+    margin-bottom: 10px;
+}
+
+    .cafe-btn-primary:hover {
+        background: #C2410C;
+        transform: translateY(-1px);
+    }
+
+    .cafe-btn-primary:disabled {
+        opacity: .6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+.cafe-btn-secondary {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    border: 1.5px solid var(--cafe-border);
+    color: var(--cafe-muted);
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s;
+}
+
+    .cafe-btn-secondary:hover {
+        border-color: var(--cafe-red);
+        color: var(--cafe-red);
+    }
+
+/* ── Product image in table ──────────────────────────────────────── */
+.cafe-product-img {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--cafe-border);
+}
+
+.cafe-product-emoji {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background: var(--cafe-bg3);
+    border: 1px solid var(--cafe-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+}
+
+/* ── Revenue section ────────────────────────────────────────────── */
+.cafe-revenue-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 24px 28px;
+}
+
+.cafe-top-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+    .cafe-top-table th {
+        padding: 9px 14px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: var(--cafe-muted);
+        border-bottom: 1px solid var(--cafe-border);
+        background: var(--cafe-bg3);
+        text-align: left;
+    }
+
+    .cafe-top-table td {
+        padding: 11px 14px;
+        border-bottom: 1px solid var(--cafe-border);
+    }
+
+    .cafe-top-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+/* ── Success banner ─────────────────────────────────────────────── */
+#cafe-success-banner {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--cafe-white);
+    border: 1px solid rgba(22,163,74,.3);
+    border-left: 4px solid var(--cafe-green);
+    border-radius: 10px;
+    padding: 14px 20px;
+    color: #166534;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 1000;
+    box-shadow: 0 8px 24px rgba(0,0,0,.12);
+    max-width: 380px;
+    animation: cafeBannerIn .25s ease both;
+}
+
+@keyframes cafeBannerIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+@media (max-width:1100px) {
+    .cafe-stats-grid {
+        grid-template-columns: repeat(2,1fr);
+    }
+
+    .cafe-revenue-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .cafe-form-grid.cols-3 {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width:768px) {
+    .cafe-stats-grid {
+        grid-template-columns: 1fr 1fr;
+        padding: 16px;
+    }
+
+    .cafe-card {
+        margin: 0 16px 16px;
+    }
+
+    .cafe-tab-bar {
+        padding: 14px 16px 0;
+    }
+
+    .cafe-form-grid.cols-2,
+    .cafe-form-grid.cols-3 {
+        grid-template-columns: 1fr;
+    }
+}

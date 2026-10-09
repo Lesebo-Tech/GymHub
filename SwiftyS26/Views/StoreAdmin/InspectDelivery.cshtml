@@ -1,0 +1,650 @@
+﻿@model SwiftyS26.Models.DeliveryInspectionViewModel
+@using System.Collections.Generic
+@using System.Web.Mvc
+
+@{
+    Layout = Session["LoggedInAdmin"] != null
+        ? "~/Views/Shared/_AdminLayout.cshtml"
+        : "~/Views/Shared/_StoreStaffLayout.cshtml";
+
+    ViewBag.Title = "Inspect Delivery";
+    ViewBag.PageTitle = "DELIVERY STOCK INSPECTION";
+    var po = Model.PurchaseOrder;
+}
+
+<style>
+    @@keyframes id-fadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .id-page {
+        max-width: 1150px;
+        margin: auto;
+        color: #0F172A;
+    }
+
+    .id-head,
+    .id-section,
+    .id-submit {
+        background: #fff;
+        border: 1px solid #E2E8F0;
+        border-radius: 14px;
+        padding: 22px;
+        margin-bottom: 18px;
+        animation: id-fadeUp .3s ease both;
+    }
+
+    .id-head {
+        border-top: 4px solid #2563EB;
+    }
+
+    .id-head-row,
+    .id-item-top,
+    .id-submit {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .id-kicker {
+        font-size: 10.5px;
+        font-weight: 800;
+        letter-spacing: 1.2px;
+        color: #2563EB;
+    }
+
+    .id-head h2 {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 27px;
+        letter-spacing: 1px;
+        margin: 5px 0;
+    }
+
+    .id-muted {
+        font-size: 12.5px;
+        color: #64748B;
+    }
+
+    .id-title {
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: .7px;
+        margin: 0 0 18px;
+        padding-bottom: 11px;
+        border-bottom: 1px solid #E2E8F0;
+    }
+
+    .id-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .id-full {
+        grid-column: 1 / -1;
+    }
+
+    .id-field label {
+        display: block;
+        font-size: 10.5px;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: #64748B;
+        margin-bottom: 6px;
+    }
+
+    .id-field input,
+    .id-field select,
+    .id-field textarea {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px 11px;
+        border: 1.5px solid #E2E8F0;
+        border-radius: 8px;
+        background: #fff;
+        color: #0F172A;
+        font-size: 13px;
+    }
+
+        .id-field input:focus,
+        .id-field select:focus,
+        .id-field textarea:focus {
+            outline: none;
+            border-color: #2563EB;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .08);
+        }
+
+    .id-checks {
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+    }
+
+    .id-check {
+        font-size: 12.5px;
+        color: #334155;
+    }
+
+        .id-check input {
+            width: auto;
+            margin-right: 7px;
+        }
+
+    .id-item {
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 17px;
+        margin-bottom: 13px;
+    }
+
+        .id-item.issue {
+            border-color: #F59E0B;
+            background: #FFFBEB;
+        }
+
+        .id-item.invalid {
+            border-color: #EF4444;
+            background: #FEF2F2;
+        }
+
+    .id-name {
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .id-expected {
+        font-size: 12px;
+        color: #64748B;
+    }
+
+    .id-results {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin-top: 13px;
+    }
+
+    .id-result {
+        background: #F8FAFC;
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+    }
+
+        .id-result span {
+            display: block;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #64748B;
+        }
+
+        .id-result strong {
+            display: block;
+            font-size: 18px;
+            margin-top: 2px;
+        }
+
+    .id-good strong {
+        color: #16A34A;
+    }
+
+    .id-bad strong {
+        color: #DC2626;
+    }
+
+    .id-warn strong {
+        color: #D97706;
+    }
+
+    .id-damage-panel {
+        display: none;
+        border-top: 1px solid #FED7AA;
+        margin-top: 15px;
+        padding-top: 15px;
+    }
+
+    .id-line-error {
+        display: none;
+        color: #DC2626;
+        font-size: 11.5px;
+        font-weight: 700;
+        margin-top: 9px;
+    }
+
+    .id-error {
+        background: #FEF2F2;
+        color: #DC2626;
+        border: 1px solid rgba(220, 38, 38, .2);
+        padding: 12px 16px;
+        border-radius: 10px;
+        margin-bottom: 16px;
+        font-size: 13px;
+    }
+
+    .field-validation-error {
+        color: #DC2626;
+        font-size: 11px;
+    }
+
+    .id-actions {
+        display: flex;
+        gap: 9px;
+    }
+
+    .id-btn {
+        padding: 11px 20px;
+        border-radius: 9px;
+        font-weight: 800;
+        font-size: 12.5px;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+    }
+
+    .id-cancel {
+        background: #fff;
+        color: #334155;
+        border: 1px solid #CBD5E1;
+    }
+
+    .id-primary {
+        background: #2563EB;
+        color: #fff;
+    }
+
+        .id-primary:disabled {
+            background: #94A3B8;
+            cursor: not-allowed;
+        }
+
+    @@media (max-width: 800px) {
+        .id-grid,
+        .id-results {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .id-full {
+            grid-column: 1 / -1;
+        }
+    }
+
+    @@media (max-width: 560px) {
+        .id-grid,
+        .id-results {
+            grid-template-columns: 1fr;
+        }
+
+        .id-submit {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .id-actions {
+            flex-direction: column-reverse;
+        }
+
+        .id-btn {
+            text-align: center;
+        }
+    }
+</style>
+
+<div class="id-page">
+
+    <div class="id-head">
+        <div class="id-head-row">
+            <div>
+                <div class="id-kicker">GYMHUB &bull; GOODS RECEIVED &amp; INSPECTION REPORT</div>
+                <h2>Delivery Stock Inspection</h2>
+                <div class="id-muted">Record the quantities and physical condition of delivered stock.</div>
+            </div>
+            @if (po != null)
+            {
+                <div>
+                    <strong>@po.ReferenceNumber</strong><br />
+                    <span class="id-muted">@(po.Supplier != null ? po.Supplier.Name : "Supplier")</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="id-error"><i class="fas fa-circle-exclamation"></i> @TempData["Error"]</div>
+    }
+
+    @using (Html.BeginForm("SubmitInspection", "StoreAdmin", FormMethod.Post,
+        new { id = "inspectionForm", enctype = "multipart/form-data" }))
+    {
+        @Html.AntiForgeryToken()
+        @Html.HiddenFor(m => m.PurchaseOrderId)
+
+        if (!ViewData.ModelState.IsValid)
+        {
+            <div class="id-error">@Html.ValidationSummary(false, "Please correct the following problems:")</div>
+        }
+
+        <div class="id-section">
+            <h3 class="id-title">DELIVERY INFORMATION</h3>
+            <div class="id-grid">
+                <div class="id-field">
+                    @Html.LabelFor(m => m.DeliveryNoteNumber)
+                    @Html.TextBoxFor(m => m.DeliveryNoteNumber, new { placeholder = "e.g. DN-86543", required = "required" })
+                    @Html.ValidationMessageFor(m => m.DeliveryNoteNumber)
+                </div>
+                <div class="id-field">
+                    @Html.LabelFor(m => m.DeliveredAt)
+                    @Html.TextBoxFor(m => m.DeliveredAt, "{0:yyyy-MM-ddTHH:mm}", new { type = "datetime-local", required = "required" })
+                    @Html.ValidationMessageFor(m => m.DeliveredAt)
+                </div>
+                <div class="id-field">
+                    @Html.LabelFor(m => m.NumberOfPackages)
+                    @Html.TextBoxFor(m => m.NumberOfPackages, new { type = "number", min = "1", required = "required" })
+                    @Html.ValidationMessageFor(m => m.NumberOfPackages)
+                </div>
+                <div class="id-field">
+                    @Html.LabelFor(m => m.CourierDriver)
+                    @Html.TextBoxFor(m => m.CourierDriver, new { placeholder = "Courier or driver name" })
+                </div>
+                <div class="id-field">
+                    @Html.LabelFor(m => m.VehicleRegistration)
+                    @Html.TextBoxFor(m => m.VehicleRegistration, new { placeholder = "e.g. ND 123-456" })
+                </div>
+                <div class="id-field">
+                    @Html.LabelFor(m => m.PackagingCondition)
+                    @Html.DropDownListFor(m => m.PackagingCondition, new List<SelectListItem>
+                    {
+                        new SelectListItem { Text = "Good", Value = "Good" },
+                        new SelectListItem { Text = "Minor Damage", Value = "Minor Damage" },
+                        new SelectListItem { Text = "Severe Damage", Value = "Severe Damage" }
+                    }, new { required = "required" })
+                </div>
+                <div class="id-field">
+                    @Html.LabelFor(m => m.SealCondition)
+                    @Html.DropDownListFor(m => m.SealCondition, new List<SelectListItem>
+                    {
+                        new SelectListItem { Text = "Intact", Value = "Intact" },
+                        new SelectListItem { Text = "Broken", Value = "Broken" },
+                        new SelectListItem { Text = "Not Applicable", Value = "Not Applicable" }
+                    }, new { required = "required" })
+                </div>
+                <div class="id-field">
+                    <label>DOCUMENTS &amp; SECURITY</label>
+                    <div class="id-checks">
+                        <label class="id-check">@Html.CheckBoxFor(m => m.SignsOfTampering) Signs of tampering</label>
+                        <label class="id-check">@Html.CheckBoxFor(m => m.DeliveryNoteReceived) Delivery note received</label>
+                        <label class="id-check">@Html.CheckBoxFor(m => m.SupplierInvoiceReceived) Supplier invoice received</label>
+                    </div>
+                </div>
+                <div class="id-field id-full">
+                    @Html.LabelFor(m => m.GeneralNotes)
+                    @Html.TextAreaFor(m => m.GeneralNotes, new { rows = "3", placeholder = "General packaging, documentation or delivery observations..." })
+                </div>
+            </div>
+        </div>
+
+        <div class="id-section">
+            <h3 class="id-title">ITEM VERIFICATION</h3>
+
+            <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:12px;padding:16px;margin-bottom:16px;">
+                <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;">
+                    <div>
+                        <strong><i class="fas fa-qrcode" style="color:#2563EB"></i> Scan Product QR</strong>
+                        <div class="id-muted">Scan a delivered item to locate and verify it on this purchase order.</div>
+                    </div>
+                    <button type="button" class="id-btn id-primary" id="startProductScanner">Open Camera Scanner</button>
+                </div>
+                <div id="productReader" style="display:none;max-width:500px;margin:15px auto 0;"></div>
+                <div id="productScanMessage" style="display:none;padding:11px;border-radius:8px;margin-top:12px;font-size:12.5px;"></div>
+            </div>
+
+            @for (int i = 0; i < Model.Items.Count; i++)
+            {
+                <div class="id-item" id="inspectionProduct-@Model.Items[i].ProductId"
+                     data-product-id="@Model.Items[i].ProductId" data-expected="@Model.Items[i].ExpectedQty">
+
+                    @Html.HiddenFor(m => m.Items[i].PurchaseOrderItemId)
+                    @Html.HiddenFor(m => m.Items[i].ProductId)
+                    @Html.HiddenFor(m => m.Items[i].ExpectedQty)
+                    @Html.HiddenFor(m => m.Items[i].ProductName)
+
+                    <div class="id-item-top">
+                        <span class="id-name">@Model.Items[i].ProductName</span>
+                        <span class="id-expected">Expected: <strong>@Model.Items[i].ExpectedQty</strong></span>
+                    </div>
+
+                    <div class="id-grid">
+                        <div class="id-field">
+                            @Html.LabelFor(m => m.Items[i].ReceivedQty)
+                            @Html.TextBoxFor(m => m.Items[i].ReceivedQty, new { type = "number", min = "0", @class = "id-received", required = "required" })
+                            @Html.ValidationMessageFor(m => m.Items[i].ReceivedQty)
+                        </div>
+                        <div class="id-field">
+                            @Html.LabelFor(m => m.Items[i].DamagedQty)
+                            @Html.TextBoxFor(m => m.Items[i].DamagedQty, new { type = "number", min = "0", @class = "id-damaged", required = "required" })
+                            @Html.ValidationMessageFor(m => m.Items[i].DamagedQty)
+                        </div>
+                        <div class="id-field">
+                            @Html.LabelFor(m => m.Items[i].Condition)
+                            @Html.DropDownListFor(m => m.Items[i].Condition, new List<SelectListItem>
+                            {
+                                new SelectListItem { Text = "Good", Value = "Good" },
+                                new SelectListItem { Text = "Mixed", Value = "Mixed" },
+                                new SelectListItem { Text = "Damaged", Value = "Damaged" }
+                            }, new { @class = "id-condition", required = "required" })
+                        </div>
+                    </div>
+
+                    <div class="id-results">
+                        <div class="id-result id-good"><span>Good</span><strong class="id-good-result">0</strong></div>
+                        <div class="id-result id-bad"><span>Damaged</span><strong class="id-damaged-result">0</strong></div>
+                        <div class="id-result id-bad"><span>Missing</span><strong class="id-missing-result">0</strong></div>
+                        <div class="id-result id-warn"><span>Excess</span><strong class="id-excess-result">0</strong></div>
+                    </div>
+
+                    <div class="id-line-error">Damaged quantity cannot exceed received quantity.</div>
+
+                    <div class="id-damage-panel">
+                        <div class="id-grid">
+                            <div class="id-field">
+                                @Html.LabelFor(m => m.Items[i].DamageType)
+                                @Html.DropDownListFor(m => m.Items[i].DamageType, new List<SelectListItem>
+                                {
+                                    new SelectListItem { Text = "Select damage type", Value = "" },
+                                    new SelectListItem { Text = "Physical Damage", Value = "Physical Damage" },
+                                    new SelectListItem { Text = "Packaging Damage", Value = "Packaging Damage" },
+                                    new SelectListItem { Text = "Manufacturing Defect", Value = "Manufacturing Defect" },
+                                    new SelectListItem { Text = "Water Damage", Value = "Water Damage" },
+                                    new SelectListItem { Text = "Contamination", Value = "Contamination" },
+                                    new SelectListItem { Text = "Expired / Near Expiry", Value = "Expired / Near Expiry" },
+                                    new SelectListItem { Text = "Incorrect Product", Value = "Incorrect Product" },
+                                    new SelectListItem { Text = "Other", Value = "Other" }
+                                }, new { @class = "id-damage-type" })
+                                @Html.ValidationMessageFor(m => m.Items[i].DamageType)
+                            </div>
+                            <div class="id-field">
+                                @Html.LabelFor(m => m.Items[i].DamageSeverity)
+                                @Html.DropDownListFor(m => m.Items[i].DamageSeverity, new List<SelectListItem>
+                                {
+                                    new SelectListItem { Text = "Select severity", Value = "" },
+                                    new SelectListItem { Text = "Minor", Value = "Minor" },
+                                    new SelectListItem { Text = "Moderate", Value = "Moderate" },
+                                    new SelectListItem { Text = "Severe", Value = "Severe" }
+                                }, new { @class = "id-damage-severity" })
+                                @Html.ValidationMessageFor(m => m.Items[i].DamageSeverity)
+                            </div>
+                            <div class="id-field">
+                                @Html.LabelFor(m => m.Items[i].EvidenceImage)
+                                @Html.TextBoxFor(m => m.Items[i].EvidenceImage, new { type = "file", accept = ".jpg,.jpeg,.png,.webp" })
+                            </div>
+                            <div class="id-field id-full">
+                                @Html.LabelFor(m => m.Items[i].InspectionNotes)
+                                @Html.TextAreaFor(m => m.Items[i].InspectionNotes, new { rows = "3", placeholder = "Describe the damage or defect..." })
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="id-section">
+            <h3 class="id-title">FINAL DELIVERY ASSESSMENT</h3>
+            <div class="id-grid">
+                <div class="id-field">
+                    @Html.LabelFor(m => m.OverallResult)
+                    @Html.DropDownListFor(m => m.OverallResult, new List<SelectListItem>
+                    {
+                        new SelectListItem { Text = "Accept Delivery", Value = "Accept" },
+                        new SelectListItem { Text = "Accept With Discrepancies", Value = "AcceptWithDiscrepancies" },
+                        new SelectListItem { Text = "Reject Delivery", Value = "Reject" }
+                    }, new { required = "required" })
+                    @Html.ValidationMessageFor(m => m.OverallResult)
+                </div>
+                <div class="id-field" style="grid-column:span 2">
+                    @Html.LabelFor(m => m.FinalInspectionNotes)
+                    @Html.TextAreaFor(m => m.FinalInspectionNotes, new { rows = "3", placeholder = "Final decision and required follow-up action..." })
+                </div>
+            </div>
+        </div>
+
+        <div class="id-submit">
+            <span class="id-muted">Only received, undamaged units will be added to inventory.</span>
+            <div class="id-actions">
+                <a class="id-btn id-cancel" href="@Url.Action("PurchaseOrders", "StoreAdmin")">Cancel</a>
+                <button class="id-btn id-primary" id="submitButton" type="submit"><i class="fas fa-check"></i> Complete Inspection</button>
+            </div>
+        </div>
+    }
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+    (function () {
+        var form = document.getElementById('inspectionForm');
+        var button = document.getElementById('submitButton');
+        var cards = document.querySelectorAll('.id-item');
+        var scannerStarted = false;
+
+        function showScanMessage(message, success) {
+            var element = document.getElementById('productScanMessage');
+            element.style.display = 'block';
+            element.style.background = success ? '#F0FDF4' : '#FEF2F2';
+            element.style.color = success ? '#16A34A' : '#DC2626';
+            element.textContent = message;
+        }
+
+        function verifyProductQr(qrData) {
+            fetch('@Url.Action("VerifyInspectionProduct", "StoreAdmin")', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: 'purchaseOrderId=@Model.PurchaseOrderId&qrData=' + encodeURIComponent(qrData)
+            })
+                .then(function (response) { return response.json(); })
+                .then(function (result) {
+                    if (!result.success) {
+                        showScanMessage(result.message, false);
+                        return;
+                    }
+
+                    var card = document.getElementById('inspectionProduct-' + result.productId);
+                    if (!card) {
+                        showScanMessage('The product is valid but its inspection row could not be found.', false);
+                        return;
+                    }
+
+                    showScanMessage(result.productName + ' verified. Complete the highlighted inspection row.', true);
+                    card.style.boxShadow = '0 0 0 4px rgba(37,99,235,.22)';
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    card.querySelector('.id-received').focus();
+                    window.setTimeout(function () { card.style.boxShadow = ''; }, 5000);
+                })
+                .catch(function () { showScanMessage('Unable to verify the product. Please try again.', false); });
+        }
+
+        document.getElementById('startProductScanner').addEventListener('click', function () {
+            if (scannerStarted) return;
+            if (typeof Html5QrcodeScanner === 'undefined') {
+                showScanMessage('The camera scanner could not load. Check your internet connection.', false);
+                return;
+            }
+
+            scannerStarted = true;
+            document.getElementById('productReader').style.display = 'block';
+            var scanner = new Html5QrcodeScanner('productReader',
+                { fps: 10, qrbox: { width: 240, height: 240 } }, false);
+            scanner.render(function (decodedText) {
+                verifyProductQr(decodedText);
+            }, function () { });
+        });
+
+        function numberValue(input) {
+            var value = parseInt(input.value, 10);
+            return isNaN(value) ? 0 : value;
+        }
+
+        function calculate(card) {
+            var expected = parseInt(card.getAttribute('data-expected'), 10) || 0;
+            var receivedInput = card.querySelector('.id-received');
+            var damagedInput = card.querySelector('.id-damaged');
+            var condition = card.querySelector('.id-condition');
+            var damageType = card.querySelector('.id-damage-type');
+            var severity = card.querySelector('.id-damage-severity');
+            var received = numberValue(receivedInput);
+            var damaged = numberValue(damagedInput);
+            var good = Math.max(received - damaged, 0);
+            var missing = Math.max(expected - received, 0);
+            var excess = Math.max(received - expected, 0);
+            var valid = damaged <= received;
+
+            card.querySelector('.id-good-result').textContent = good;
+            card.querySelector('.id-damaged-result').textContent = damaged;
+            card.querySelector('.id-missing-result').textContent = missing;
+            card.querySelector('.id-excess-result').textContent = excess;
+            card.querySelector('.id-line-error').style.display = valid ? 'none' : 'block';
+            card.querySelector('.id-damage-panel').style.display = damaged > 0 ? 'block' : 'none';
+
+            card.classList.toggle('invalid', !valid);
+            card.classList.toggle('issue', valid && (damaged > 0 || missing > 0 || excess > 0));
+            receivedInput.setCustomValidity(valid ? '' : 'Damaged quantity cannot exceed received quantity.');
+            damageType.required = damaged > 0;
+            severity.required = damaged > 0;
+
+            if (damaged > 0 && condition.value === 'Good') {
+                condition.value = good > 0 ? 'Mixed' : 'Damaged';
+            }
+            return valid;
+        }
+
+        function validateAll() {
+            var valid = true;
+            for (var i = 0; i < cards.length; i++) if (!calculate(cards[i])) valid = false;
+            button.disabled = !valid;
+            return valid;
+        }
+
+        for (var i = 0; i < cards.length; i++) {
+            var controls = cards[i].querySelectorAll('input,select');
+            for (var j = 0; j < controls.length; j++) {
+                controls[j].addEventListener('input', validateAll);
+                controls[j].addEventListener('change', validateAll);
+            }
+        }
+
+        form.addEventListener('submit', function (event) {
+            if (!validateAll()) event.preventDefault();
+        });
+        validateAll();
+    })();
+</script>

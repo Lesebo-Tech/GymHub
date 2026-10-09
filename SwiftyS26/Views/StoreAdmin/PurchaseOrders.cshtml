@@ -1,0 +1,463 @@
+﻿@model List<SwiftyS26.Models.PurchaseOrder>
+
+@{
+    Layout = Session["LoggedInAdmin"] != null
+        ? "~/Views/Shared/_AdminLayout.cshtml"
+        : "~/Views/Shared/_StoreStaffLayout.cshtml";
+
+    ViewBag.Title = "Purchase Orders";
+    ViewBag.PageTitle = "PURCHASE ORDERS";
+
+    var suppliers = ViewBag.Suppliers as List<SwiftyS26.Models.Supplier> ?? new List<SwiftyS26.Models.Supplier>();
+    var products = ViewBag.Products as List<SwiftyS26.Models.Product> ?? new List<SwiftyS26.Models.Product>();
+    bool isAdmin = ViewBag.IsAdmin;
+    const decimal threshold = 2000m;
+}
+
+<style>
+    @@keyframes po-fadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .po-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+        .po-header h2 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 26px;
+            letter-spacing: 1px;
+        }
+
+    .po-add-btn {
+        padding: 11px 20px;
+        background: #2563EB;
+        color: #fff;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 13px;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .po-threshold-note {
+        background: #EFF6FF;
+        border: 1px solid rgba(37, 99, 235, .15);
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: 12.5px;
+        color: #1D4ED8;
+        margin-bottom: 20px;
+    }
+
+    .po-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin-bottom: 12px;
+        animation: po-fadeUp .35s ease both;
+    }
+
+    .po-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .po-ref {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 16px;
+        letter-spacing: .5px;
+    }
+
+    .po-badge {
+        font-size: 10.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 4px 11px;
+        border-radius: 20px;
+    }
+
+        .po-badge.Draft,
+        .po-badge.Pending {
+            background: #F1F5F9;
+            color: #64748B;
+        }
+
+        .po-badge.PendingAdminApproval {
+            background: #FFFBEB;
+            color: #D97706;
+        }
+
+        .po-badge.Confirmed {
+            background: #F0FDF4;
+            color: #16A34A;
+        }
+
+        .po-badge.Rejected {
+            background: #FEF2F2;
+            color: #DC2626;
+        }
+
+    .po-detail {
+        font-size: 13px;
+        color: #334155;
+        margin-bottom: 4px;
+    }
+
+    .po-value {
+        font-weight: 800;
+        font-size: 15px;
+        color: #0F172A;
+    }
+
+    .po-threshold-flag {
+        font-size: 11px;
+        color: #D97706;
+        font-weight: 700;
+        margin-left: 8px;
+    }
+
+    .po-items-list {
+        font-size: 12.5px;
+        color: #64748B;
+        margin: 8px 0;
+    }
+
+    .po-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+    }
+
+    .po-btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 12.5px;
+        cursor: pointer;
+    }
+
+        .po-btn.approve {
+            background: #16A34A;
+            color: #fff;
+        }
+
+        .po-btn.reject {
+            background: #FEF2F2;
+            color: #DC2626;
+            border: 1px solid rgba(220, 38, 38, .2);
+        }
+
+        .po-btn.send {
+            background: #2563EB;
+            color: #fff;
+        }
+
+    .po-admin-only-note {
+        font-size: 11.5px;
+        color: #94A3B8;
+        font-style: italic;
+    }
+
+    .po-empty {
+        text-align: center;
+        padding: 50px 20px;
+        color: #64748B;
+    }
+
+    .po-item-row {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr auto;
+        gap: 10px;
+        margin-bottom: 8px;
+        align-items: center;
+    }
+
+    @@media (max-width: 600px) {
+        .po-item-row {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="po-header">
+    <h2><i class="fas fa-cart-flatbed" style="color:#2563EB;"></i> Purchase Orders</h2>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <a class="po-add-btn" href="@Url.Action("ScanDelivery", "StoreAdmin")" style="background:#0F766E;text-decoration:none;">
+            <i class="fas fa-qrcode"></i> Scan Delivery
+        </a>
+        <a class="po-add-btn" href="@Url.Action("CreatePurchaseOrder", "StoreAdmin")" style="text-decoration:none;">
+            <i class="fas fa-plus"></i> New Purchase Order
+        </a>
+        @if (isAdmin)
+        {
+            using (Html.BeginForm("GenerateMissingProcurementQrs", "StoreAdmin", FormMethod.Post, new { style = "display:inline;" }))
+            {
+                @Html.AntiForgeryToken()
+                <button class="po-add-btn" type="submit" style="background:#475569;">
+                    <i class="fas fa-wand-magic-sparkles"></i> Generate Missing QRs
+                </button>
+            }
+        }
+    </div>
+</div>
+
+<div class="po-threshold-note">
+    <i class="fas fa-circle-info"></i> Orders at or below R@(threshold.ToString("F0")) are sent directly. Orders above that require admin approval before being sent to the supplier.
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div style="background:#F0FDF4;color:#16A34A;border:1px solid rgba(22,163,74,.2);padding:12px 16px;border-radius:10px;margin-bottom:16px;font-weight:600;font-size:13px;">
+        @TempData["Success"]
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div style="background:#FEF2F2;color:#DC2626;border:1px solid rgba(220,38,38,.2);padding:12px 16px;border-radius:10px;margin-bottom:16px;font-weight:600;font-size:13px;">
+        @TempData["Error"]
+    </div>
+}
+
+@if (!Model.Any())
+{
+    <div class="po-empty">No open purchase orders.</div>
+}
+else
+{
+    foreach (var po in Model)
+    {
+        <div class="po-card">
+            <div class="po-top">
+                <div>
+                    <div class="po-ref">@po.ReferenceNumber</div>
+                    <div style="font-size:12px;color:#64748b;">@(po.Supplier?.Name) &middot; @po.CreatedAt.ToString("dd MMM yyyy")</div>
+                </div>
+                <span class="po-badge @po.Status">@po.Status</span>
+            </div>
+
+            @if (po.Status == "Inspected")
+            {
+                <a href="@Url.Action("DeliveryIssues", "StoreAdmin", new { purchaseOrderId = po.PurchaseOrderId })"
+                   class="po-btn send" style="text-decoration:none;display:inline-flex;align-items:center;">
+                    <i class="fas fa-triangle-exclamation"></i>&nbsp;Review Issues / Complete
+                </a>
+            }
+
+            <div class="po-items-list">
+                @string.Join(", ", po.Items.Select(i => $"{i.Product?.Name} x{i.QuantityOrdered}"))
+            </div>
+
+            <div class="po-detail">
+                <span class="po-value">R@(po.TotalValue.ToString("F2"))</span>
+                @if (po.RequiredAdminApproval)
+                {
+                    <span class="po-threshold-flag"><i class="fas fa-triangle-exclamation"></i> Above threshold</span>
+                }
+            </div>
+
+            <div class="po-actions">
+                @if (po.Status == "PendingAdminApproval")
+                {
+                    if (isAdmin)
+                    {
+                        using (Html.BeginForm("ApprovePurchaseOrder", "StoreAdmin", FormMethod.Post, new { style = "display:inline;" }))
+                        {
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="purchaseOrderId" value="@po.PurchaseOrderId" />
+                            <button type="submit" class="po-btn approve">Approve</button>
+                        }
+                        <button type="button" class="po-btn reject" onclick="openRejectModal(@po.PurchaseOrderId, '@po.ReferenceNumber')">Reject</button>
+                    }
+                    else
+                    {
+                        <span class="po-admin-only-note">Above the approval threshold — only an admin can approve or reject this order.</span>
+                    }
+                }
+                @if (po.Status == "Pending")
+                {
+                    using (Html.BeginForm("MarkPurchaseOrderSent", "StoreAdmin", FormMethod.Post, new { style = "display:inline;" }))
+                    {
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="purchaseOrderId" value="@po.PurchaseOrderId" />
+                        <button type="submit" class="po-btn send"><i class="fas fa-paper-plane"></i> Send to Supplier</button>
+                    }
+                }
+                @if (po.Status == "Confirmed")
+                {
+                    <a href="@Url.Action("InspectDelivery", "StoreAdmin", new { purchaseOrderId = po.PurchaseOrderId })"
+                       class="po-btn send" style="text-decoration:none;display:inline-flex;align-items:center;">
+                        <i class="fas fa-clipboard-check"></i>&nbsp;Inspect Delivery
+                    </a>
+                    if (!string.IsNullOrWhiteSpace(po.ReceivingQrBase64))
+                    {
+                        <button type="button" class="po-btn" style="background:#EFF6FF;color:#2563EB;" onclick="togglePoQr(@po.PurchaseOrderId)">
+                            <i class="fas fa-qrcode"></i> Receiving QR
+                        </button>
+                    }
+                }
+            </div>
+
+            @if (po.Status == "Confirmed" && !string.IsNullOrWhiteSpace(po.ReceivingQrBase64))
+            {
+                <div id="poQr-@po.PurchaseOrderId" style="display:none;margin-top:14px;padding:15px;background:#F8FAFC;border-radius:10px;text-align:center;">
+                    <img src="data:image/png;base64,@po.ReceivingQrBase64" alt="@po.ReferenceNumber receiving QR" style="width:190px;height:190px;" />
+                    <div style="font-weight:800;margin-top:6px;">@po.ReferenceNumber</div>
+                    <div style="font-size:11.5px;color:#64748B;">Place this QR on the delivery documentation or package label.</div>
+                </div>
+            }
+        </div>
+    }
+}
+
+<!-- Create PO Modal -->
+<div id="createModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:26px;max-width:520px;width:90%;max-height:90vh;overflow-y:auto;">
+        <div style="font-weight:700;font-size:16px;margin-bottom:16px;">New Purchase Order</div>
+        @using (Html.BeginForm("CreatePurchaseOrder", "StoreAdmin", FormMethod.Post, new { id = "createPoForm" }))
+        {
+            @Html.AntiForgeryToken()
+            <div style="margin-bottom:14px;">
+                <label style="display:block;font-size:12px;font-weight:700;margin-bottom:5px;">Supplier *</label>
+                <select name="supplierId" required style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;">
+                    <option value="">Select a supplier</option>
+                    @foreach (var s in suppliers)
+                    {
+                        <option value="@s.SupplierId">@s.Name</option>
+                    }
+                </select>
+            </div>
+
+            <div id="itemRows"></div>
+
+            <button type="button" onclick="addItemRow()" style="padding:8px 16px;background:#F1F5F9;border:none;border-radius:8px;font-weight:700;font-size:12.5px;cursor:pointer;margin-bottom:16px;">
+                <i class="fas fa-plus"></i> Add Item
+            </button>
+
+            <div style="text-align:right;font-weight:800;font-size:15px;margin-bottom:16px;">
+                Total: R<span id="runningTotal">0.00</span>
+            </div>
+
+            <div style="display:flex;gap:10px;">
+                <button type="submit" style="flex:1;padding:11px;background:#2563EB;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Create Purchase Order</button>
+                <button type="button" onclick="closeCreateModal()" style="flex:1;padding:11px;background:transparent;border:1px solid #e2e8f0;border-radius:8px;font-weight:700;cursor:pointer;">Cancel</button>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Reject PO Modal -->
+<div id="rejectModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:26px;max-width:420px;width:90%;">
+        <div style="font-weight:700;font-size:16px;margin-bottom:14px;color:#DC2626;">Reject Purchase Order — <span id="rejectRef"></span></div>
+        @using (Html.BeginForm("RejectPurchaseOrder", "StoreAdmin", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="purchaseOrderId" id="reject_Id" />
+            <div style="margin-bottom:16px;">
+                <label style="display:block;font-size:12px;font-weight:700;margin-bottom:5px;">Reason *</label>
+                <input type="text" name="reason" required style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;" />
+            </div>
+            <div style="display:flex;gap:10px;">
+                <button type="submit" style="flex:1;padding:11px;background:#DC2626;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Confirm Reject</button>
+                <button type="button" onclick="closeRejectModal()" style="flex:1;padding:11px;background:transparent;border:1px solid #e2e8f0;border-radius:8px;font-weight:700;cursor:pointer;">Cancel</button>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    function togglePoQr(id) {
+        var panel = document.getElementById('poQr-' + id);
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+
+    var productOptions = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(
+        products.Select(p => new { id = p.ProductId, name = p.Name, cost = p.NormalPrice })
+    ));
+    var rowCount = 0;
+
+    function openCreateModal() {
+        document.getElementById('itemRows').innerHTML = '';
+        rowCount = 0;
+        addItemRow();
+        document.getElementById('createModal').style.display = 'flex';
+    }
+
+    function closeCreateModal() {
+        document.getElementById('createModal').style.display = 'none';
+    }
+
+    function addItemRow() {
+        var idx = rowCount++;
+        var container = document.getElementById('itemRows');
+        var row = document.createElement('div');
+        row.className = 'po-item-row';
+
+        var options = '<option value="">Select product</option>' + productOptions.map(function (p) {
+            return '<option value="' + p.id + '" data-cost="' + p.cost + '">' + p.name + '</option>';
+        }).join('');
+
+        row.innerHTML =
+            '<select name="productIds" class="po-product-select" required style="padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:12.5px;">' + options + '</select>' +
+            '<input type="number" name="quantities" min="1" value="1" placeholder="Qty" required style="padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:12.5px;" />' +
+            '<input type="number" name="unitCosts" step="0.01" min="0" placeholder="Unit Cost" required style="padding:9px;border:1px solid #e2e8f0;border-radius:8px;font-size:12.5px;" />' +
+            '<button type="button" onclick="this.parentElement.remove(); recalcTotal();" style="background:#FEF2F2;color:#DC2626;border:none;border-radius:6px;padding:8px 10px;cursor:pointer;"><i class="fas fa-trash"></i></button>';
+
+        container.appendChild(row);
+
+        var select = row.querySelector('.po-product-select');
+        var costInput = row.querySelector('input[name="unitCosts"]');
+        select.addEventListener('change', function () {
+            var opt = select.options[select.selectedIndex];
+            if (opt.dataset.cost) costInput.value = parseFloat(opt.dataset.cost).toFixed(2);
+            recalcTotal();
+        });
+        row.querySelectorAll('input').forEach(function (inp) { inp.addEventListener('input', recalcTotal); });
+
+        recalcTotal();
+    }
+
+    function recalcTotal() {
+        var total = 0;
+        document.querySelectorAll('.po-item-row').forEach(function (row) {
+            var qty = parseFloat(row.querySelector('input[name="quantities"]').value) || 0;
+            var cost = parseFloat(row.querySelector('input[name="unitCosts"]').value) || 0;
+            total += qty * cost;
+        });
+        document.getElementById('runningTotal').textContent = total.toFixed(2);
+    }
+
+    function openRejectModal(id, ref_) {
+        document.getElementById('reject_Id').value = id;
+        document.getElementById('rejectRef').textContent = ref_;
+        document.getElementById('rejectModal').style.display = 'flex';
+    }
+
+    function closeRejectModal() {
+        document.getElementById('rejectModal').style.display = 'none';
+    }
+</script>

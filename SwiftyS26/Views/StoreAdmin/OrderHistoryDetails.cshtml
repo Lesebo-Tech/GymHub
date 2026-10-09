@@ -1,0 +1,966 @@
+﻿@model SwiftyS26.ViewModels.OrderHistoryDetailsViewModel
+@using System
+@using System.Linq
+
+@{
+    Layout = Session["LoggedInAdmin"] != null
+        ? "~/Views/Shared/_AdminLayout.cshtml"
+        : "~/Views/Shared/_StoreStaffLayout.cshtml";
+
+    ViewBag.Title = "Order Record";
+    ViewBag.PageTitle = "ORDER RECORD";
+
+    var order = Model != null ? Model.Order : null;
+
+    var events =
+        Model != null && Model.CollectionEvents != null
+            ? Model.CollectionEvents
+            : new List<SwiftyS26.Models.StoreOrderCollectionEvent>();
+
+    var movements =
+        Model != null && Model.InventoryMovements != null
+            ? Model.InventoryMovements
+            : new List<SwiftyS26.Models.InventoryMovement>();
+
+    var returns =
+        Model != null && Model.ReturnRequests != null
+            ? Model.ReturnRequests
+            : new List<SwiftyS26.Models.ReturnRequest>();
+
+    string statusText = order != null ? order.Status : "Unavailable";
+    string statusClass = "or-status-neutral";
+
+    if (order != null)
+    {
+        switch (order.Status)
+        {
+            case "Paid":
+                statusText = "Payment Received";
+                statusClass = "or-status-warning";
+                break;
+
+            case "Preparing":
+                statusText = "Preparing";
+                statusClass = "or-status-warning";
+                break;
+
+            case "ReadyForPickup":
+                statusText = "Ready for Pickup";
+                statusClass = "or-status-info";
+                break;
+
+            case "Collected":
+                statusText = "Collected";
+                statusClass = "or-status-success";
+                break;
+
+            case "Uncollected":
+            case "UncollectedPendingReview":
+                statusText = "Uncollected – Awaiting Review";
+                statusClass = "or-status-danger";
+                break;
+
+            case "UncollectedRefundPending":
+                statusText = "Uncollected – Refund Pending";
+                statusClass = "or-status-purple";
+                break;
+
+            case "UncollectedRefunded":
+            case "Refunded":
+                statusText = "Refunded";
+                statusClass = "or-status-success";
+                break;
+
+            case "UncollectedResolved":
+                statusText = "Uncollected – Resolved";
+                statusClass = "or-status-neutral";
+                break;
+
+            case "Cancelled":
+                statusText = "Cancelled";
+                statusClass = "or-status-neutral";
+                break;
+        }
+    }
+}
+
+<style>
+    .or-page {
+        max-width: 1450px;
+        margin: 0 auto;
+    }
+
+    .or-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .or-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .or-title i {
+            color: #2563eb;
+            font-size: 28px;
+        }
+
+        .or-title h2 {
+            margin: 0;
+            color: #0f172a;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 30px;
+            letter-spacing: 1px;
+        }
+
+    .or-subtitle {
+        margin-top: 4px;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .or-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .or-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 10px 15px;
+        border-radius: 9px;
+        font-size: 12px;
+        font-weight: 850;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .or-button-light {
+        border: 1px solid #dbe3ef;
+        color: #334155;
+        background: #fff;
+    }
+
+    .or-button-pdf {
+        border: 1px solid #fecaca;
+        color: #dc2626;
+        background: #fff;
+    }
+
+    .or-button-primary {
+        border: 1px solid #2563eb;
+        color: #fff;
+        background: #2563eb;
+    }
+
+    .or-status {
+        display: inline-flex;
+        padding: 6px 11px;
+        margin-top: 10px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    .or-status-warning {
+        color: #b45309;
+        background: #fffbeb;
+    }
+
+    .or-status-info {
+        color: #2563eb;
+        background: #eff6ff;
+    }
+
+    .or-status-success {
+        color: #16a34a;
+        background: #f0fdf4;
+    }
+
+    .or-status-danger {
+        color: #dc2626;
+        background: #fef2f2;
+    }
+
+    .or-status-purple {
+        color: #9333ea;
+        background: #faf5ff;
+    }
+
+    .or-status-neutral {
+        color: #64748b;
+        background: #f1f5f9;
+    }
+
+    .or-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.65fr) minmax(320px, .85fr);
+        gap: 17px;
+        align-items: start;
+    }
+
+    .or-card {
+        overflow: hidden;
+        margin-bottom: 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        background: #fff;
+    }
+
+    .or-card-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 17px;
+        border-bottom: 1px solid #e2e8f0;
+        color: #0f172a;
+        background: #f8fafc;
+        font-size: 14px;
+        font-weight: 900;
+    }
+
+        .or-card-title i {
+            color: #2563eb;
+        }
+
+    .or-card-body {
+        padding: 17px;
+    }
+
+    .or-info {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 15px;
+    }
+
+    .or-label {
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 850;
+        text-transform: uppercase;
+    }
+
+    .or-value {
+        margin-top: 4px;
+        overflow-wrap: anywhere;
+        color: #0f172a;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    .or-table-wrap {
+        overflow-x: auto;
+    }
+
+    .or-table {
+        width: 100%;
+        min-width: 650px;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+        .or-table th {
+            padding: 10px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #64748b;
+            background: #f8fafc;
+            font-size: 9.5px;
+            text-align: left;
+            text-transform: uppercase;
+        }
+
+        .or-table td {
+            padding: 11px 10px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+        }
+
+        .or-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+    .or-money-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 9px 0;
+        border-bottom: 1px solid #eef2f7;
+        color: #475569;
+        font-size: 13px;
+    }
+
+        .or-money-row strong {
+            color: #0f172a;
+        }
+
+    .or-money-discount strong {
+        color: #16a34a;
+    }
+
+    .or-money-total {
+        padding-top: 13px;
+        border-bottom: 0;
+        color: #0f172a;
+        font-size: 15px;
+        font-weight: 900;
+    }
+
+    .or-event {
+        position: relative;
+        margin-left: 5px;
+        padding: 0 0 17px 21px;
+        border-left: 2px solid #dbeafe;
+    }
+
+        .or-event:last-child {
+            padding-bottom: 0;
+            border-left-color: transparent;
+        }
+
+        .or-event::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: -6px;
+            width: 10px;
+            height: 10px;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            background: #2563eb;
+            box-shadow: 0 0 0 2px #bfdbfe;
+        }
+
+        .or-event strong {
+            color: #0f172a;
+            font-size: 12px;
+        }
+
+        .or-event div {
+            margin-top: 3px;
+            color: #64748b;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+    .or-change-positive {
+        color: #16a34a;
+        font-weight: 900;
+    }
+
+    .or-change-negative {
+        color: #dc2626;
+        font-weight: 900;
+    }
+
+    .or-return {
+        padding: 12px;
+        margin-bottom: 9px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #f8fafc;
+    }
+
+        .or-return:last-child {
+            margin-bottom: 0;
+        }
+
+    .or-return-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .or-return-ref {
+        color: #0f172a;
+        font-size: 12px;
+        font-weight: 900;
+    }
+
+    .or-return-status {
+        padding: 4px 8px;
+        border-radius: 999px;
+        color: #2563eb;
+        background: #eff6ff;
+        font-size: 9px;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    .or-return-detail {
+        margin-top: 7px;
+        color: #64748b;
+        font-size: 11px;
+        line-height: 1.5;
+    }
+
+    .or-empty {
+        padding: 22px;
+        color: #64748b;
+        font-size: 12px;
+        text-align: center;
+    }
+
+    .or-document-footer {
+        margin-top: 15px;
+        color: #94a3b8;
+        font-size: 10.5px;
+        text-align: center;
+    }
+
+    @@media (max-width: 950px) {
+        .or-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 600px) {
+        .or-info {
+            grid-template-columns: 1fr;
+        }
+
+        .or-header {
+            flex-direction: column;
+        }
+
+        .or-actions,
+        .or-actions .or-button {
+            width: 100%;
+        }
+    }
+
+    @@media print {
+        .or-actions,
+        aside,
+        .sidebar,
+        .topbar {
+            display: none !important;
+        }
+
+        .or-grid {
+            display: block;
+        }
+
+        .or-page {
+            max-width: none;
+        }
+
+        .or-card {
+            break-inside: avoid;
+            box-shadow: none;
+        }
+    }
+</style>
+
+<div class="or-page">
+    @if (order == null)
+    {
+        <div class="or-card">
+            <div class="or-empty">
+                The requested order record could not be loaded.
+            </div>
+        </div>
+
+        <a class="or-button or-button-light"
+           href="@Url.Action("OrderHistory", "StoreAdmin")">
+            <i class="fas fa-arrow-left"></i>
+            Back to Order History
+        </a>
+    }
+    else
+    {
+        <div class="or-header">
+            <div>
+                <div class="or-title">
+                    <i class="fas fa-file-lines"></i>
+                    <h2>Formal Order Record</h2>
+                </div>
+
+                <div class="or-subtitle">
+                    @order.ReferenceNumber
+                    &middot;
+                    Created @order.CreatedAt.ToString("dd MMM yyyy HH:mm")
+                </div>
+
+                <span class="or-status @statusClass">
+                    @statusText
+                </span>
+            </div>
+
+            <div class="or-actions">
+                <a class="or-button or-button-light"
+                   href="@Url.Action("OrderHistory", "StoreAdmin")">
+                    <i class="fas fa-arrow-left"></i>
+                    Order History
+                </a>
+
+                <button class="or-button or-button-primary"
+                        type="button"
+                        onclick="window.print();">
+                    <i class="fas fa-print"></i>
+                    Print
+                </button>
+
+                <a class="or-button or-button-pdf"
+                   href="@Url.Action(
+                       "ExportOrderRecordPdf",
+                       "StoreAdmin",
+                       new { id = order.StoreOrderId })">
+                    <i class="fas fa-file-pdf"></i>
+                    Download PDF
+                </a>
+            </div>
+        </div>
+
+        <div class="or-grid">
+            <main>
+                <section class="or-card">
+                    <div class="or-card-title">
+                        <i class="fas fa-user"></i>
+                        Member and Order Information
+                    </div>
+
+                    <div class="or-card-body">
+                        <div class="or-info">
+                            <div>
+                                <div class="or-label">Member</div>
+
+                                <div class="or-value">
+                                    @(order.Member != null
+                                        ? order.Member.FullName
+                                        : "Unknown member")
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="or-label">Email</div>
+
+                                <div class="or-value">
+                                    @(order.Member != null &&
+                                      !string.IsNullOrWhiteSpace(
+                                          order.Member.Email)
+                                        ? order.Member.Email
+                                        : "No email recorded")
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="or-label">Order reference</div>
+                                <div class="or-value">
+                                    @order.ReferenceNumber
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="or-label">Paystack reference</div>
+
+                                <div class="or-value">
+                                    @(string.IsNullOrWhiteSpace(
+                                        order.PaystackReference)
+                                        ? "Not recorded"
+                                        : order.PaystackReference)
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="or-label">Created date</div>
+
+                                <div class="or-value">
+                                    @order.CreatedAt.ToString(
+                                             "dd MMM yyyy HH:mm")
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="or-label">Paid date</div>
+
+                                <div class="or-value">
+                                    @(order.PaidAt.HasValue
+                                        ? order.PaidAt.Value.ToString(
+                                            "dd MMM yyyy HH:mm")
+                                        : "—")
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="or-label">Current status</div>
+                                <div class="or-value">@statusText</div>
+                            </div>
+
+                            <div>
+                                <div class="or-label">Total item quantity</div>
+
+                                <div class="or-value">
+                                    @Model.TotalItemQuantity
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="or-card">
+                    <div class="or-card-title">
+                        <i class="fas fa-bag-shopping"></i>
+                        Ordered Products
+                    </div>
+
+                    <div class="or-card-body">
+                        @if (order.Items == null || !order.Items.Any())
+                        {
+                            <div class="or-empty">
+                                No order items were found.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="or-table-wrap">
+                                <table class="or-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Product</th>
+                                            <th>Quantity</th>
+                                            <th>Unit paid</th>
+                                            <th>Line total</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        @foreach (var item in order.Items)
+                                        {
+                                            decimal unitPaid =
+                                                item.Quantity > 0
+                                                    ? item.LineTotal /
+                                                      item.Quantity
+                                                    : 0m;
+
+                                            <tr>
+                                                <td>
+                                                    <strong>
+                                                        @(item.Product != null
+                                                            ? item.Product.Name
+                                                            : "Unknown product")
+                                                    </strong>
+                                                </td>
+
+                                                <td>@item.Quantity</td>
+
+                                                <td>
+                                                    @("R" +
+                                                      unitPaid.ToString("N2"))
+                                                </td>
+
+                                                <td>
+                                                    <strong>
+                                                        @("R" +
+                                                          item.LineTotal
+                                                              .ToString("N2"))
+                                                    </strong>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </section>
+
+                <section class="or-card">
+                    <div class="or-card-title">
+                        <i class="fas fa-clock-rotate-left"></i>
+                        Collection Audit Timeline
+                    </div>
+
+                    <div class="or-card-body">
+                        @if (!events.Any())
+                        {
+                            <div class="or-empty">
+                                No collection events were recorded.
+                            </div>
+                        }
+                        else
+                        {
+                            foreach (var auditEvent in events)
+                            {
+                                <div class="or-event">
+                                    <strong>@auditEvent.EventType</strong>
+
+                                    <div>@auditEvent.Description</div>
+
+                                    <div>
+                                        @auditEvent.CreatedAt.ToString(
+                                                 "dd MMM yyyy HH:mm")
+                                        &middot;
+                                        @(string.IsNullOrWhiteSpace(
+                                            auditEvent.PerformedBy)
+                                            ? "GymHub System"
+                                            : auditEvent.PerformedBy)
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </section>
+
+                <section class="or-card">
+                    <div class="or-card-title">
+                        <i class="fas fa-boxes-stacked"></i>
+                        Inventory Movements
+                    </div>
+
+                    <div class="or-card-body">
+                        @if (!movements.Any())
+                        {
+                            <div class="or-empty">
+                                No inventory movements were linked to
+                                this order.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="or-table-wrap">
+                                <table class="or-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Product</th>
+                                            <th>Movement</th>
+                                            <th>Quantity</th>
+                                            <th>Performed by</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        @foreach (var movement in movements)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    @movement.CreatedAt.ToString(
+                                                             "dd MMM yyyy HH:mm")
+                                                </td>
+
+                                                <td>
+                                                    @(movement.Product != null
+                                                        ? movement.Product.Name
+                                                        : "Unknown product")
+                                                </td>
+
+                                                <td>@movement.MovementType</td>
+
+                                                <td>
+                                                    <span class="@(movement.QuantityChange >= 0
+                                                        ? "or-change-positive"
+                                                        : "or-change-negative")">
+                                                        @(movement.QuantityChange > 0
+                                                            ? "+" +
+                                                              movement.QuantityChange
+                                                            : movement
+                                                                .QuantityChange
+                                                                .ToString())
+                                                    </span>
+                                                </td>
+
+                                                <td>
+                                                    @(string.IsNullOrWhiteSpace(
+                                                        movement.PerformedBy)
+                                                        ? "GymHub System"
+                                                        : movement.PerformedBy)
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                </section>
+
+                <section class="or-card">
+                    <div class="or-card-title">
+                        <i class="fas fa-rotate-left"></i>
+                        Return and Exchange Records
+                    </div>
+
+                    <div class="or-card-body">
+                        @if (!returns.Any())
+                        {
+                            <div class="or-empty">
+                                No return or exchange requests are linked
+                                to this order.
+                            </div>
+                        }
+                        else
+                        {
+                            foreach (var request in returns)
+                            {
+                                <div class="or-return">
+                                    <div class="or-return-head">
+                                        <span class="or-return-ref">
+                                            @request.ReferenceNumber
+                                        </span>
+
+                                        <span class="or-return-status">
+                                            @request.Status
+                                        </span>
+                                    </div>
+
+                                    <div class="or-return-detail">
+                                        Requested:
+                                        @request.RequestedAt.ToString(
+                                                 "dd MMM yyyy HH:mm")
+
+                                        @if (request.RefundAmount.HasValue)
+                                        {
+                                            <text>
+                                                &middot; Refund:
+                                                @("R" +
+                                                  request.RefundAmount.Value
+                                                      .ToString("N2"))
+                                            </text>
+                                        }
+
+                                        @if (request.ExchangeProduct != null)
+                                        {
+                                            <text>
+                                                &middot; Replacement:
+                                                @request.ExchangeProduct.Name
+                                            </text>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </section>
+            </main>
+
+            <aside>
+                <section class="or-card">
+                    <div class="or-card-title">
+                        <i class="fas fa-coins"></i>
+                        Financial Summary
+                    </div>
+
+                    <div class="or-card-body">
+                        <div class="or-money-row">
+                            <span>Subtotal</span>
+
+                            <strong>
+                                @("R" + order.Subtotal.ToString("N2"))
+                            </strong>
+                        </div>
+
+                        @if (order.DiscountAmount > 0)
+                        {
+                            <div class="or-money-row or-money-discount">
+                                <span>Premium discount</span>
+
+                                <strong>
+                                    @("-R" +
+                                      order.DiscountAmount.ToString("N2"))
+                                </strong>
+                            </div>
+                        }
+
+                        <div class="or-money-row or-money-total">
+                            <span>Amount paid</span>
+
+                            <strong>
+                                @("R" + order.FinalTotal.ToString("N2"))
+                            </strong>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="or-card">
+                    <div class="or-card-title">
+                        <i class="fas fa-store"></i>
+                        Collection Information
+                    </div>
+
+                    <div class="or-card-body">
+                        <div class="or-info">
+                            <div>
+                                <div class="or-label">Ready date</div>
+
+                                <div class="or-value">
+                                    @(order.ReadyAt.HasValue
+                                        ? order.ReadyAt.Value.ToString(
+                                            "dd MMM yyyy HH:mm")
+                                        : "—")
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="or-label">Deadline</div>
+
+                                <div class="or-value">
+                                    @(order.PickupDeadline.HasValue
+                                        ? order.PickupDeadline.Value.ToString(
+                                            "dd MMM yyyy HH:mm")
+                                        : "—")
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="or-label">Collected date</div>
+
+                                <div class="or-value">
+                                    @(order.CollectedAt.HasValue
+                                        ? order.CollectedAt.Value.ToString(
+                                            "dd MMM yyyy HH:mm")
+                                        : "—")
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="or-label">Collected by</div>
+
+                                <div class="or-value">
+                                    @(order.CollectedByStaffId.HasValue
+                                        ? "Staff #" +
+                                          order.CollectedByStaffId.Value
+                                        : "—")
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="or-label">Stock position</div>
+
+                                <div class="or-value">
+                                    @(order.IsPickupStockReserved
+                                        ? "Reserved"
+                                        : "Not reserved")
+                                </div>
+                            </div>
+
+                            <div>
+                                <div class="or-label">Signature</div>
+
+                                <div class="or-value">
+                                    @(!string.IsNullOrWhiteSpace(
+                                        order.PickupSignaturePath)
+                                        ? "Captured"
+                                        : "Not captured")
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </aside>
+        </div>
+
+        <div class="or-document-footer">
+            Read-only GymHub audit record generated
+            @DateTime.Now.ToString("dd MMM yyyy HH:mm").
+        </div>
+    }
+</div>

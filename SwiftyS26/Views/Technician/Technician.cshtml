@@ -1,0 +1,256 @@
+﻿@model SwiftyS26.Models.Technician
+@{
+    Layout = "~/Views/Shared/_TechnicianLayout.cshtml";
+    ViewBag.Title = "Dashboard";
+
+    string technicianName = ViewBag.TechnicianName as string ?? "";
+    string technicianRole = ViewBag.TechnicianRole as string ?? "Technician";
+    string technicianCode = ViewBag.TechnicianCode as string ?? "";
+    string specialization = ViewBag.Specialization as string ?? "General";
+    string certificationLevel = ViewBag.CertificationLevel as string ?? "";
+    string employmentType = ViewBag.EmploymentType as string ?? "";
+
+    int hour = DateTime.Now.Hour;
+    string greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <style>
+        .db-wrap {
+            max-width: 1140px;
+        }
+
+        .db-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .db-header-left h1 {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin: 0 0 2px;
+        }
+
+        .db-header-left p {
+            font-size: 13px;
+            color: var(--muted);
+            margin: 0;
+        }
+
+        .db-header-right {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+            .db-header-right strong {
+                color: var(--text-primary);
+                font-weight: 700;
+            }
+
+        .stat-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .sc {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px 20px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+
+            .sc:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+            }
+
+        .sc-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px;
+        }
+
+            .sc-icon.blue {
+                background: #eff6ff;
+                color: #2563eb;
+            }
+
+            .sc-icon.green {
+                background: #f0fdf4;
+                color: #16a34a;
+            }
+
+            .sc-icon.orange {
+                background: #fff7ed;
+                color: #ea580c;
+            }
+
+            .sc-icon.purple {
+                background: #faf5ff;
+                color: #7c3aed;
+            }
+
+        .sc-label {
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .sc-value {
+            font-size: 30px;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+            .sc-value.text-val {
+                font-size: 15px;
+                font-weight: 700;
+            }
+
+        .sc-sub {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .sec-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .sec-card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sec-card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+            .sec-card-title i {
+                color: var(--muted);
+                font-size: 13px;
+            }
+
+        .empty {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--muted);
+        }
+
+            .empty i {
+                font-size: 32px;
+                margin-bottom: 12px;
+                opacity: 0.35;
+                display: block;
+            }
+
+            .empty p {
+                font-size: 13px;
+                margin: 0;
+            }
+
+        @@media (max-width: 1000px) {
+            .stat-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @@media (max-width: 420px) {
+            .stat-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+}
+
+<div class="db-wrap">
+
+    <!-- Header -->
+    <div class="db-header">
+        <div class="db-header-left">
+            <h1>Dashboard</h1>
+        </div>
+        <div class="db-header-right">
+            @greeting, <strong>@technicianName</strong> — @DateTime.Now.ToString("dddd, dd MMMM yyyy")
+        </div>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="stat-row">
+        <div class="sc">
+            <div class="sc-icon blue"><i class="fas fa-id-badge"></i></div>
+            <div>
+                <div class="sc-label">Technician Code</div>
+                <div class="sc-value text-val">@technicianCode</div>
+                <div class="sc-sub">@technicianRole</div>
+            </div>
+        </div>
+        <div class="sc">
+            <div class="sc-icon green"><i class="fas fa-tools"></i></div>
+            <div>
+                <div class="sc-label">Specialization</div>
+                <div class="sc-value text-val">@specialization</div>
+                <div class="sc-sub">Primary equipment focus</div>
+            </div>
+        </div>
+        <div class="sc">
+            <div class="sc-icon orange"><i class="fas fa-certificate"></i></div>
+            <div>
+                <div class="sc-label">Certification</div>
+                <div class="sc-value text-val">@(string.IsNullOrEmpty(certificationLevel) ? "—" : certificationLevel)</div>
+                <div class="sc-sub">Level</div>
+            </div>
+        </div>
+        <div class="sc">
+            <div class="sc-icon purple"><i class="fas fa-briefcase"></i></div>
+            <div>
+                <div class="sc-label">Employment</div>
+                <div class="sc-value text-val">@(string.IsNullOrEmpty(employmentType) ? "—" : employmentType)</div>
+                <div class="sc-sub">Type</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assigned Work (placeholder until Equipment Management entities exist) -->
+    <div class="sec-card">
+        <div class="sec-card-head">
+            <div class="sec-card-title"><i class="fas fa-clipboard-list"></i> Assigned Work</div>
+        </div>
+        <div class="empty">
+            <i class="fas fa-clipboard-check"></i>
+            <p>No inspections, maintenance jobs, or fault reports yet</p>
+        </div>
+    </div>
+
+</div>

@@ -1,0 +1,843 @@
+﻿@model SwiftyS26.Models.Locker
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.PageTitle = "Unlock Locker";
+    ViewBag.ActivePage = "lockers";
+    bool hasBeenUnlocked = ViewBag.HasBeenUnlocked != null && (bool)ViewBag.HasBeenUnlocked;
+    int lockoutSecondsLeft = ViewBag.LockoutSecondsLeft != null ? (int)ViewBag.LockoutSecondsLeft : 0;
+}
+
+<style>
+    .lk-wrap {
+        max-width: 520px;
+        margin: 0 auto;
+    }
+
+    .lk-head {
+        text-align: center;
+        margin-bottom: 26px;
+    }
+
+        .lk-head h2 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 26px;
+            letter-spacing: 1px;
+            color: var(--sb-text-primary, #0F172A);
+            margin-bottom: 4px;
+        }
+
+        .lk-head p {
+            font-size: 13px;
+            color: var(--sb-text-secondary, #64748B);
+        }
+
+    /* ===== THE LOCKER ===== */
+    .lk-scene {
+        perspective: 1400px;
+        display: flex;
+        justify-content: center;
+        margin-bottom: 28px;
+    }
+
+    .lk-body {
+        position: relative;
+        width: 210px;
+        height: 280px;
+        border-radius: 8px;
+        transform-style: preserve-3d;
+    }
+
+    .lk-interior {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(160deg, #1e293b, #0f172a);
+        border-radius: 8px;
+        box-shadow: inset 0 8px 24px rgba(0,0,0,.7);
+        overflow: hidden;
+    }
+
+    .lk-shelf {
+        position: absolute;
+        top: 78px;
+        left: 10px;
+        right: 10px;
+        height: 6px;
+        background: linear-gradient(#475569, #334155);
+        border-radius: 2px;
+        box-shadow: 0 3px 8px rgba(0,0,0,.6);
+    }
+
+    .lk-hook {
+        position: absolute;
+        top: 104px;
+        left: 50%;
+        width: 3px;
+        height: 16px;
+        background: #64748b;
+        border-radius: 0 0 4px 4px;
+    }
+
+    .lk-interior-msg {
+        position: absolute;
+        bottom: 26px;
+        left: 0;
+        right: 0;
+        color: #94a3b8;
+        font-size: 11.5px;
+        font-weight: 600;
+        letter-spacing: .4px;
+        text-align: center;
+        padding: 0 16px;
+        opacity: 0;
+        transition: opacity .4s .55s;
+    }
+
+    .lk-scene.is-open .lk-interior-msg {
+        opacity: 1;
+    }
+
+    .lk-door {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(145deg, #cbd5e1 0%, #94a3b8 45%, #b6c2d1 100%);
+        border-radius: 8px;
+        transform-origin: left center;
+        transform: rotateY(0deg);
+        transition: transform 1.05s cubic-bezier(.5,.05,.2,1);
+        box-shadow: 0 10px 30px rgba(0,0,0,.22), inset 0 0 0 2px rgba(255,255,255,.35);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 22px;
+        backface-visibility: hidden;
+    }
+    /* door swing is delayed slightly so the padlock click reads first */
+    .lk-scene.is-open .lk-door {
+        transform: rotateY(-112deg);
+        transition-delay: .32s;
+    }
+
+    .lk-vents {
+        width: 74%;
+        margin-bottom: 16px;
+    }
+
+        .lk-vents span {
+            display: block;
+            height: 4px;
+            margin-bottom: 6px;
+            border-radius: 2px;
+            background: rgba(51,65,85,.35);
+            box-shadow: inset 0 1px 2px rgba(0,0,0,.35);
+        }
+
+    .lk-plate {
+        background: #0f172a;
+        color: #f1f5f9;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 20px;
+        letter-spacing: 2px;
+        padding: 4px 16px;
+        border-radius: 4px;
+        margin-bottom: auto;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,.6);
+    }
+
+    /* ===== PADLOCK (with click) ===== */
+    .lk-lock {
+        position: absolute;
+        bottom: 40px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: linear-gradient(145deg, #f8fafc, #cbd5e1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 3px 8px rgba(0,0,0,.28), inset 0 0 0 2px rgba(255,255,255,.6);
+        color: #475569;
+        font-size: 17px;
+        transition: color .25s, background .25s;
+    }
+
+    .lk-scene.is-open .lk-lock {
+        color: #16a34a;
+        background: linear-gradient(145deg,#f0fdf4,#bbf7d0);
+    }
+
+    .lk-scene.is-error .lk-lock {
+        color: #dc2626;
+        background: linear-gradient(145deg,#fef2f2,#fecaca);
+    }
+
+    .lk-scene.is-lockout .lk-lock {
+        color: #94a3b8;
+    }
+
+    /* the "click" — a sharp mechanical snap, then the ring pulses outward */
+    @@keyframes lkClick {
+        0% {
+            transform: translateX(-50%) scale(1) rotate(0deg);
+        }
+
+        35% {
+            transform: translateX(-50%) scale(.82) rotate(-12deg);
+        }
+
+        55% {
+            transform: translateX(-50%) scale(1.14) rotate(6deg);
+        }
+
+        100% {
+            transform: translateX(-50%) scale(1) rotate(0deg);
+        }
+    }
+
+    .lk-scene.is-click .lk-lock {
+        animation: lkClick .34s cubic-bezier(.36,.07,.19,.97);
+    }
+
+    @@keyframes lkRing {
+        0% {
+            opacity: .85;
+            transform: translateX(-50%) scale(1);
+        }
+
+        100% {
+            opacity: 0;
+            transform: translateX(-50%) scale(2.1);
+        }
+    }
+
+    .lk-lock-ring {
+        position: absolute;
+        bottom: 40px;
+        left: 50%;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        border: 2px solid #16a34a;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateX(-50%);
+    }
+
+    .lk-scene.is-click .lk-lock-ring {
+        animation: lkRing .6s ease-out .1s;
+    }
+
+    .lk-handle {
+        position: absolute;
+        right: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 8px;
+        height: 46px;
+        border-radius: 4px;
+        background: linear-gradient(#f1f5f9, #94a3b8);
+        box-shadow: 0 2px 5px rgba(0,0,0,.3);
+    }
+
+    @@keyframes lkShake {
+        0%, 100% {
+            transform: translateX(0);
+        }
+
+        20% {
+            transform: translateX(-9px);
+        }
+
+        40% {
+            transform: translateX(9px);
+        }
+
+        60% {
+            transform: translateX(-6px);
+        }
+
+        80% {
+            transform: translateX(6px);
+        }
+    }
+
+    .lk-scene.is-error .lk-body {
+        animation: lkShake .45s;
+    }
+
+    .lk-scene.is-lockout .lk-door {
+        filter: grayscale(.7) brightness(.85);
+    }
+
+    .lk-status {
+        text-align: center;
+        font-size: 13px;
+        font-weight: 600;
+        min-height: 20px;
+        margin-bottom: 20px;
+    }
+
+        .lk-status.ok {
+            color: #16A34A;
+        }
+
+        .lk-status.err {
+            color: #DC2626;
+        }
+
+        .lk-status.warn {
+            color: #D97706;
+        }
+
+    /* ===== CARD ===== */
+    .lk-card {
+        background: #fff;
+        border: 1px solid rgba(0,0,0,.07);
+        border-radius: 14px;
+        padding: 26px;
+        box-shadow: 0 4px 16px rgba(0,0,0,.06);
+    }
+
+    .lk-label-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .lk-label {
+        display: block;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--sb-text-primary, #0F172A);
+        text-align: center;
+    }
+
+    /* ===== VOICE TOGGLE ===== */
+    .lk-voice-btn {
+        background: none;
+        border: 1px solid rgba(0,0,0,.1);
+        border-radius: 50%;
+        width: 26px;
+        height: 26px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: var(--sb-text-secondary, #64748B);
+        font-size: 11px;
+        transition: all .15s;
+        padding: 0;
+    }
+
+        .lk-voice-btn:hover {
+            background: rgba(37,99,235,.06);
+            border-color: rgba(37,99,235,.25);
+            color: #2563EB;
+        }
+
+        .lk-voice-btn.muted {
+            color: #94A3B8;
+            background: #F1F5F9;
+        }
+
+    /* ===== SEGMENTED PIN ===== */
+    .lk-pin-row {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-bottom: 4px;
+    }
+
+    .lk-pin-box {
+        width: 48px;
+        height: 58px;
+        text-align: center;
+        font-size: 24px;
+        font-weight: 700;
+        font-family: 'DM Sans', sans-serif;
+        color: var(--sb-text-primary, #0F172A);
+        border: 1.5px solid rgba(0,0,0,.12);
+        border-radius: 12px;
+        background: #fff;
+        outline: none;
+        transition: border-color .15s, box-shadow .15s, transform .12s;
+        -moz-appearance: textfield;
+    }
+
+        .lk-pin-box::-webkit-outer-spin-button,
+        .lk-pin-box::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .lk-pin-box:focus {
+            border-color: #2563EB;
+            box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+            transform: translateY(-1px);
+        }
+
+        .lk-pin-box.filled {
+            border-color: #2563EB;
+            background: rgba(37,99,235,.04);
+        }
+
+        .lk-pin-box:disabled {
+            background: #f1f5f9;
+            color: #94a3b8;
+            border-color: rgba(0,0,0,.06);
+        }
+
+    .lk-pin-row.err .lk-pin-box {
+        border-color: #DC2626;
+        background: rgba(239,68,68,.04);
+    }
+
+    .lk-btn-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 18px;
+    }
+
+    .lk-btn-primary {
+        flex: 1;
+        padding: 12px 20px;
+        background: linear-gradient(135deg,#3B82F6,#1D4ED8);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13.5px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(37,99,235,.3);
+        transition: transform .15s;
+    }
+
+        .lk-btn-primary:hover:not(:disabled) {
+            transform: translateY(-1px);
+        }
+
+        .lk-btn-primary:disabled {
+            opacity: .55;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+    .lk-btn-secondary {
+        padding: 12px 20px;
+        background: var(--sb-surface,#F1F5F9);
+        color: var(--sb-text-secondary,#64748B);
+        border: 1px solid rgba(0,0,0,.07);
+        border-radius: 10px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13.5px;
+        font-weight: 600;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .lk-link-row {
+        text-align: center;
+        margin-top: 14px;
+    }
+
+        .lk-link-row button {
+            background: none;
+            border: none;
+            color: var(--sb-accent,#2563EB);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0;
+        }
+
+    .lk-divider {
+        border: none;
+        border-top: 1px solid rgba(0,0,0,.07);
+        margin: 24px 0;
+    }
+
+    .lk-btn-danger {
+        width: 100%;
+        padding: 12px 20px;
+        background: rgba(239,68,68,.08);
+        color: #DC2626;
+        border: 1px solid rgba(239,68,68,.25);
+        border-radius: 10px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13.5px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background .18s;
+    }
+
+        .lk-btn-danger:hover:not(:disabled) {
+            background: rgba(239,68,68,.15);
+        }
+
+        .lk-btn-danger:disabled {
+            background: var(--sb-surface,#F1F5F9);
+            color: #94A3B8;
+            border-color: rgba(0,0,0,.07);
+            cursor: not-allowed;
+        }
+
+    .lk-hint {
+        font-size: 11.5px;
+        color: var(--sb-text-secondary,#64748B);
+        text-align: center;
+        margin-top: 8px;
+    }
+</style>
+
+<div class="lk-wrap">
+
+    <div class="lk-head">
+        <h2>Locker @Model.LockerNumber</h2>
+        <p>@Model.Location</p>
+    </div>
+
+    <!-- ===== ANIMATED LOCKER ===== -->
+    <div class="lk-scene @(hasBeenUnlocked ? "is-open" : "") @(lockoutSecondsLeft > 0 ? "is-lockout" : "")" id="lkScene">
+        <div class="lk-body">
+            <div class="lk-interior">
+                <div class="lk-shelf"></div>
+                <div class="lk-hook"></div>
+                <div class="lk-interior-msg">Your locker is open.<br />Remember to end your reservation when you leave.</div>
+            </div>
+            <div class="lk-door">
+                <div class="lk-plate">@Model.LockerNumber</div>
+                <div class="lk-vents">
+                    <span></span><span></span><span></span><span></span>
+                </div>
+                <div class="lk-handle"></div>
+                <div class="lk-lock-ring"></div>
+                <div class="lk-lock" id="lkLock">
+                    <i class="fas fa-lock" id="lkLockIcon"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="lk-status @(hasBeenUnlocked ? "ok" : "")" id="lkStatus">
+        @(hasBeenUnlocked ? "Unlocked — your locker is open." : "")
+    </div>
+
+    <!-- ===== CARD ===== -->
+    <div class="lk-card">
+
+        @Html.AntiForgeryToken()
+
+        <div class="lk-label-row">
+            <label class="lk-label">Enter your PIN</label>
+            <button type="button" class="lk-voice-btn" id="lkVoiceBtn" title="Toggle voice feedback">
+                <i class="fas fa-volume-high" id="lkVoiceIcon"></i>
+            </button>
+        </div>
+
+        <div class="lk-pin-row" id="lkPinRow">
+            <input type="password" inputmode="numeric" maxlength="1" class="lk-pin-box" data-idx="0" autocomplete="off" @(lockoutSecondsLeft > 0 ? "disabled" : "") />
+            <input type="password" inputmode="numeric" maxlength="1" class="lk-pin-box" data-idx="1" autocomplete="off" @(lockoutSecondsLeft > 0 ? "disabled" : "") />
+            <input type="password" inputmode="numeric" maxlength="1" class="lk-pin-box" data-idx="2" autocomplete="off" @(lockoutSecondsLeft > 0 ? "disabled" : "") />
+            <input type="password" inputmode="numeric" maxlength="1" class="lk-pin-box" data-idx="3" autocomplete="off" @(lockoutSecondsLeft > 0 ? "disabled" : "") />
+            <input type="password" inputmode="numeric" maxlength="1" class="lk-pin-box" data-idx="4" autocomplete="off" @(lockoutSecondsLeft > 0 ? "disabled" : "") />
+        </div>
+
+        <div class="lk-btn-row">
+            <button type="button" class="lk-btn-primary" id="lkUnlockBtn" @(lockoutSecondsLeft > 0 ? "disabled" : "")>
+                <i class="fas fa-unlock"></i> Unlock
+            </button>
+            @Html.ActionLink("Back", "Index", null, new { @class = "lk-btn-secondary" })
+        </div>
+
+        <div class="lk-link-row">
+            @using (Html.BeginForm("ForgotPin", "Locker", new { id = Model.LockerId }, FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <button type="submit" onclick="return confirm('A new PIN will be emailed to you and your old PIN will stop working. Continue?');">
+                    Forgot your PIN?
+                </button>
+            }
+        </div>
+
+        <hr class="lk-divider" />
+
+        @using (Html.BeginForm("EndReservation", "Locker", new { id = Model.LockerId }, FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <button type="submit" class="lk-btn-danger" id="lkEndBtn"
+                    @(hasBeenUnlocked ? "" : "disabled")
+                    onclick="return confirm('Are you sure? This will end your reservation and permanently delete your PIN.');">
+                <i class="fas fa-box-open"></i> End Locker Reservation
+            </button>
+        }
+
+        <div class="lk-hint" id="lkEndHint" style="@(hasBeenUnlocked ? "display:none;" : "")">
+            Unlock the locker at least once before ending your reservation.
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var scene    = document.getElementById('lkScene');
+    var lockIcon = document.getElementById('lkLockIcon');
+    var status   = document.getElementById('lkStatus');
+    var pinRow   = document.getElementById('lkPinRow');
+    var boxes    = Array.prototype.slice.call(pinRow.querySelectorAll('.lk-pin-box'));
+    var btn      = document.getElementById('lkUnlockBtn');
+    var endBtn   = document.getElementById('lkEndBtn');
+    var endHint  = document.getElementById('lkEndHint');
+    var voiceBtn = document.getElementById('lkVoiceBtn');
+    var voiceIcon = document.getElementById('lkVoiceIcon');
+    var lockoutTimer = null;
+
+    var unlockUrl = '@Url.Action("Unlock", "Locker", new { id = Model.LockerId })';
+
+    // ============================================================
+    // VOICE FEEDBACK (Web Speech API — no libraries, no audio files)
+    //
+    // Enhancement only: if the browser blocks speech, the device is
+    // muted, or the member turns it off, the on-screen status message
+    // still carries exactly the same information.
+    // ============================================================
+    var voice = null;
+    var voiceMuted = false;
+
+    try {
+        voiceMuted = sessionStorage.getItem('lkVoiceMuted') === '1';
+    } catch (e) { /* sessionStorage unavailable — default to unmuted */ }
+
+    function loadVoice() {
+        if (!('speechSynthesis' in window)) return;
+        var voices = window.speechSynthesis.getVoices();
+        // Prefer a clear English voice; fall back to whatever's available
+        voice = voices.filter(function (v) { return /en[-_]?(GB|ZA|US)/i.test(v.lang); })[0]
+             || voices.filter(function (v) { return /^en/i.test(v.lang); })[0]
+             || voices[0] || null;
+    }
+
+    if ('speechSynthesis' in window) {
+        loadVoice();
+        // Chrome loads voices asynchronously — re-read once they're ready
+        window.speechSynthesis.onvoiceschanged = loadVoice;
+    }
+
+    function speak(text) {
+        if (voiceMuted) return;
+        if (!('speechSynthesis' in window)) return;
+        try {
+            window.speechSynthesis.cancel();   // stop any overlapping phrase
+            var u = new SpeechSynthesisUtterance(text);
+            if (voice) u.voice = voice;
+            u.rate = 0.95;    // slightly slow — reads as an announcement
+            u.pitch = 1.0;
+            u.volume = 1.0;
+            window.speechSynthesis.speak(u);
+        } catch (e) { /* silent — voice is optional */ }
+    }
+
+    function renderVoiceBtn() {
+        voiceIcon.className = voiceMuted ? 'fas fa-volume-xmark' : 'fas fa-volume-high';
+        voiceBtn.classList.toggle('muted', voiceMuted);
+        voiceBtn.title = voiceMuted ? 'Voice feedback off' : 'Voice feedback on';
+    }
+
+    // Hide the toggle entirely if the browser can't speak at all
+    if (!('speechSynthesis' in window)) {
+        voiceBtn.style.display = 'none';
+    } else {
+        renderVoiceBtn();
+        voiceBtn.addEventListener('click', function () {
+            voiceMuted = !voiceMuted;
+            try { sessionStorage.setItem('lkVoiceMuted', voiceMuted ? '1' : '0'); } catch (e) { }
+            if (voiceMuted && window.speechSynthesis) window.speechSynthesis.cancel();
+            renderVoiceBtn();
+        });
+    }
+
+    function token() {
+        var el = document.querySelector('input[name="__RequestVerificationToken"]');
+        return el ? el.value : '';
+    }
+
+    function getPin() {
+        return boxes.map(function (b) { return b.value; }).join('');
+    }
+
+    function clearPin(focusFirst) {
+        boxes.forEach(function (b) { b.value = ''; b.classList.remove('filled'); });
+        if (focusFirst && !boxes[0].disabled) boxes[0].focus();
+    }
+
+    function setStatus(msg, type) {
+        status.textContent = msg;
+        status.className = 'lk-status' + (type ? ' ' + type : '');
+    }
+
+    function setBoxesDisabled(disabled) {
+        boxes.forEach(function (b) { b.disabled = disabled; });
+    }
+
+    // ── Segmented PIN behaviour ──
+    boxes.forEach(function (box, i) {
+        box.addEventListener('input', function () {
+            // strip anything that isn't a digit
+            this.value = this.value.replace(/\D/g, '').slice(0, 1);
+            this.classList.toggle('filled', this.value !== '');
+            pinRow.classList.remove('err');
+
+            if (this.value && i < boxes.length - 1) {
+                boxes[i + 1].focus();
+            }
+            // auto-submit once all five are filled
+            if (getPin().length === 5) {
+                attempt();
+            }
+        });
+
+        box.addEventListener('keydown', function (e) {
+            if (e.key === 'Backspace' && !this.value && i > 0) {
+                e.preventDefault();
+                boxes[i - 1].value = '';
+                boxes[i - 1].classList.remove('filled');
+                boxes[i - 1].focus();
+            }
+            if (e.key === 'ArrowLeft' && i > 0) { e.preventDefault(); boxes[i - 1].focus(); }
+            if (e.key === 'ArrowRight' && i < boxes.length - 1) { e.preventDefault(); boxes[i + 1].focus(); }
+            if (e.key === 'Enter') { e.preventDefault(); attempt(); }
+        });
+
+        box.addEventListener('paste', function (e) {
+            e.preventDefault();
+            var digits = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 5);
+            digits.split('').forEach(function (d, k) {
+                if (boxes[k]) { boxes[k].value = d; boxes[k].classList.add('filled'); }
+            });
+            var next = Math.min(digits.length, boxes.length - 1);
+            boxes[next].focus();
+            if (getPin().length === 5) attempt();
+        });
+
+        box.addEventListener('focus', function () { this.select(); });
+    });
+
+    function startLockout(seconds) {
+        scene.classList.add('is-lockout');
+        setBoxesDisabled(true);
+        btn.disabled = true;
+        clearInterval(lockoutTimer);
+
+        function tick() {
+            if (seconds <= 0) {
+                clearInterval(lockoutTimer);
+                scene.classList.remove('is-lockout');
+                setBoxesDisabled(false);
+                btn.disabled = false;
+                setStatus('You can try again now.', '');
+                clearPin(true);
+                return;
+            }
+            var m = Math.floor(seconds / 60), s = seconds % 60;
+            setStatus('Locked out — try again in ' + m + ':' + (s < 10 ? '0' : '') + s, 'warn');
+            seconds--;
+        }
+        tick();
+        lockoutTimer = setInterval(tick, 1000);
+    }
+
+    var busy = false;
+    function attempt() {
+        if (busy) return;
+        var pin = getPin();
+        if (pin.length !== 5) {
+            setStatus('Enter all 5 digits.', 'err');
+            return;
+        }
+
+        busy = true;
+        btn.disabled = true;
+        setStatus('Checking…', '');
+
+        var fd = new FormData();
+        fd.append('pin', pin);
+        fd.append('__RequestVerificationToken', token());
+
+        fetch(unlockUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                busy = false;
+                if (data.redirect) { window.location.href = data.redirect; return; }
+
+                if (data.success) {
+                    scene.classList.remove('is-error');
+                    pinRow.classList.remove('err');
+
+                    speak('Access granted. Don\'t forget to close it.');
+
+                    // 1. the click — padlock snaps, ring pulses out
+                    scene.classList.add('is-click');
+                    setTimeout(function () { lockIcon.className = 'fas fa-lock-open'; }, 170);
+                    // 2. then the door swings (CSS transition-delay handles the timing)
+                    setTimeout(function () { scene.classList.add('is-open'); }, 120);
+                    setTimeout(function () { scene.classList.remove('is-click'); }, 700);
+
+                    setStatus(data.message, 'ok');
+                    clearPin(false);
+                    setBoxesDisabled(true);
+                    btn.disabled = true;
+                    if (endBtn) endBtn.disabled = false;
+                    if (endHint) endHint.style.display = 'none';
+                    return;
+                }
+
+                // failure
+                scene.classList.add('is-error');
+                pinRow.classList.add('err');
+
+                // A lockout is a materially different situation from a single
+                // wrong digit — saying "enter the correct pin" while the input
+                // is disabled for five minutes would just confuse the member.
+                if (data.lockedOut) {
+                    speak('Access denied. Too many incorrect attempts. This locker is temporarily locked.');
+                } else {
+                    speak('Access denied. Please enter the correct pin.');
+                }
+
+                setTimeout(function () { scene.classList.remove('is-error'); }, 600);
+                clearPin(false);
+
+                if (data.lockedOut) {
+                    startLockout(data.secondsLeft || 300);
+                } else {
+                    setStatus(data.message, 'err');
+                    btn.disabled = false;
+                    setTimeout(function () { clearPin(true); }, 450);
+                }
+            })
+            .catch(function () {
+                busy = false;
+                setStatus('Something went wrong. Please try again.', 'err');
+                btn.disabled = false;
+            });
+    }
+
+    btn.addEventListener('click', attempt);
+
+    @if (lockoutSecondsLeft > 0)
+    {
+        <text>startLockout(@lockoutSecondsLeft);</text>
+    }
+    else if (!hasBeenUnlocked)
+    {
+        <text>boxes[0].focus();</text>
+    }
+})();
+</script>

@@ -1,0 +1,379 @@
+﻿@model SwiftyS26.ViewModels.CollectionHistoryDetailsViewModel
+@using System
+@using System.Linq
+
+@{
+    Layout = Session["LoggedInAdmin"] != null
+        ? "~/Views/Shared/_AdminLayout.cshtml"
+        : "~/Views/Shared/_StoreStaffLayout.cshtml";
+    ViewBag.Title = "Collection Record";
+    ViewBag.PageTitle = "COLLECTION RECORD";
+    var o = Model == null ? null : Model.Order;
+    var events = Model != null && Model.Events != null
+        ? Model.Events : new List<SwiftyS26.Models.StoreOrderCollectionEvent>();
+}
+
+<style>
+    .cr-page {
+        max-width: 1400px;
+        margin: 0 auto
+    }
+
+    .cr-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-bottom: 20px
+    }
+
+    .cr-title {
+        display: flex;
+        align-items: center;
+        gap: 10px
+    }
+
+        .cr-title i {
+            font-size: 28px;
+            color: #2563eb
+        }
+
+        .cr-title h2 {
+            margin: 0;
+            font-family: 'Bebas Neue',sans-serif;
+            font-size: 30px;
+            letter-spacing: 1px;
+            color: #0f172a
+        }
+
+    .cr-sub {
+        margin-top: 4px;
+        color: #64748b;
+        font-size: 13px
+    }
+
+    .cr-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap
+    }
+
+    .cr-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 10px 15px;
+        border-radius: 9px;
+        font-size: 12px;
+        font-weight: 850;
+        text-decoration: none;
+        cursor: pointer
+    }
+
+        .cr-btn.light {
+            border: 1px solid #dbe3ef;
+            color: #334155;
+            background: #fff
+        }
+
+        .cr-btn.blue {
+            border: 1px solid #2563eb;
+            color: #fff;
+            background: #2563eb
+        }
+
+        .cr-btn.pdf {
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            background: #fff
+        }
+
+    .cr-grid {
+        display: grid;
+        grid-template-columns: minmax(0,1.55fr) minmax(310px,.75fr);
+        gap: 17px;
+        align-items: start
+    }
+
+    .cr-card {
+        overflow: hidden;
+        margin-bottom: 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        background: #fff
+    }
+
+    .cr-card-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 17px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 900
+    }
+
+        .cr-card-title i {
+            color: #2563eb
+        }
+
+    .cr-body {
+        padding: 17px
+    }
+
+    .cr-info {
+        display: grid;
+        grid-template-columns: repeat(2,minmax(0,1fr));
+        gap: 15px
+    }
+
+    .cr-label {
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 850;
+        text-transform: uppercase
+    }
+
+    .cr-value {
+        margin-top: 4px;
+        color: #0f172a;
+        font-size: 13px;
+        font-weight: 800;
+        overflow-wrap: anywhere
+    }
+
+    .cr-outcome {
+        display: inline-flex;
+        padding: 6px 10px;
+        border-radius: 999px;
+        color: #2563eb;
+        background: #eff6ff;
+        font-size: 10px;
+        font-weight: 900;
+        text-transform: uppercase
+    }
+
+    .cr-items {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px
+    }
+
+        .cr-items th, .cr-items td {
+            padding: 10px;
+            border-bottom: 1px solid #eef2f7;
+            text-align: left
+        }
+
+        .cr-items th {
+            color: #64748b;
+            background: #f8fafc;
+            font-size: 9.5px;
+            text-transform: uppercase
+        }
+
+    .cr-event {
+        position: relative;
+        margin-left: 5px;
+        padding: 0 0 18px 22px;
+        border-left: 2px solid #dbeafe
+    }
+
+        .cr-event:last-child {
+            padding-bottom: 0;
+            border-left-color: transparent
+        }
+
+        .cr-event:before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 2px;
+            width: 10px;
+            height: 10px;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            background: #2563eb;
+            box-shadow: 0 0 0 2px #bfdbfe
+        }
+
+        .cr-event strong {
+            font-size: 12px;
+            color: #0f172a
+        }
+
+        .cr-event div {
+            margin-top: 3px;
+            color: #64748b;
+            font-size: 11px;
+            line-height: 1.45
+        }
+
+    .cr-empty {
+        padding: 24px;
+        color: #64748b;
+        font-size: 12px;
+        text-align: center
+    }
+
+    .cr-check {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        padding: 11px 0;
+        border-bottom: 1px solid #eef2f7
+    }
+
+        .cr-check:last-child {
+            border: 0
+        }
+
+        .cr-check i {
+            width: 18px;
+            margin-top: 2px;
+            color: #16a34a
+        }
+
+        .cr-check.missing i {
+            color: #94a3b8
+        }
+
+        .cr-check strong {
+            display: block;
+            color: #0f172a;
+            font-size: 12px
+        }
+
+        .cr-check span {
+            display: block;
+            margin-top: 2px;
+            color: #64748b;
+            font-size: 10.5px
+        }
+
+    .cr-footer {
+        text-align: center;
+        color: #94a3b8;
+        font-size: 10.5px;
+        margin-top: 12px
+    }
+
+    @@media(max-width:900px) {
+        .cr-grid {
+            grid-template-columns: 1fr
+        }
+    }
+
+    @@media(max-width:580px) {
+        .cr-info {
+            grid-template-columns: 1fr
+        }
+
+        .cr-actions, .cr-actions .cr-btn {
+            width: 100%
+        }
+    }
+
+    @@media print {
+        .cr-actions, .sidebar, .topbar {
+            display: none !important
+        }
+
+        .cr-grid {
+            display: block
+        }
+
+        .cr-card {
+            break-inside: avoid
+        }
+    }
+</style>
+
+<div class="cr-page">
+    @if (o == null)
+    {
+        <div class="cr-card"><div class="cr-empty">The collection record could not be loaded.</div></div>
+    }
+    else
+    {
+        <div class="cr-head">
+            <div>
+                <div class="cr-title"><i class="fas fa-box-open"></i><h2>Formal Collection Record</h2></div>
+                <div class="cr-sub">@o.ReferenceNumber &middot; generated @DateTime.Now.ToString("dd MMM yyyy HH:mm")</div>
+            </div>
+            <div class="cr-actions">
+                <a class="cr-btn light" href="@Url.Action("CollectionHistory","StoreAdmin")"><i class="fas fa-arrow-left"></i>History</a>
+                <button class="cr-btn blue" type="button" onclick="window.print()"><i class="fas fa-print"></i>Print</button>
+                <a class="cr-btn pdf" href="@Url.Action("ExportCollectionRecordPdf","StoreAdmin",new{id=o.StoreOrderId})"><i class="fas fa-file-pdf"></i>Download PDF</a>
+            </div>
+        </div>
+        <div class="cr-grid">
+            <main>
+                <section class="cr-card">
+                    <div class="cr-card-title"><i class="fas fa-user"></i>Member and Collection Information</div>
+                    <div class="cr-body">
+                        <div class="cr-info">
+                            <div><div class="cr-label">Member</div><div class="cr-value">@(o.Member == null ? "Unknown member" : o.Member.FullName)</div></div>
+                            <div><div class="cr-label">Email</div><div class="cr-value">@(o.Member == null ? "—" : o.Member.Email)</div></div>
+                            <div><div class="cr-label">Order reference</div><div class="cr-value">@o.ReferenceNumber</div></div>
+                            <div><div class="cr-label">Outcome</div><div class="cr-value"><span class="cr-outcome">@Model.CollectionOutcome</span></div></div>
+                            <div><div class="cr-label">Ready date</div><div class="cr-value">@(o.ReadyAt.HasValue ? o.ReadyAt.Value.ToString("dd MMM yyyy HH:mm") : "—")</div></div>
+                            <div><div class="cr-label">Deadline</div><div class="cr-value">@(o.PickupDeadline.HasValue ? o.PickupDeadline.Value.ToString("dd MMM yyyy HH:mm") : "—")</div></div>
+                            <div><div class="cr-label">Collected date</div><div class="cr-value">@(o.CollectedAt.HasValue ? o.CollectedAt.Value.ToString("dd MMM yyyy HH:mm") : "—")</div></div>
+                            <div><div class="cr-label">Collected by</div><div class="cr-value">@(o.CollectedByStaffId.HasValue ? "Store Staff #" + o.CollectedByStaffId.Value : "—")</div></div>
+                        </div>
+                    </div>
+                </section>
+                <section class="cr-card">
+                    <div class="cr-card-title"><i class="fas fa-bag-shopping"></i>Items Associated with Collection</div>
+                    <div class="cr-body">
+                        @if (o.Items == null || !o.Items.Any())
+                        {<div class="cr-empty">No item records were found.</div> }
+                        else
+                        { <div style="overflow-x:auto">
+                                <table class="cr-items">
+                                    <thead><tr><th>Product</th><th>Quantity</th><th>Line Total</th></tr></thead>
+                                    <tbody>
+                                        @foreach (var item in o.Items)
+                                        {
+                                            <tr><td><strong>@(item.Product == null ? "Unknown product" : item.Product.Name)</strong></td><td>@item.Quantity</td><td>@("R" + item.LineTotal.ToString("N2"))</td></tr>
+}
+                                    </tbody>
+                                </table>
+                            </div>}
+                    </div>
+                </section>
+                <section class="cr-card">
+                    <div class="cr-card-title"><i class="fas fa-clock-rotate-left"></i>Collection Audit Timeline</div>
+                    <div class="cr-body">
+                        @if (!events.Any())
+                        {<div class="cr-empty">No collection events were recorded.</div>}
+                        else
+                        {
+                            foreach (var e in events)
+                            {<div class="cr-event"><strong>@e.EventType</strong><div>@e.Description</div><div>@e.CreatedAt.ToString("dd MMM yyyy HH:mm") &middot; @(string.IsNullOrWhiteSpace(e.PerformedBy) ? "GymHub System" : e.PerformedBy)</div></div>}
+                    }
+                    </div>
+                </section>
+            </main>
+            <aside>
+                <section class="cr-card">
+                    <div class="cr-card-title"><i class="fas fa-shield-halved"></i>Verification Summary</div><div class="cr-body">
+                        <div class="cr-check"><i class="fas fa-circle-check"></i><div><strong>Order identified</strong><span>@o.ReferenceNumber</span></div></div>
+                        <div class="cr-check @(o.CollectedAt.HasValue ? "" : "missing")"><i class="fas @(o.CollectedAt.HasValue ? "fa-circle-check" : "fa-circle-minus")"></i><div><strong>Collection completion</strong><span>@(o.CollectedAt.HasValue ? "Recorded" : "Not collected")</span></div></div>
+                        <div class="cr-check @(!string.IsNullOrWhiteSpace(o.PickupSignaturePath) ? "" : "missing")"><i class="fas @(!string.IsNullOrWhiteSpace(o.PickupSignaturePath) ? "fa-circle-check" : "fa-circle-minus")"></i><div><strong>Member signature</strong><span>@(!string.IsNullOrWhiteSpace(o.PickupSignaturePath) ? "Captured" : "Not captured")</span></div></div>
+                        <div class="cr-check @(Model.WasCollectedOnTime ? "" : "missing")"><i class="fas @(Model.WasCollectedOnTime ? "fa-circle-check" : "fa-clock")"></i><div><strong>Deadline result</strong><span>@(Model.WasCollectedOnTime ? "Collected on time" : Model.CollectionOutcome)</span></div></div>
+                        <div class="cr-check @(Model.WasDeadlineExtended ? "" : "missing")"><i class="fas @(Model.WasDeadlineExtended ? "fa-calendar-check" : "fa-calendar")"></i><div><strong>Deadline extension</strong><span>@(Model.WasDeadlineExtended ? "Extension recorded" : "No extension recorded")</span></div></div>
+                    </div>
+                </section>
+                <section class="cr-card"><div class="cr-card-title"><i class="fas fa-stopwatch"></i>Collection Duration</div><div class="cr-body"><div class="cr-value" style="font-size:24px">@(Model.CollectionDuration.HasValue ? Math.Floor(Model.CollectionDuration.Value.TotalHours).ToString("N0") + " hours " + Model.CollectionDuration.Value.Minutes + " minutes" : "Not available")</div></div></section>
+            </aside>
+        </div>
+        <div class="cr-footer">Read-only GymHub collection audit record.</div>
+    }
+</div>
+

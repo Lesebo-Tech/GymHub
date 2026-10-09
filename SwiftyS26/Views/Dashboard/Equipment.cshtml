@@ -1,0 +1,683 @@
+﻿@model List<SwiftyS26.Models.Equipment>
+
+@{
+
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+
+    ViewBag.ActivePage = "equipment";
+
+    ViewBag.PageTitle = "Equipment";
+
+    var equipmentList = Model ?? new List<SwiftyS26.Models.Equipment>();
+
+    var groupedByArea = equipmentList.GroupBy(e => e.GymArea ?? "Other");
+
+}
+
+@section head {
+    <style>
+
+        /* ── existing styles kept as-is (eq-area-heading, eq-grid, eq-card, etc.) ── */
+
+        .eq-area-heading {
+            font-family: 'Bebas Neue',sans-serif;
+            font-size: 16px;
+            letter-spacing: 1.5px;
+            color: #0F172A;
+            margin: 24px 0 12px;
+        }
+
+            .eq-area-heading:first-child {
+                margin-top: 0;
+            }
+
+        .eq-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill,minmax(240px,1fr));
+            gap: 14px;
+        }
+
+        .eq-card {
+            background: #fff;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,.06);
+        }
+
+        .eq-card-img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            background: #F1F5F9;
+            display: block;
+        }
+
+        .eq-card-img-placeholder {
+            width: 100%;
+            height: 160px;
+            background: #F1F5F9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #CBD5E1;
+            font-size: 32px;
+        }
+
+        .eq-card-body {
+            padding: 16px 18px;
+        }
+
+        .eq-card-name {
+            font-weight: 700;
+            font-size: 14px;
+            color: #0F172A;
+            margin-bottom: 4px;
+        }
+
+        .eq-card-cat {
+            font-size: 12px;
+            color: #64748B;
+            margin-bottom: 10px;
+        }
+
+        .eq-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .eq-status-available {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+        .eq-status-outofservice {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .eq-status-undermaintenance {
+            background: #fffbeb;
+            color: #d97706;
+        }
+
+        .eq-report-btn {
+            width: 100%;
+            padding: 9px;
+            background: #eff6ff;
+            color: #2563EB;
+            border: 1px solid rgba(37,99,235,.2);
+            border-radius: 8px;
+            font-family: 'DM Sans',sans-serif;
+            font-size: 12.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all .18s ease;
+        }
+
+            .eq-report-btn:hover {
+                background: #2563EB;
+                color: #fff;
+            }
+
+        .eq-alert {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 18px;
+        }
+
+        .eq-alert-success {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid rgba(22,163,74,.2);
+        }
+
+        .eq-alert-error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid rgba(220,38,38,.2);
+        }
+
+        .eq-empty {
+            text-align: center;
+            padding: 48px 24px;
+            color: #94A3B8;
+        }
+
+            .eq-empty i {
+                font-size: 32px;
+                opacity: .3;
+                display: block;
+                margin-bottom: 12px;
+            }
+
+        /* ── NEW: search + scan bar ── */
+
+        .eq-toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .eq-search-input {
+            flex: 1;
+            padding: 11px 14px;
+            border: 1.5px solid #E2E8F0;
+            border-radius: 10px;
+            font-family: 'DM Sans',sans-serif;
+            font-size: 13.5px;
+            outline: none;
+            background: #fff;
+        }
+
+            .eq-search-input:focus {
+                border-color: #2563EB;
+            }
+
+        .eq-scan-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 11px 18px;
+            background: #0F172A;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-family: 'DM Sans',sans-serif;
+            font-size: 13.5px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background .15s ease;
+        }
+
+            .eq-scan-btn:hover {
+                background: #1E293B;
+            }
+
+        /* ── NEW: camera overlay ── */
+
+        .eq-cam-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15,23,42,.9);
+            z-index: 600;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .eq-cam-box {
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+            margin: 20px;
+        }
+
+            .eq-cam-box video {
+                width: 100%;
+                border-radius: 16px;
+                background: #000;
+            }
+
+        .eq-cam-frame {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%,-50%);
+            width: 70%;
+            aspect-ratio: 1;
+            border: 3px solid #2563EB;
+            border-radius: 16px;
+            box-shadow: 0 0 0 2000px rgba(0,0,0,.35);
+        }
+
+        .eq-cam-hint {
+            color: #fff;
+            text-align: center;
+            margin-top: 16px;
+            font-size: 13px;
+            opacity: .85;
+        }
+
+        .eq-cam-close {
+            margin-top: 18px;
+            padding: 10px 24px;
+            background: transparent;
+            border: 1.5px solid rgba(255,255,255,.3);
+            color: #fff;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* ── NEW: fault report popup ── */
+
+        .eq-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15,23,42,.55);
+            backdrop-filter: blur(4px);
+            z-index: 500;
+            align-items: center;
+            justify-content: center;
+            overflow-y: auto;
+        }
+
+        .eq-modal-box {
+            background: #fff;
+            border-radius: 20px;
+            padding: 28px;
+            width: 100%;
+            max-width: 480px;
+            margin: 20px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .eq-modal-title {
+            font-family: 'Bebas Neue',sans-serif;
+            font-size: 22px;
+            letter-spacing: 1.5px;
+            margin-bottom: 4px;
+            color: #0F172A;
+        }
+
+        .eq-modal-sub {
+            font-size: 12.5px;
+            color: #94A3B8;
+            margin-bottom: 18px;
+        }
+
+        .eq-readonly-box {
+            background: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+        }
+
+        .eq-readonly-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 13px;
+        }
+
+            .eq-readonly-row span:first-child {
+                color: #64748B;
+            }
+
+            .eq-readonly-row span:last-child {
+                color: #0F172A;
+                font-weight: 600;
+            }
+
+        .eq-field-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #334155;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+            margin: 14px 0 6px;
+            display: block;
+        }
+
+        .eq-select, .eq-modal-textarea {
+            width: 100%;
+            padding: 11px 13px;
+            background: #F1F5F9;
+            border: 1.5px solid #E2E8F0;
+            border-radius: 8px;
+            font-family: 'DM Sans',sans-serif;
+            font-size: 13px;
+            outline: none;
+            color: #0F172A;
+        }
+
+            .eq-select:focus, .eq-modal-textarea:focus {
+                border-color: #2563EB;
+            }
+
+        .eq-modal-textarea {
+            min-height: 90px;
+            resize: vertical;
+        }
+
+        .eq-severity-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .eq-severity-option {
+            flex: 1;
+        }
+
+            .eq-severity-option input {
+                display: none;
+            }
+
+            .eq-severity-option label {
+                display: block;
+                text-align: center;
+                padding: 12px;
+                border: 1.5px solid #E2E8F0;
+                border-radius: 8px;
+                font-size: 13px;
+                font-weight: 700;
+                cursor: pointer;
+                color: #64748B;
+                transition: all .15s ease;
+            }
+
+            .eq-severity-option input:checked + label.minor {
+                border-color: #D97706;
+                background: #FFFBEB;
+                color: #D97706;
+            }
+
+            .eq-severity-option input:checked + label.critical {
+                border-color: #DC2626;
+                background: #FEF2F2;
+                color: #DC2626;
+            }
+
+        .eq-photo-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        .eq-photo-btn {
+            flex: 1;
+            padding: 10px;
+            border: 1.5px dashed #CBD5E1;
+            border-radius: 8px;
+            background: #F8FAFC;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #475569;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .eq-photo-preview {
+            margin-top: 10px;
+            max-width: 100%;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .eq-modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .eq-modal-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            font-family: 'DM Sans',sans-serif;
+        }
+
+            .eq-modal-btn.submit {
+                background: #2563EB;
+                color: #fff;
+            }
+
+                .eq-modal-btn.submit:hover {
+                    background: #1D4ED8;
+                }
+
+                .eq-modal-btn.submit:disabled {
+                    background: #94A3B8;
+                    cursor: not-allowed;
+                }
+
+            .eq-modal-btn.cancel {
+                background: transparent;
+                border: 1.5px solid #E2E8F0;
+                color: #64748B;
+            }
+
+                .eq-modal-btn.cancel:hover {
+                    background: #F1F5F9;
+                }
+
+        .eq-form-error {
+            display: none;
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid rgba(220,38,38,.2);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 12.5px;
+            margin-top: 12px;
+        }
+
+        .eq-form-success {
+            display: none;
+            text-align: center;
+            padding: 24px 0;
+        }
+
+            .eq-form-success i {
+                font-size: 40px;
+                color: #16a34a;
+                margin-bottom: 10px;
+                display: block;
+            }
+
+            .eq-form-success .ref {
+                font-weight: 700;
+                color: #0F172A;
+            }
+    </style>
+
+}
+
+@if (TempData["Success"] != null)
+
+{
+    <div class="eq-alert eq-alert-success"><i class="fas fa-check-circle"></i> @TempData["Success"]</div>
+
+}
+
+@if (TempData["Error"] != null)
+
+{
+    <div class="eq-alert eq-alert-error"><i class="fas fa-exclamation-circle"></i> @TempData["Error"]</div>
+
+}
+
+<p style="color:#64748B;font-size:13px;margin-bottom:16px;">
+
+    Noticed something wrong with a machine? Scan its QR code or search for it below to report an issue.
+</p>
+
+<div class="eq-toolbar">
+    <input type="text" id="eqSearchInput" class="eq-search-input" placeholder="Search equipment by name or code…" oninput="filterEquipment()" />
+    <button class="eq-scan-btn" onclick="openCamera()">
+        <i class="fas fa-qrcode"></i> Scan QR Code
+    </button>
+</div>
+
+@if (!equipmentList.Any())
+
+{
+    <div class="eq-empty">
+        <i class="fas fa-dumbbell"></i>
+
+        No equipment is currently listed.
+    </div>
+
+}
+
+else
+
+{
+    <div id="eqListContainer">
+
+        @foreach (var group in groupedByArea)
+
+        {
+            <div class="eq-area-heading">@group.Key</div>
+            <div class="eq-grid">
+
+                @foreach (var e in group)
+
+                {
+
+                    var statusClass = e.Status == "Available" ? "eq-status-available"
+
+                                     : e.Status == "OutOfService" ? "eq-status-outofservice"
+
+                                     : "eq-status-undermaintenance";
+                    <div class="eq-card" data-search="@($"{e.Name} {e.EquipmentCode}".ToLower())">
+
+                        @if (!string.IsNullOrEmpty(e.ImagePath))
+
+                        {
+                            <img src="@Url.Content(e.ImagePath)" alt="@e.Name" class="eq-card-img" />
+
+                        }
+
+                        else
+
+                        {
+                            <div class="eq-card-img-placeholder"><i class="fas fa-dumbbell"></i></div>
+
+                        }
+                        <div class="eq-card-body">
+                            <div class="eq-card-name">@e.Name</div>
+                            <div class="eq-card-cat">@e.Category &middot; @e.EquipmentCode</div>
+                            <span class="eq-status-pill @statusClass">@e.StatusDisplay</span>
+                            <button class="eq-report-btn" onclick='openReportModal(@e.EquipmentId, @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(e.Name)), @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(e.Category)), @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(e.GymArea)), @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(e.StatusDisplay)))'>
+                                <i class="fas fa-flag"></i> Report Issue
+                            </button>
+                        </div>
+                    </div>
+
+                }
+            </div>
+
+        }
+    </div>
+    <div id="eqNoResults" class="eq-empty" style="display:none;">
+        <i class="fas fa-search"></i>
+
+        No equipment matches your search.
+    </div>
+
+}
+
+<!-- ══════════════════ CAMERA OVERLAY ══════════════════ -->
+<div id="eqCamOverlay" class="eq-cam-overlay">
+    <div class="eq-cam-box">
+        <video id="eqCamVideo" playsinline autoplay muted></video>
+        <div class="eq-cam-frame"></div>
+    </div>
+    <div class="eq-cam-hint">Point the camera at the equipment's QR code</div>
+    <canvas id="eqCamCanvas" style="display:none;"></canvas>
+    <button class="eq-cam-close" onclick="closeCamera()">Cancel</button>
+</div>
+
+<!-- ══════════════════ REPORT FAULT MODAL ══════════════════ -->
+<div id="reportModal" class="eq-modal-overlay">
+    <div class="eq-modal-box">
+
+        <div id="reportFormView">
+            <div class="eq-modal-title">Report an Issue</div>
+            <div class="eq-modal-sub">Fill in the details below — a staff member will follow up.</div>
+
+            <div class="eq-readonly-box">
+                <div class="eq-readonly-row"><span>Equipment</span><span id="roName">—</span></div>
+                <div class="eq-readonly-row"><span>Category</span><span id="roCategory">—</span></div>
+                <div class="eq-readonly-row"><span>Area</span><span id="roArea">—</span></div>
+                <div class="eq-readonly-row"><span>Current Status</span><span id="roStatus">—</span></div>
+            </div>
+
+            <label class="eq-field-label">Fault Category</label>
+            <select id="faultCategory" class="eq-select">
+                <option value="">Select a category…</option>
+
+                @foreach (var cat in SwiftyS26.Models.FaultCategoryHelper.ValidCategories)
+
+                {
+                    <option value="@cat">@cat</option>
+
+                }
+            </select>
+
+            <label class="eq-field-label">Severity</label>
+            <div class="eq-severity-group">
+                <div class="eq-severity-option">
+                    <input type="radio" name="severity" id="sevMinor" value="Minor" checked />
+                    <label for="sevMinor" class="minor">Minor</label>
+                </div>
+                <div class="eq-severity-option">
+                    <input type="radio" name="severity" id="sevCritical" value="Critical" />
+                    <label for="sevCritical" class="critical">Critical</label>
+                </div>
+            </div>
+
+            <label class="eq-field-label">Description</label>
+<textarea id="faultDescription" class="eq-modal-textarea" placeholder="What's wrong? e.g. 'Belt makes a grinding noise' or 'Display screen not working'"></textarea>
+
+            <label class="eq-field-label">Photo Evidence (optional)</label>
+            <div class="eq-photo-row">
+                <button type="button" class="eq-photo-btn" onclick="document.getElementById('photoCapture').click()">
+                    <i class="fas fa-camera"></i> Take Photo
+                </button>
+                <button type="button" class="eq-photo-btn" onclick="document.getElementById('photoUpload').click()">
+                    <i class="fas fa-upload"></i> Upload Photo
+                </button>
+            </div>
+            <input type="file" id="photoCapture" accept="image/*" capture="environment" style="display:none;" onchange="handlePhotoSelect(this)" />
+            <input type="file" id="photoUpload" accept="image/*" style="display:none;" onchange="handlePhotoSelect(this)" />
+            <img id="photoPreview" class="eq-photo-preview" />
+
+            <div id="reportFormError" class="eq-form-error"></div>
+
+            <div class="eq-modal-actions">
+                <button type="button" id="reportSubmitBtn" class="eq-modal-btn submit" onclick="submitReport()">Submit Report</button>
+                <button type="button" class="eq-modal-btn cancel" onclick="closeReportModal()">Cancel</button>
+            </div>
+        </div>
+
+        <div id="reportSuccessView" class="eq-form-success">
+            <i class="fas fa-check-circle"></i>
+            <div id="successMessage" style="font-size:14px;color:#334155;margin-bottom:6px;"></div>
+            <div class="ref" id="successRef"></div>
+            <div class="eq-modal-actions" style="margin-top:20px;">
+                <button type="button" class="eq-modal-btn submit" onclick="closeReportModal()">Done</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="~/Scripts/equipment-scanner.js"></script>
+

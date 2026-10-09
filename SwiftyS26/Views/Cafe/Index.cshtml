@@ -1,0 +1,558 @@
+﻿@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GymHub Café</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link href="~/Content/Cafe.css" rel="stylesheet" />
+    <style>
+        /* Additional styles for better integration */
+        .cafe-header {
+            background: #fff;
+            border-bottom: 1px solid var(--border);
+            padding: 18px 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+
+        .cafe-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .cafe-logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--blue), var(--blue-bright));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 18px;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        .cafe-logo-text {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 22px;
+            letter-spacing: 2px;
+            color: var(--text);
+        }
+
+            .cafe-logo-text span {
+                color: var(--blue-bright);
+            }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 18px;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--muted);
+            background: #fff;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+            .back-btn:hover {
+                border-color: var(--blue);
+                color: var(--blue);
+            }
+
+        .hero-points {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 6px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+            .hero-points i {
+                color: var(--gold);
+                font-size: 18px;
+            }
+
+            .hero-points span {
+                font-weight: 600;
+                color: var(--text);
+            }
+
+                .hero-points span:last-child {
+                    font-family: 'Bebas Neue', sans-serif;
+                    font-size: 20px;
+                    color: var(--gold);
+                }
+
+        /* Filter tabs container */
+        .cafe-filters {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 24px 40px 0;
+            flex-wrap: wrap;
+        }
+
+        .filter-tab {
+            padding: 8px 20px;
+            border-radius: 40px;
+            border: 1.5px solid var(--border);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--muted);
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+            .filter-tab i {
+                margin-right: 6px;
+                font-size: 12px;
+            }
+
+            .filter-tab:hover,
+            .filter-tab.active {
+                background: var(--blue);
+                color: #fff;
+                border-color: var(--blue);
+            }
+
+        /* Main container */
+        .cafe-main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 28px 40px 60px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .section-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 28px;
+            letter-spacing: 1.5px;
+            color: var(--text);
+        }
+
+        .section-count {
+            font-size: 13px;
+            color: var(--muted);
+            background: var(--bg2);
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        /* Products Grid */
+        .cafe-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 24px;
+        }
+
+        /* Product Card */
+        .cafe-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+
+            .cafe-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+                border-color: rgba(59, 130, 246, 0.3);
+            }
+
+        /* Product Image */
+        .cafe-card-img {
+            width: 100%;
+            height: 180px;
+            overflow: hidden;
+            background: var(--bg2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+            .cafe-card-img img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                transition: transform 0.35s ease;
+            }
+
+        .cafe-card:hover .cafe-card-img img {
+            transform: scale(1.05);
+        }
+
+        .img-placeholder {
+            font-size: 48px;
+            color: var(--muted);
+            opacity: 0.4;
+        }
+
+        /* Category Badge */
+        .category-badge {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(4px);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--blue);
+        }
+
+        /* Stock Badge */
+        .stock-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            border-radius: 20px;
+            padding: 4px 10px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+            .stock-badge.out-of-stock {
+                background: var(--red);
+            }
+
+        /* Card Body */
+        .cafe-card-body {
+            padding: 16px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .cafe-card-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            line-height: 1.3;
+        }
+
+        .cafe-card-desc {
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.5;
+            flex: 1;
+        }
+
+        .cafe-card-points {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 24px;
+            color: var(--gold);
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+
+            .cafe-card-points span {
+                font-family: 'DM Sans', sans-serif;
+                font-size: 11px;
+                color: var(--muted);
+                font-weight: 500;
+                letter-spacing: 0;
+            }
+
+        /* Redeem Button */
+        .redeem-btn {
+            margin: 8px 16px 16px;
+            padding: 11px;
+            background: linear-gradient(135deg, var(--blue), var(--blue-bright));
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+            .redeem-btn:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            }
+
+            .redeem-btn:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+                transform: none;
+                box-shadow: none;
+            }
+
+        /* Out of Stock Overlay */
+        .out-of-stock-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+            .out-of-stock-overlay span {
+                background: var(--red);
+                color: #fff;
+                padding: 6px 16px;
+                border-radius: 40px;
+                font-size: 12px;
+                font-weight: 700;
+                text-transform: uppercase;
+                transform: rotate(-15deg);
+            }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--muted);
+        }
+
+            .empty-state i {
+                font-size: 48px;
+                margin-bottom: 16px;
+                opacity: 0.4;
+            }
+
+            .empty-state p {
+                font-size: 14px;
+            }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            background: #1e293b;
+            color: #fff;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            z-index: 1000;
+            transform: translateY(80px);
+            opacity: 0;
+            transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+            .toast.show {
+                transform: translateY(0);
+                opacity: 1;
+            }
+
+            .toast.success {
+                background: var(--green);
+            }
+
+            .toast.error {
+                background: var(--red);
+            }
+
+        /* Responsive */
+        @@media (max-width: 900px) {
+            .cafe-header {
+                padding: 16px 20px;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .cafe-logo {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .cafe-filters {
+                padding: 20px 20px 0;
+            }
+
+            .cafe-main {
+                padding: 20px 20px 48px;
+            }
+
+            .cafe-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px;
+            }
+
+            .section-title {
+                font-size: 24px;
+            }
+        }
+
+        @@media (max-width: 600px) {
+            .cafe-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .cafe-logo {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header class="cafe-header">
+        <div class="cafe-logo">
+            <div class="cafe-logo-icon">GH</div>
+            <div class="cafe-logo-text">Gym<span>Hub</span> Café</div>
+            <div class="header-actions">
+                <a href="/Dashboard/Index" class="back-btn">
+                    <i class="fas fa-arrow-left"></i> Dashboard
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <div class="cafe-hero">
+        <div class="cafe-hero-tag">
+            <i class="fas fa-star"></i> Loyalty Rewards
+        </div>
+        <h1>GymHub <span>Café</span></h1>
+        <p>Redeem your loyalty points for fuel that powers your grind — from protein shakes to coffee and snacks.</p>
+        <div class="hero-points">
+            <i class="fas fa-coins"></i>
+            <span>Your Balance:</span>
+            <span id="hero-pts-display">—</span>
+            <span>pts</span>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="cafe-filters" id="cafe-filters">
+        <!-- Filters will be populated by JavaScript -->
+    </div>
+
+    <!-- Main Content -->
+    <main class="cafe-main">
+        <div class="section-header">
+            <div class="section-title">All Products</div>
+        </div>
+        <div class="cafe-grid" id="cafe-products-grid">
+            <div class="empty-state">
+                <i class="fas fa-spinner fa-pulse"></i>
+                <p>Loading products...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Redemption Modal -->
+    <div class="modal-overlay" id="redeemModal" onclick="if(event.target===this) closeModal()">
+        <div class="modal-card">
+            <img id="modal-img" class="modal-img" src="" alt="" onerror="this.style.display='none'" />
+            <div class="modal-title" id="modal-name">Product Name</div>
+            <div class="modal-desc" id="modal-desc">Description</div>
+
+            <div class="modal-pts-row">
+                <span class="modal-pts-label"><i class="fas fa-gem"></i> Points Required</span>
+                <span class="modal-pts-val" id="modal-pts">0 pts</span>
+            </div>
+
+            <div class="modal-balance-row">
+                <span><i class="fas fa-wallet"></i> Your Balance:</span>
+                <span id="modal-balance">—</span>
+                <span>pts</span>
+            </div>
+
+            <div class="modal-error" id="modal-error"></div>
+            <div class="modal-success" id="modal-success"></div>
+
+            <div class="modal-code-box" id="modal-code-box">
+                <div class="modal-code-label">
+                    <i class="fas fa-qrcode"></i> Collection Code
+                </div>
+                <div class="modal-code-value" id="modal-code-value">——</div>
+                <div class="modal-code-note">
+                    <i class="fas fa-info-circle"></i> Show this code at the café counter
+                </div>
+            </div>
+
+            <div class="modal-btn-row">
+                <button class="modal-confirm-btn" id="modal-confirm-btn" onclick="confirmRedeem()">
+                    <i class="fas fa-gift"></i> Redeem Now
+                </button>
+                <button class="modal-close-btn" onclick="closeModal()">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @Html.AntiForgeryToken()
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <script src="~/Scripts/jquery-3.4.1.min.js"></script>
+    <script src="~/Scripts/Cafe.js"></script>
+</body>
+</html>

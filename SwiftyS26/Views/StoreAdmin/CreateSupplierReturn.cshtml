@@ -1,0 +1,238 @@
+﻿@model SwiftyS26.Models.SupplierReturnCreateViewModel
+
+@{
+    Layout = Session["LoggedInAdmin"] != null
+        ? "~/Views/Shared/_AdminLayout.cshtml"
+        : "~/Views/Shared/_StoreStaffLayout.cshtml";
+
+    ViewBag.Title = "Return to Supplier";
+    ViewBag.PageTitle = "RETURN TO SUPPLIER";
+
+    int maximum = (int)ViewBag.MaximumReturnable;
+    var item = Model.DeliveryItem;
+}
+
+<style>
+    .shell {
+        max-width: 900px;
+        margin: auto;
+    }
+
+    .head,
+    .section {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 18px;
+    }
+
+    .head {
+        border-top: 5px solid #dc2626;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .section h3 {
+        font-size: 14px;
+        margin-top: 0;
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    .full {
+        grid-column: 1 / -1;
+    }
+
+    .fact {
+        background: #f8fafc;
+        padding: 12px;
+        border-radius: 9px;
+    }
+
+        .fact small,
+        label {
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 800;
+            color: #64748b;
+            margin-bottom: 5px;
+        }
+
+    input,
+    select,
+    textarea {
+        width: 100%;
+        padding: 11px;
+        border: 1px solid #cbd5e1;
+        border-radius: 9px;
+        box-sizing: border-box;
+    }
+
+    .evidence {
+        max-width: 240px;
+        border-radius: 10px;
+    }
+
+    .actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+
+    .btn {
+        padding: 12px 20px;
+        border-radius: 10px;
+        border: 0;
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .primary {
+        background: #dc2626;
+        color: white;
+    }
+
+    .secondary {
+        border: 1px solid #cbd5e1;
+        color: #334155;
+        background: #fff;
+    }
+
+    .validation-summary-errors {
+        background: #fef2f2;
+        color: #b91c1c;
+        padding: 12px;
+        border-radius: 10px;
+        margin-bottom: 16px;
+    }
+
+    @@media (max-width: 650px) {
+        .grid {
+            grid-template-columns: 1fr;
+        }
+
+        .full {
+            grid-column: auto;
+        }
+    }
+</style>
+
+<div class="shell">
+
+    <div class="head">
+        <div>
+            <small>GYMHUB • RETURN AUTHORISATION</small>
+            <h2>Return to Supplier</h2>
+            <span>
+                @item.SupplierDelivery.PurchaseOrder.ReferenceNumber •
+                @item.SupplierDelivery.PurchaseOrder.Supplier.Name
+            </span>
+        </div>
+        <div>
+            <strong>@DateTime.Now.ToString("dd MMM yyyy")</strong><br />
+            <small>Reference generated on submission</small>
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>INSPECTION SOURCE</h3>
+        <div class="grid">
+            <div class="fact">
+                <small>Product</small>
+                <strong>@item.Product.Name</strong>
+            </div>
+            <div class="fact">
+                <small>Inspection</small>
+                <strong>@item.SupplierDelivery.InspectionReference</strong>
+            </div>
+            <div class="fact">
+                <small>Received / Damaged</small>
+                <strong>@item.ReceivedQty / @item.DamagedQty</strong>
+            </div>
+            <div class="fact">
+                <small>Maximum returnable</small>
+                <strong>@maximum</strong>
+            </div>
+            <div class="fact">
+                <small>Damage type</small>
+                <strong>@(item.DamageType ?? "—")</strong>
+            </div>
+            <div class="fact">
+                <small>Severity</small>
+                <strong>@(item.DamageSeverity ?? "—")</strong>
+            </div>
+            <div class="full fact">
+                <small>Inspection description</small>
+                @(item.InspectionNotes ?? "No notes recorded")
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(item.EvidenceImagePath))
+            {
+                <div class="full">
+                    <label>Inspection Evidence</label>
+                    <img class="evidence" src="@Url.Content(item.EvidenceImagePath)" alt="Inspection evidence" />
+                </div>
+            }
+        </div>
+    </div>
+
+    @using (Html.BeginForm("CreateSupplierReturn", "StoreAdmin", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+        @Html.HiddenFor(x => x.DeliveryItemId)
+        @Html.ValidationSummary(false)
+
+        <div class="section">
+            <h3>RETURN INSTRUCTIONS</h3>
+            <div class="grid">
+                <div>
+                    <label>Return Quantity *</label>
+                    @Html.TextBoxFor(x => x.Quantity, new
+                    {
+                        type = "number",
+                        min = "1",
+                        max = maximum,
+                        required = "required"
+                    })
+                </div>
+                <div>
+                    <label>Reason *</label>
+                    @Html.DropDownListFor(x => x.Reason, new[]
+                    {
+                        new SelectListItem { Text = "Damaged goods", Value = "Damaged" },
+                        new SelectListItem { Text = "Missing goods claim", Value = "Missing" }
+                    })
+                </div>
+                <div>
+                    <label>Requested Resolution *</label>
+                    @Html.DropDownListFor(x => x.RequestedResolution, new[]
+                    {
+                        new SelectListItem { Text = "Replacement", Value = "Replacement" },
+                        new SelectListItem { Text = "Credit note", Value = "CreditNote" },
+                        new SelectListItem { Text = "Refund", Value = "Refund" }
+                    })
+                </div>
+                <div class="full">
+                    <label>Return Notes</label>
+                    @Html.TextAreaFor(x => x.Notes, new
+                    {
+                        rows = "4",
+                        placeholder = "Supplier instructions, packaging details or preferred collection arrangement..."
+                    })
+                    @Html.ValidationMessageFor(x => x.Notes)
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <a class="btn secondary" href="@Url.Action("DeliveryIssues", new { purchaseOrderId = item.SupplierDelivery.PurchaseOrderId })">Cancel</a>
+            <button class="btn primary" type="submit">Submit Supplier Return</button>
+        </div>
+    }
+</div>

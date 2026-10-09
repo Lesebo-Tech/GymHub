@@ -1,0 +1,340 @@
+﻿@model List<SwiftyS26.Models.RepairAssignment>
+@{
+    Layout = "~/Views/Shared/_TechnicianLayout.cshtml";
+    ViewBag.PageTitle = "My Repairs";
+}
+
+<div class="pg-header" style="margin-bottom:20px;">
+    <h2 style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1.5px;">MY ASSIGNED REPAIRS</h2>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div style="background:#f0fdf4;color:#16a34a;border:1px solid rgba(22,163,74,.2);padding:12px 16px;border-radius:8px;margin-bottom:16px;font-weight:600;font-size:13px;">
+        @TempData["Success"]
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div style="background:#fef2f2;color:#dc2626;border:1px solid rgba(220,38,38,.2);padding:12px 16px;border-radius:8px;margin-bottom:16px;font-weight:600;font-size:13px;">
+        @TempData["Error"]
+    </div>
+}
+
+@if (!Model.Any())
+{
+    <div style="text-align:center;padding:48px;color:#64748b;">
+        <i class="fas fa-check-circle" style="font-size:32px;opacity:.3;display:block;margin-bottom:12px;"></i>
+        No repairs currently assigned to you.
+    </div>
+}
+else
+{
+    foreach (var a in Model)
+    {
+        var statusColor = a.Repair.RepairStatus == "Reopened" ? "#dc2626"
+                         : a.Repair.RepairStatus == "Escalated" ? "#ea580c"
+                         : a.Repair.RepairStatus == "AwaitingInspection" ? "#d97706"
+                         : "#2563eb";
+        var statusBg = a.Repair.RepairStatus == "Reopened" ? "#fef2f2"
+                     : a.Repair.RepairStatus == "Escalated" ? "#fff7ed"
+                     : a.Repair.RepairStatus == "AwaitingInspection" ? "#fffbeb"
+                     : "#eff6ff";
+
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+                <div>
+                    <div style="font-weight:700;font-size:15px;">@(a.Repair.Equipment?.Name)</div>
+                    <div style="font-size:12px;color:#64748b;">@(a.Repair.Equipment?.EquipmentCode) — @(a.Repair.Equipment?.GymArea)</div>
+                </div>
+                <span style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;background:@statusBg;color:@statusColor;">
+                    @a.Repair.RepairStatus
+                </span>
+            </div>
+
+            <div style="font-size:13px;color:#334155;margin-bottom:10px;"><strong>Fault:</strong> @a.Repair.FaultDescription</div>
+
+            <div style="display:flex;gap:16px;font-size:12px;color:#64748b;margin-bottom:16px;flex-wrap:wrap;">
+                <span><i class="fas fa-flag"></i> Priority: @a.Priority</span>
+                @if (a.DueDate.HasValue)
+                {
+                    <span><i class="fas fa-calendar"></i> Due: @a.DueDate.Value.ToString("dd MMM yyyy")</span>
+                }
+                @if (!string.IsNullOrEmpty(a.AssignmentNotes))
+                {
+                    <span><i class="fas fa-sticky-note"></i> @a.AssignmentNotes</span>
+                }
+            </div>
+
+            @if (a.AssignmentStatus == "Assigned")
+            {
+                <div style="display:flex;gap:10px;">
+                    @using (Html.BeginForm("AcceptAssignment", "Technician", FormMethod.Post))
+                    {
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="repairAssignmentId" value="@a.RepairAssignmentId" />
+                        <button type="submit" style="padding:10px 20px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
+                            <i class="fas fa-check"></i> Accept
+                        </button>
+                    }
+                    <button type="button" onclick="openDeclineModal(@a.RepairAssignmentId)" style="padding:10px 20px;background:#fef2f2;color:#dc2626;border:1px solid rgba(220,38,38,.2);border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
+                        <i class="fas fa-times"></i> Decline
+                    </button>
+                </div>
+            }
+            else if (a.AssignmentStatus == "Accepted" && a.Repair.RepairStatus == "Accepted")
+            {
+                using (Html.BeginForm("StartRepair", "Technician", FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="repairAssignmentId" value="@a.RepairAssignmentId" />
+                    <button type="submit" style="padding:10px 20px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
+                        <i class="fas fa-play"></i> Start Repair
+                    </button>
+                }
+            }
+            else if (a.Repair.RepairStatus == "InProgress")
+            {
+                <div style="display:flex;gap:10px;">
+                    <button type="button" onclick="openCompleteModal(@a.RepairAssignmentId, '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(a.Repair.Equipment?.Name))')" style="padding:10px 20px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
+                        <i class="fas fa-clipboard-check"></i> Complete Repair
+                    </button>
+                    <button type="button" onclick="openEscalateModal(@a.RepairAssignmentId)" style="padding:10px 20px;background:#fff7ed;color:#ea580c;border:1px solid rgba(234,88,12,.25);border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
+                        <i class="fas fa-arrow-up-right-from-square"></i> Escalate
+                    </button>
+                </div>
+            }
+            else if (a.Repair.RepairStatus == "Escalated")
+            {
+                <div style="font-size:13px;color:#ea580c;font-weight:600;">
+                    <i class="fas fa-arrow-up-right-from-square"></i> Escalated — awaiting admin review
+                </div>
+            }
+            else if (a.Repair.RepairStatus == "AwaitingInspection")
+            {
+                <div style="font-size:13px;color:#d97706;font-weight:600;">
+                    <i class="fas fa-hourglass-half"></i> Awaiting post-repair inspection
+                </div>
+            }
+            else if (a.Repair.RepairStatus == "Reopened")
+            {
+                <div style="background:#fef2f2;border:1px solid rgba(220,38,38,.2);border-radius:8px;padding:12px 14px;margin-bottom:12px;">
+                    <div style="font-size:13px;color:#dc2626;font-weight:700;margin-bottom:6px;">
+                        <i class="fas fa-rotate-left"></i> Reopened — post-repair inspection did not pass
+                    </div>
+                    <div style="font-size:12px;color:#7f1d1d;">
+                        The verifying technician found the issue still present. Please take another look before marking this complete again.
+                    </div>
+                    @if (!string.IsNullOrEmpty(a.Repair.DiagnosisNotes))
+                    {
+                        <div style="font-size:12px;color:#7f1d1d;margin-top:8px;"><strong>Your previous notes:</strong> @a.Repair.DiagnosisNotes</div>
+                    }
+                    @if (!string.IsNullOrEmpty(a.Repair.PartsUsed))
+                    {
+                        <div style="font-size:12px;color:#7f1d1d;margin-top:2px;"><strong>Parts previously used:</strong> @a.Repair.PartsUsed</div>
+                    }
+                </div>
+                using (Html.BeginForm("StartRepair", "Technician", FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="repairAssignmentId" value="@a.RepairAssignmentId" />
+                    <button type="submit" style="padding:10px 20px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
+                        <i class="fas fa-rotate-right"></i> Resume Repair
+                    </button>
+                }
+            }
+        </div>
+    }
+}
+
+@{
+    var lockerFaults = ViewBag.MyLockerFaults as List<SwiftyS26.Models.LockerFault> ?? new List<SwiftyS26.Models.LockerFault>();
+}
+
+@if (lockerFaults.Any())
+{
+    <div style="margin-top:28px; margin-bottom:14px;">
+        <h3 style="font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:#0F172A;">
+            <i class="fas fa-lock" style="color:#D97706;"></i> LOCKER FAULTS
+        </h3>
+    </div>
+
+    foreach (var f in lockerFaults)
+    {
+        var sevColor = f.Severity == "Critical" ? "#dc2626" : f.Severity == "Major" ? "#ea580c" : "#64748b";
+        var sevBg = f.Severity == "Critical" ? "#fef2f2" : f.Severity == "Major" ? "#fff7ed" : "#f1f5f9";
+
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:14px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+                <div>
+                    <div style="font-weight:700;font-size:15px;">Locker @f.Locker?.LockerNumber</div>
+                    <div style="font-size:12px;color:#64748b;">@f.ReferenceNumber — @f.FaultTypeDisplay</div>
+                </div>
+                <span style="padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;background:@sevBg;color:@sevColor;">
+                    @f.Severity
+                </span>
+            </div>
+
+            @if (f.BelongingsInside)
+            {
+                <div style="background:#fef2f2;border:1px solid rgba(220,38,38,.2);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12.5px;color:#dc2626;font-weight:600;">
+                    <i class="fas fa-triangle-exclamation"></i> Member belongings are inside — handle with care.
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(f.TriageNotes))
+            {
+                <div style="font-size:13px;color:#334155;margin-bottom:10px;"><strong>Triage notes:</strong> @f.TriageNotes</div>
+            }
+
+            <div style="display:flex;gap:10px;">
+                @if (f.Status == "Assigned")
+                {
+                    using (Html.BeginForm("Start", "LockerFault", FormMethod.Post))
+                    {
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="lockerFaultId" value="@f.LockerFaultId" />
+                        <button type="submit" style="padding:10px 20px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
+                            <i class="fas fa-play"></i> Start Work
+                        </button>
+                    }
+                }
+                @if (f.Status == "InProgress")
+                {
+                    <button type="button" onclick="openLockerResolveModal(@f.LockerFaultId, '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(f.Locker?.LockerNumber))')"
+                            style="padding:10px 20px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
+                        <i class="fas fa-clipboard-check"></i> Resolve
+                    </button>
+                }
+            </div>
+        </div>
+    }
+}
+
+<!-- Decline Modal -->
+<div id="declineModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:26px;max-width:420px;width:90%;">
+        <div style="font-weight:700;font-size:16px;margin-bottom:10px;">Decline Assignment</div>
+        <p style="font-size:13px;color:#64748b;margin-bottom:14px;">Let the admin know why you can't take this repair.</p>
+        @using (Html.BeginForm("DeclineAssignment", "Technician", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="repairAssignmentId" id="decline_AssignmentId" />
+            <textarea name="declineReason" required placeholder="e.g. Not specialized in this equipment type, currently overloaded..." style="width:100%;min-height:90px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:13px;margin-bottom:14px;"></textarea>
+            <div style="display:flex;gap:10px;">
+                <button type="submit" style="flex:1;padding:11px;background:#dc2626;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Confirm Decline</button>
+                <button type="button" onclick="closeDeclineModal()" style="flex:1;padding:11px;background:transparent;border:1px solid #e2e8f0;border-radius:8px;font-weight:700;cursor:pointer;">Cancel</button>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Complete Modal -->
+<div id="completeModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:26px;max-width:460px;width:90%;">
+        <div style="font-weight:700;font-size:16px;margin-bottom:4px;">Complete Repair</div>
+        <p style="font-size:13px;color:#64748b;margin-bottom:14px;" id="completeEquipName"></p>
+        @using (Html.BeginForm("CompleteRepair", "Technician", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="repairAssignmentId" id="complete_AssignmentId" />
+            <div style="margin-bottom:12px;">
+                <label style="display:block;font-size:12px;font-weight:700;margin-bottom:5px;">Diagnosis / Work Performed</label>
+                <textarea name="diagnosisNotes" style="width:100%;min-height:80px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:13px;"></textarea>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block;font-size:12px;font-weight:700;margin-bottom:5px;">Parts Used</label>
+                <input name="partsUsed" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:13px;" />
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="display:block;font-size:12px;font-weight:700;margin-bottom:5px;">Cost (R)</label>
+                <input name="repairCost" type="number" step="0.01" min="0" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:13px;" />
+            </div>
+            <div style="display:flex;gap:10px;">
+                <button type="submit" style="flex:1;padding:11px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Mark Complete</button>
+                <button type="button" onclick="closeCompleteModal()" style="flex:1;padding:11px;background:transparent;border:1px solid #e2e8f0;border-radius:8px;font-weight:700;cursor:pointer;">Cancel</button>
+            </div>
+        }
+    </div>
+</div>
+<!-- Escalate Modal -->
+<div id="escalateModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:26px;max-width:420px;width:90%;">
+        <div style="font-weight:700;font-size:16px;margin-bottom:10px;">Escalate to Admin</div>
+        <p style="font-size:13px;color:#64748b;margin-bottom:14px;">Explain why this repair can't be completed in-house (e.g. missing parts, outside your specialization, needs specialist equipment).</p>
+        @using (Html.BeginForm("EscalateRepair", "Technician", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="repairAssignmentId" id="escalate_AssignmentId" />
+            <textarea name="escalationReason" required placeholder="e.g. Requires specialized electrical repair beyond our in-house capability..." style="width:100%;min-height:90px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:13px;margin-bottom:14px;"></textarea>
+            <div style="display:flex;gap:10px;">
+                <button type="submit" style="flex:1;padding:11px;background:#ea580c;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Confirm Escalation</button>
+                <button type="button" onclick="closeEscalateModal()" style="flex:1;padding:11px;background:transparent;border:1px solid #e2e8f0;border-radius:8px;font-weight:700;cursor:pointer;">Cancel</button>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Locker Fault Resolve Modal -->
+<div id="lockerResolveModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:26px;max-width:460px;width:90%;">
+        <div style="font-weight:700;font-size:16px;margin-bottom:4px;">Resolve Locker Fault</div>
+        <p style="font-size:13px;color:#64748b;margin-bottom:14px;" id="lockerResolveLockerLabel"></p>
+        @using (Html.BeginForm("Resolve", "LockerFault", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="lockerFaultId" id="lockerResolve_FaultId" />
+            <div style="margin-bottom:12px;">
+                <label style="display:block;font-size:12px;font-weight:700;margin-bottom:5px;">Outcome</label>
+                <select name="outcome" required style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:13px;">
+                    <option value="">Select</option>
+                    <option value="Resolved">Resolved — back in service</option>
+                    <option value="Unrepairable">Unrepairable — retire locker</option>
+                </select>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block;font-size:12px;font-weight:700;margin-bottom:5px;">What was done</label>
+                <textarea name="resolutionNotes" required style="width:100%;min-height:80px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:13px;"></textarea>
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block;font-size:12px;font-weight:700;margin-bottom:5px;">Parts Used</label>
+                <input name="partsUsed" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:13px;" />
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="display:block;font-size:12px;font-weight:700;margin-bottom:5px;">Cost (R)</label>
+                <input name="repairCost" type="number" step="0.01" min="0" style="width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:13px;" />
+            </div>
+            <div style="display:flex;gap:10px;">
+                <button type="submit" style="flex:1;padding:11px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Submit</button>
+                <button type="button" onclick="closeLockerResolveModal()" style="flex:1;padding:11px;background:transparent;border:1px solid #e2e8f0;border-radius:8px;font-weight:700;cursor:pointer;">Cancel</button>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    function openDeclineModal(id) {
+        document.getElementById('decline_AssignmentId').value = id;
+        document.getElementById('declineModal').style.display = 'flex';
+    }
+    function closeDeclineModal() { document.getElementById('declineModal').style.display = 'none'; }
+
+    function openCompleteModal(id, name) {
+        document.getElementById('complete_AssignmentId').value = id;
+        document.getElementById('completeEquipName').textContent = name;
+        document.getElementById('completeModal').style.display = 'flex';
+    }
+    function closeCompleteModal() { document.getElementById('completeModal').style.display = 'none'; }
+    function openEscalateModal(id) {
+        document.getElementById('escalate_AssignmentId').value = id;
+        document.getElementById('escalateModal').style.display = 'flex';
+    }
+    function closeEscalateModal() { document.getElementById('escalateModal').style.display = 'none'; }
+
+    function openLockerResolveModal(faultId, lockerNumber) {
+        document.getElementById('lockerResolve_FaultId').value = faultId;
+        document.getElementById('lockerResolveLockerLabel').textContent = 'Locker ' + lockerNumber;
+        document.getElementById('lockerResolveModal').style.display = 'flex';
+    }
+    function closeLockerResolveModal() { document.getElementById('lockerResolveModal').style.display = 'none'; }
+</script>

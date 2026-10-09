@@ -1,0 +1,175 @@
+﻿@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="admin-stats-grid">
+    <div class="admin-stat-card gold">
+        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+        <div class="stat-number" id="refund-pending-count">0</div>
+        <div class="stat-label">Pending Refunds</div>
+    </div>
+    <div class="admin-stat-card green">
+        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-number" id="refund-approved-count">0</div>
+        <div class="stat-label">Approved</div>
+    </div>
+    <div class="admin-stat-card red">
+        <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+        <div class="stat-number" id="refund-rejected-count">0</div>
+        <div class="stat-label">Rejected</div>
+    </div>
+    <div class="admin-stat-card blue">
+        <div class="stat-icon"><i class="fas fa-coins"></i></div>
+        <div class="stat-number" id="refund-total-amount">R0</div>
+        <div class="stat-label">Total Refunded</div>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-header">
+        <div class="admin-card-title"><i class="fas fa-undo-alt"></i> Refund Requests</div>
+        <div class="admin-card-count" id="refund-total-count">Loading…</div>
+    </div>
+    <div class="filter-tabs">
+        <button onclick="filterRefunds('all')" id="refund-tab-all" class="filter-tab active">All</button>
+        <button onclick="filterRefunds('Pending')" id="refund-tab-pending" class="filter-tab pending">Pending</button>
+        <button onclick="filterRefunds('Approved')" id="refund-tab-approved" class="filter-tab approved">Approved</button>
+        <button onclick="filterRefunds('Rejected')" id="refund-tab-rejected" class="filter-tab rejected">Rejected</button>
+    </div>
+    <div class="admin-table-wrap">
+        <table class="admin-table" id="refundsTable">
+            <thead>
+                <tr><th>Member</th><th>Member ID</th><th>Type</th><th>Amount</th><th>Requested</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="refundTableBody">
+                <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted);">Loading…</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Modals {
+    <div id="refundModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-icon">💰</div>
+            <div class="modal-title">Process Refund</div>
+            <div class="modal-info-card" style="background:#f8fafe;border-color:#e2e8f0;">
+                <div class="modal-info-row"><span class="modal-info-label">Member</span>    <span class="modal-info-value" id="modal-member-name">—</span></div>
+                <div class="modal-info-row"><span class="modal-info-label">Member ID</span> <span class="modal-info-value" style="color:var(--blue);" id="modal-member-id">—</span></div>
+                <div class="modal-info-row"><span class="modal-info-label">Type</span>      <span class="modal-info-value" id="modal-refund-type">—</span></div>
+                <div class="modal-info-row" style="border:none;">
+                    <span class="modal-info-label" style="font-size:13px;font-weight:700;">Amount</span>
+                    <span style="font-family:'Bebas Neue';font-size:22px;color:var(--green);letter-spacing:1px;" id="modal-refund-amount">—</span>
+                </div>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label class="modal-notes-label">Admin Notes (optional)</label>
+                <textarea id="adminNotes" class="modal-textarea" placeholder="Add any notes about this decision..."></textarea>
+            </div>
+            <div id="refund-modal-error" class="modal-error"></div>
+            <div class="modal-actions">
+                <button id="approveBtn" class="modal-btn approve" onclick="submitRefundDecision('approve')">✅ Approve &amp; Process Refund</button>
+                <button id="rejectBtn" class="modal-btn reject" onclick="submitRefundDecision('reject')">❌ Reject Refund Request</button>
+                <button class="modal-btn cancel" onclick="closeRefundModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        var allRefunds = [], currentRefundId = null;
+
+        function loadRefunds() {
+            fetch('/Admin/GetRefunds').then(function (r) { return r.json(); }).then(function (data) {
+                if (!data.success) return;
+                allRefunds = data.refunds;
+                renderRefunds(allRefunds);
+                var set = function (id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
+                set('refund-pending-count', data.pendingCount || 0);
+                set('refund-approved-count', data.approvedCount || 0);
+                set('refund-rejected-count', data.rejectedCount || 0);
+                set('refund-total-amount', 'R' + (data.totalAmount || '0.00'));
+                set('refund-total-count', (data.totalCount || 0) + ' requests');
+            });
+        }
+
+        function renderRefunds(refunds) {
+            var tbody = document.getElementById('refundTableBody');
+            if (!tbody) return;
+            if (!refunds || refunds.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted);">No refund requests found.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = refunds.map(function (r) {
+                var sc = 'refund-status-' + r.status.toLowerCase();
+                var actions = r.status === 'Pending'
+                    ? '<button onclick="openRefundModal(' + r.refundRequestId + ')" class="btn-primary" style="padding:7px 14px;font-size:12px;box-shadow:none;">Review</button>'
+                    : '<span style="font-size:12px;color:var(--muted);">' + (r.processedAt || '—') + '</span>';
+                return '<tr>'
+                    + '<td class="member-name">' + (r.memberName || '—') + '</td>'
+                    + '<td><span class="member-id-badge">' + (r.memberNumber || '—') + '</span></td>'
+                    + '<td style="color:var(--muted);font-size:12px;">' + (r.refundType || '—') + '</td>'
+                    + '<td style="font-weight:700;color:var(--green);">R' + (r.refundAmount || '0.00') + '</td>'
+                    + '<td style="color:var(--muted);font-size:12px;">' + (r.requestedAt || '—') + '</td>'
+                    + '<td><span class="' + sc + '">' + r.status + '</span></td>'
+                    + '<td>' + actions + '</td></tr>';
+            }).join('');
+        }
+
+        function filterRefunds(status) {
+            ['all', 'Pending', 'Approved', 'Rejected'].forEach(function (s) {
+                var tab = document.getElementById('refund-tab-' + s.toLowerCase()); if (tab) tab.classList.remove('active');
+            });
+            var at = document.getElementById('refund-tab-' + status.toLowerCase()); if (at) at.classList.add('active');
+            renderRefunds(status === 'all' ? allRefunds : allRefunds.filter(function (r) { return r.status === status; }));
+        }
+
+        function openRefundModal(refundId) {
+            currentRefundId = refundId;
+            var refund = allRefunds.find(function (r) { return r.refundRequestId === refundId; }); if (!refund) return;
+            document.getElementById('modal-member-name').textContent = refund.memberName || '—';
+            document.getElementById('modal-member-id').textContent = refund.memberNumber || '—';
+            document.getElementById('modal-refund-type').textContent = refund.refundType || '—';
+            document.getElementById('modal-refund-amount').textContent = 'R' + refund.refundAmount;
+            document.getElementById('adminNotes').value = '';
+            document.getElementById('refund-modal-error').style.display = 'none';
+            document.getElementById('refundModal').style.display = 'flex';
+        }
+
+        function closeRefundModal() { document.getElementById('refundModal').style.display = 'none'; currentRefundId = null; }
+
+        function submitRefundDecision(action) {
+            if (!currentRefundId) return;
+            var approveBtn = document.getElementById('approveBtn');
+            var rejectBtn = document.getElementById('rejectBtn');
+            var notes = document.getElementById('adminNotes').value.trim();
+            var errEl = document.getElementById('refund-modal-error');
+            approveBtn.disabled = rejectBtn.disabled = true;
+            approveBtn.textContent = action === 'approve' ? 'Processing...' : '✅ Approve & Process Refund';
+            rejectBtn.textContent = action === 'reject' ? 'Processing...' : '❌ Reject Refund Request';
+            var url = action === 'approve' ? '/Admin/ApproveRefund' : '/Admin/RejectRefund';
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ refundRequestId: currentRefundId, adminNotes: notes, __RequestVerificationToken: getToken() }).toString()
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    approveBtn.disabled = rejectBtn.disabled = false;
+                    approveBtn.textContent = '✅ Approve & Process Refund';
+                    rejectBtn.textContent = '❌ Reject Refund Request';
+                    if (data.success) {
+                        closeRefundModal(); loadRefunds();
+                        showAdminSuccessBanner(action === 'approve'
+                            ? '✅ Refund approved for ' + data.memberName
+                            : '❌ Refund rejected for ' + data.memberName);
+                    } else { errEl.textContent = data.message; errEl.style.display = 'block'; }
+                })
+                .catch(function () { errEl.textContent = 'Connection error.'; errEl.style.display = 'block'; approveBtn.disabled = rejectBtn.disabled = false; });
+        }
+
+        // Load on page ready (replaces old showSection('refunds') trigger)
+        document.addEventListener('DOMContentLoaded', loadRefunds);
+    </script>
+}

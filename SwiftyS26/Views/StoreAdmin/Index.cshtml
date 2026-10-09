@@ -1,0 +1,1673 @@
+@model IEnumerable<SwiftyS26.Models.Product>
+@using System
+@using System.Linq
+@using System.Collections.Generic
+@using System.Globalization
+@using System.Web
+
+@{
+    Layout = Session["LoggedInAdmin"] != null
+        ? "~/Views/Shared/_AdminLayout.cshtml"
+        : "~/Views/Shared/_StoreStaffLayout.cshtml";
+
+    ViewBag.Title = "Manage Products";
+    ViewBag.PageTitle = "MANAGE PRODUCTS";
+    ViewBag.ActiveNav = "storeproducts";
+
+    var products =
+        Model != null
+            ? Model.ToList()
+            : new List<SwiftyS26.Models.Product>();
+
+    var categories =
+        ViewBag.Categories as string[]
+        ?? new string[0];
+
+    int lowStockCount =
+        ViewBag.LowStockCount != null
+            ? Convert.ToInt32(ViewBag.LowStockCount)
+            : products.Count(p => p.StockStatus == "LowStock");
+
+    int outOfStockCount =
+        ViewBag.OutOfStockCount != null
+            ? Convert.ToInt32(ViewBag.OutOfStockCount)
+            : products.Count(p => p.StockStatus == "OutOfStock");
+
+    int nearExpiryCount =
+        ViewBag.NearExpiryCount != null
+            ? Convert.ToInt32(ViewBag.NearExpiryCount)
+            : products.Count(p =>
+                p.ExpiryDate.HasValue &&
+                p.ExpiryDate.Value >= DateTime.Today &&
+                p.ExpiryDate.Value <= DateTime.Today.AddDays(30));
+
+    int activeCount = products.Count(p => p.IsActive);
+}
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body.pa-modal-open {
+        overflow: hidden;
+    }
+
+    .pa-page {
+        width: 100%;
+        padding-bottom: 35px;
+        color: #0f172a;
+    }
+
+    .pa-page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .pa-title {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .pa-title-icon {
+        width: 43px;
+        height: 43px;
+        flex: 0 0 43px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 11px;
+        background: #eff6ff;
+        color: #2563eb;
+        font-size: 19px;
+    }
+
+    .pa-title h2 {
+        margin: 0;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 29px;
+        line-height: 1.1;
+        letter-spacing: 1.2px;
+    }
+
+    .pa-title p {
+        margin: 5px 0 0;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .pa-button {
+        min-height: 40px;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        gap: 7px;
+        padding: 10px 15px;
+        border: 0;
+        border-radius: 9px;
+        background: #2563eb;
+        color: #fff;
+        font-family: inherit;
+        font-size: 12px;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
+        transition: transform .15s ease, box-shadow .15s ease;
+    }
+
+        .pa-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 14px rgba(37, 99, 235, .18);
+        }
+
+        .pa-button.light {
+            border: 1px solid #dbe3ef;
+            background: #fff;
+            color: #334155;
+        }
+
+        .pa-button.danger {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .pa-button.success {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+        .pa-button.icon-only {
+            min-width: 35px;
+            min-height: 35px;
+            padding: 8px;
+        }
+
+    .pa-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        margin-bottom: 15px;
+        padding: 12px 15px;
+        border-radius: 10px;
+        font-size: 12.5px;
+        font-weight: 650;
+        line-height: 1.5;
+    }
+
+        .pa-alert.success {
+            border: 1px solid #bbf7d0;
+            background: #f0fdf4;
+            color: #15803d;
+        }
+
+        .pa-alert.error {
+            border: 1px solid #fecaca;
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
+    .pa-stats {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(145px, 1fr));
+        gap: 13px;
+        margin-bottom: 20px;
+    }
+
+    .pa-stat {
+        position: relative;
+        overflow: hidden;
+        padding: 17px;
+        border: 1px solid #e2e8f0;
+        border-radius: 13px;
+        background: #fff;
+    }
+
+        .pa-stat::before {
+            position: absolute;
+            top: 0;
+            right: 0;
+            left: 0;
+            height: 3px;
+            background: var(--stat-color, #2563eb);
+            content: "";
+        }
+
+    .pa-stat-icon {
+        width: 34px;
+        height: 34px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 9px;
+        background: var(--stat-background, #eff6ff);
+        color: var(--stat-color, #2563eb);
+        font-size: 14px;
+    }
+
+    .pa-stat-number {
+        display: block;
+        margin-top: 12px;
+        font-family: 'Bebas Neue', sans-serif;
+        color: #0f172a;
+        font-size: 29px;
+        line-height: 1;
+    }
+
+    .pa-stat-label {
+        display: block;
+        margin-top: 5px;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 850;
+        letter-spacing: .35px;
+        text-transform: uppercase;
+    }
+
+    .pa-toolbar {
+        display: grid;
+        grid-template-columns: minmax(260px, 2fr) minmax(170px, .7fr) minmax(170px, .7fr);
+        gap: 10px;
+        margin-bottom: 16px;
+        padding: 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 13px;
+        background: #fff;
+    }
+
+    .pa-search {
+        position: relative;
+    }
+
+        .pa-search i {
+            position: absolute;
+            top: 50%;
+            left: 13px;
+            color: #94a3b8;
+            font-size: 12px;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+    .pa-control {
+        width: 100%;
+        height: 42px;
+        padding: 10px 12px;
+        border: 1px solid #dbe3ef;
+        border-radius: 9px;
+        outline: none;
+        background: #fff;
+        color: #0f172a;
+        font-family: inherit;
+        font-size: 12.5px;
+    }
+
+    .pa-search .pa-control {
+        padding-left: 37px;
+    }
+
+    .pa-control:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, .1);
+    }
+
+    .pa-table-card {
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        background: #fff;
+    }
+
+    .pa-table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        padding: 15px 18px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+
+        .pa-table-header h3 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 14px;
+            font-weight: 850;
+        }
+
+    .pa-result-count {
+        margin-top: 3px;
+        color: #64748b;
+        font-size: 10.5px;
+    }
+
+    .pa-table-wrap {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .pa-table {
+        width: 100%;
+        min-width: 1050px;
+        border-collapse: collapse;
+        font-size: 12.5px;
+    }
+
+        .pa-table th {
+            padding: 11px 14px;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 9.5px;
+            font-weight: 850;
+            text-align: left;
+            text-transform: uppercase;
+        }
+
+        .pa-table td {
+            padding: 13px 14px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+
+        .pa-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .pa-table tbody tr:hover {
+            background: #fcfdff;
+        }
+
+        .pa-table tbody tr.pa-inactive-row {
+            background: #fafafa;
+            opacity: .75;
+        }
+
+    .pa-product {
+        min-width: 180px;
+    }
+
+    .pa-product-name {
+        color: #0f172a;
+        font-size: 12.5px;
+        font-weight: 850;
+    }
+
+    .pa-product-description {
+        max-width: 260px;
+        margin-top: 4px;
+        overflow: hidden;
+        color: #64748b;
+        font-size: 10.5px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .pa-category {
+        display: inline-flex;
+        padding: 4px 9px;
+        border-radius: 999px;
+        background: #f1f5f9;
+        color: #475569;
+        font-size: 10px;
+        font-weight: 750;
+    }
+
+    .pa-price {
+        color: #0f172a;
+        font-size: 13px;
+        font-weight: 850;
+        white-space: nowrap;
+    }
+
+    .pa-promotion {
+        display: block;
+        margin-top: 4px;
+        color: #7c3aed;
+        font-size: 9.5px;
+        font-weight: 800;
+    }
+
+    .pa-stock-value {
+        display: block;
+        color: #0f172a;
+        font-size: 13px;
+        font-weight: 850;
+    }
+
+    .pa-stock-level {
+        display: block;
+        margin-top: 3px;
+        color: #64748b;
+        font-size: 9.5px;
+    }
+
+    .pa-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 9px;
+        border-radius: 999px;
+        font-size: 9.5px;
+        font-weight: 850;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+        .pa-badge.InStock {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+        .pa-badge.LowStock {
+            background: #fffbeb;
+            color: #d97706;
+        }
+
+        .pa-badge.OutOfStock {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .pa-badge.NearExpiry {
+            background: #f5f3ff;
+            color: #7c3aed;
+        }
+
+    .pa-visibility {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: #16a34a;
+        font-size: 10px;
+        font-weight: 800;
+    }
+
+        .pa-visibility.inactive {
+            color: #94a3b8;
+        }
+
+    .pa-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+    }
+
+    .pa-empty {
+        padding: 50px 20px;
+        color: #64748b;
+        text-align: center;
+    }
+
+        .pa-empty i {
+            display: block;
+            margin-bottom: 10px;
+            color: #cbd5e1;
+            font-size: 30px;
+        }
+
+        .pa-empty strong {
+            display: block;
+            color: #334155;
+            font-size: 13px;
+        }
+
+        .pa-empty span {
+            display: block;
+            margin-top: 4px;
+            font-size: 11px;
+        }
+
+    .pa-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 1500;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        background: rgba(15, 23, 42, .55);
+        backdrop-filter: blur(2px);
+    }
+
+        .pa-modal.open {
+            display: flex;
+        }
+
+    .pa-modal-dialog {
+        width: 100%;
+        max-width: 590px;
+        max-height: calc(100vh - 40px);
+        overflow-y: auto;
+        border-radius: 15px;
+        background: #fff;
+        box-shadow: 0 22px 60px rgba(15, 23, 42, .24);
+    }
+
+    .pa-modal-header {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        padding: 17px 20px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #fff;
+    }
+
+    .pa-modal-title {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+    }
+
+    .pa-modal-title-icon {
+        width: 34px;
+        height: 34px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 9px;
+        background: #eff6ff;
+        color: #2563eb;
+    }
+
+    .pa-modal-title strong {
+        display: block;
+        color: #0f172a;
+        font-size: 14px;
+    }
+
+    .pa-modal-title span {
+        display: block;
+        margin-top: 2px;
+        color: #64748b;
+        font-size: 10px;
+    }
+
+    .pa-modal-close {
+        width: 32px;
+        height: 32px;
+        border: 0;
+        border-radius: 8px;
+        background: #f1f5f9;
+        color: #64748b;
+        cursor: pointer;
+    }
+
+    .pa-modal-body {
+        padding: 20px;
+    }
+
+    .pa-form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    .pa-field {
+        min-width: 0;
+    }
+
+        .pa-field.full {
+            grid-column: 1 / -1;
+        }
+
+        .pa-field label {
+            display: block;
+            margin-bottom: 6px;
+            color: #334155;
+            font-size: 11px;
+            font-weight: 850;
+        }
+
+    .pa-required {
+        color: #dc2626;
+    }
+
+    .pa-input {
+        width: 100%;
+        min-height: 42px;
+        padding: 10px 12px;
+        border: 1px solid #dbe3ef;
+        border-radius: 9px;
+        outline: none;
+        background: #fff;
+        color: #0f172a;
+        font-family: inherit;
+        font-size: 12.5px;
+    }
+
+    textarea.pa-input {
+        min-height: 88px;
+        resize: vertical;
+    }
+
+    .pa-input:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, .1);
+    }
+
+    .pa-field-help {
+        display: block;
+        margin-top: 5px;
+        color: #94a3b8;
+        font-size: 9.5px;
+        line-height: 1.4;
+    }
+
+    .pa-file {
+        padding: 9px;
+        border: 1px dashed #cbd5e1;
+        border-radius: 9px;
+        background: #f8fafc;
+    }
+
+    .pa-checkbox {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        padding: 11px 12px;
+        border: 1px solid #e2e8f0;
+        border-radius: 9px;
+        background: #f8fafc;
+        color: #334155;
+        font-size: 11.5px;
+        line-height: 1.4;
+    }
+
+        .pa-checkbox input {
+            margin-top: 2px;
+        }
+
+    .pa-modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 9px;
+        margin-top: 19px;
+        padding-top: 17px;
+        border-top: 1px solid #edf2f7;
+    }
+
+    @@media (max-width: 1150px) {
+        .pa-stats {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @@media (max-width: 800px) {
+        .pa-toolbar {
+            grid-template-columns: 1fr;
+        }
+
+        .pa-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @@media (max-width: 550px) {
+        .pa-page-header {
+            flex-direction: column;
+        }
+
+            .pa-page-header > .pa-button {
+                width: 100%;
+            }
+
+        .pa-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .pa-form-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .pa-field.full {
+            grid-column: auto;
+        }
+
+        .pa-modal-footer {
+            flex-direction: column-reverse;
+        }
+
+            .pa-modal-footer .pa-button {
+                width: 100%;
+            }
+    }
+</style>
+
+<div class="pa-page">
+    <div class="pa-page-header">
+        <div class="pa-title">
+            <div class="pa-title-icon">
+                <i class="fas fa-boxes-stacked"></i>
+            </div>
+
+            <div>
+                <h2>Manage Products</h2>
+                <p>
+                    Maintain product information, selling prices, stock levels
+                    and availability.
+                </p>
+            </div>
+        </div>
+
+        <button type="button"
+                class="pa-button"
+                onclick="openAddProductModal()">
+            <i class="fas fa-plus"></i>
+            Add Product
+        </button>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="pa-alert success">
+            <i class="fas fa-circle-check"></i>
+            <span>@TempData["Success"]</span>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="pa-alert error">
+            <i class="fas fa-circle-exclamation"></i>
+            <span>@TempData["Error"]</span>
+        </div>
+    }
+
+    <section class="pa-stats">
+        <div class="pa-stat"
+             style="--stat-color:#2563eb;--stat-background:#eff6ff;">
+            <div class="pa-stat-icon">
+                <i class="fas fa-boxes-stacked"></i>
+            </div>
+            <strong class="pa-stat-number">@products.Count</strong>
+            <span class="pa-stat-label">Total Products</span>
+        </div>
+
+        <div class="pa-stat"
+             style="--stat-color:#16a34a;--stat-background:#f0fdf4;">
+            <div class="pa-stat-icon">
+                <i class="fas fa-eye"></i>
+            </div>
+            <strong class="pa-stat-number">@activeCount</strong>
+            <span class="pa-stat-label">Active Products</span>
+        </div>
+
+        <div class="pa-stat"
+             style="--stat-color:#d97706;--stat-background:#fffbeb;">
+            <div class="pa-stat-icon">
+                <i class="fas fa-triangle-exclamation"></i>
+            </div>
+            <strong class="pa-stat-number">@lowStockCount</strong>
+            <span class="pa-stat-label">Low Stock</span>
+        </div>
+
+        <div class="pa-stat"
+             style="--stat-color:#dc2626;--stat-background:#fef2f2;">
+            <div class="pa-stat-icon">
+                <i class="fas fa-ban"></i>
+            </div>
+            <strong class="pa-stat-number">@outOfStockCount</strong>
+            <span class="pa-stat-label">Out of Stock</span>
+        </div>
+
+        <div class="pa-stat"
+             style="--stat-color:#7c3aed;--stat-background:#f5f3ff;">
+            <div class="pa-stat-icon">
+                <i class="fas fa-calendar-xmark"></i>
+            </div>
+            <strong class="pa-stat-number">@nearExpiryCount</strong>
+            <span class="pa-stat-label">Near Expiry</span>
+        </div>
+    </section>
+
+    <section class="pa-toolbar">
+        <div class="pa-search">
+            <i class="fas fa-magnifying-glass"></i>
+            <input id="productSearch"
+                   class="pa-control"
+                   type="search"
+                   placeholder="Search product name or description"
+                   autocomplete="off" />
+        </div>
+
+        <select id="categoryFilter"
+                class="pa-control"
+                aria-label="Filter products by category">
+            <option value="">All categories</option>
+            @foreach (var category in categories)
+            {
+                <option value="@category">@category</option>
+            }
+        </select>
+
+        <select id="statusFilter"
+                class="pa-control"
+                aria-label="Filter products by status">
+            <option value="">All statuses</option>
+            <option value="InStock">In stock</option>
+            <option value="LowStock">Low stock</option>
+            <option value="OutOfStock">Out of stock</option>
+            <option value="NearExpiry">Near expiry</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+        </select>
+    </section>
+
+    <section class="pa-table-card">
+        <div class="pa-table-header">
+            <div>
+                <h3>Product Catalogue</h3>
+                <div id="productResultCount"
+                     class="pa-result-count">
+                    @products.Count
+                    @(products.Count == 1 ? "product" : "products")
+                </div>
+            </div>
+        </div>
+
+        @if (!products.Any())
+        {
+            <div class="pa-empty">
+                <i class="fas fa-box-open"></i>
+                <strong>No products have been added.</strong>
+                <span>Use Add Product to create the first store product.</span>
+            </div>
+        }
+        else
+        {
+            <div class="pa-table-wrap">
+                <table class="pa-table">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Selling Price</th>
+                            <th>Stock</th>
+                            <th>Stock Status</th>
+                            <th>Expiry</th>
+                            <th>Visibility</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="productTableBody">
+                        @foreach (var product in products)
+                        {
+                            string productName =
+                                product.Name ?? string.Empty;
+
+                            string description =
+                                product.Description ?? string.Empty;
+
+                            string category =
+                                product.Category ?? string.Empty;
+
+                            string stockStatus =
+                                product.StockStatus ?? string.Empty;
+
+                            string displayStatus =
+                                product.StockStatusDisplay ?? stockStatus;
+
+                            string encodedName =
+                                HttpUtility.JavaScriptStringEncode(productName);
+
+                            string encodedDescription =
+                                HttpUtility.JavaScriptStringEncode(description);
+
+                            string encodedCategory =
+                                HttpUtility.JavaScriptStringEncode(category);
+
+                            string priceValue =
+                                product.NormalPrice.ToString(
+                                    "0.00",
+                                    CultureInfo.InvariantCulture);
+
+                            string expiryValue =
+                                product.ExpiryDate.HasValue
+                                    ? product.ExpiryDate.Value.ToString("yyyy-MM-dd")
+                                    : string.Empty;
+
+                            <tr class="pa-product-row @(product.IsActive ? "" : "pa-inactive-row")"
+                                data-name="@productName.ToLowerInvariant()"
+                                data-description="@description.ToLowerInvariant()"
+                                data-category="@category"
+                                data-stock-status="@stockStatus"
+                                data-active="@(product.IsActive ? "Active" : "Inactive")">
+
+                                <td>
+                                    <div class="pa-product">
+                                        <div class="pa-product-name">
+                                            @productName
+                                        </div>
+
+                                        @if (!string.IsNullOrWhiteSpace(description))
+                                        {
+                                            <div class="pa-product-description"
+                                                 title="@description">
+                                                @description
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="pa-product-description">
+                                                No description provided
+                                            </div>
+                                        }
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <span class="pa-category">
+                                        @(string.IsNullOrWhiteSpace(category)
+                                            ? "Uncategorised"
+                                            : category)
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <span class="pa-price">
+                                        @("R" + product.NormalPrice.ToString("F2"))
+                                    </span>
+
+                                    @if (product.IsOnPromotion)
+                                    {
+                                        <span class="pa-promotion">
+                                            <i class="fas fa-tag"></i>
+                                            @(product.ActivePromotion != null
+                                                ? product.ActivePromotion.DiscountPercent
+                                                : 0)% promotion active
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    <span class="pa-stock-value">
+                                        @product.QuantityOnHand
+                                    </span>
+
+                                    <span class="pa-stock-level">
+                                        Reorder at @product.ReorderLevel
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <span class="pa-badge @stockStatus">
+                                        <i class="fas fa-circle"
+                                           style="font-size:5px;"></i>
+                                        @displayStatus
+                                    </span>
+                                </td>
+
+                                <td>
+                                    @if (product.ExpiryDate.HasValue)
+                                    {
+                                        <span>
+                                            @product.ExpiryDate.Value.ToString(
+                                                     "dd MMM yyyy")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span style="color:#94a3b8;">—</span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (product.IsActive)
+                                    {
+                                        <span class="pa-visibility">
+                                            <i class="fas fa-circle-check"></i>
+                                            Active
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="pa-visibility inactive">
+                                            <i class="fas fa-circle-minus"></i>
+                                            Inactive
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    <div class="pa-actions">
+                                        <button type="button"
+                                                class="pa-button light icon-only"
+                                                title="Edit product"
+                                                aria-label="Edit @productName"
+                                                onclick="openEditProductModal(
+                                                    @product.ProductId,
+                                                    '@Html.Raw(encodedName)',
+                                                    '@Html.Raw(encodedDescription)',
+                                                    '@Html.Raw(encodedCategory)',
+                                                    '@priceValue',
+                                                    @product.QuantityOnHand,
+                                                    @product.ReorderLevel,
+                                                    '@expiryValue',
+                                                    @(product.IsActive ? "true" : "false")
+                                                )">
+                                            <i class="fas fa-pen"></i>
+                                        </button>
+
+                                        @using (Html.BeginForm(
+                                            "DeactivateProduct",
+                                            "StoreAdmin",
+                                            new { id = product.ProductId },
+                                            FormMethod.Post,
+                                            new
+                                            {
+                                                style = "display:inline;",
+                                                onsubmit = product.IsActive
+                                                    ? "return confirm('Deactivate this product? Members will no longer see it in the store.');"
+                                                    : "return confirm('Reactivate this product? It will become available to members again.');"
+                                            }))
+                                        {
+                                            @Html.AntiForgeryToken()
+
+                                            <button type="submit"
+                                                    class="pa-button @(product.IsActive ? "danger" : "success")">
+                                                <i class="fas @(product.IsActive ? "fa-eye-slash" : "fa-eye")"></i>
+                                                @(product.IsActive
+                                                    ? "Deactivate"
+                                                    : "Reactivate")
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="filteredEmptyState"
+                 class="pa-empty"
+                 style="display:none;">
+                <i class="fas fa-magnifying-glass"></i>
+                <strong>No products match your filters.</strong>
+                <span>Change the search term or selected filters.</span>
+            </div>
+        }
+    </section>
+</div>
+
+<!-- ADD PRODUCT MODAL -->
+<div id="addProductModal"
+     class="pa-modal"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="addProductTitle">
+
+    <div class="pa-modal-dialog">
+        <div class="pa-modal-header">
+            <div class="pa-modal-title">
+                <div class="pa-modal-title-icon">
+                    <i class="fas fa-plus"></i>
+                </div>
+
+                <div>
+                    <strong id="addProductTitle">Add Product</strong>
+                    <span>Create a new item in the store catalogue</span>
+                </div>
+            </div>
+
+            <button type="button"
+                    class="pa-modal-close"
+                    onclick="closeAddProductModal()"
+                    aria-label="Close modal">
+                <i class="fas fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="pa-modal-body">
+            @using (Html.BeginForm(
+                "AddProduct",
+                "StoreAdmin",
+                FormMethod.Post,
+                new { enctype = "multipart/form-data" }))
+            {
+                @Html.AntiForgeryToken()
+
+                <div class="pa-form-grid">
+                    <div class="pa-field full">
+                        <label for="add_Name">
+                            Product name <span class="pa-required">*</span>
+                        </label>
+
+                        <input id="add_Name"
+                               name="name"
+                               class="pa-input"
+                               type="text"
+                               maxlength="150"
+                               required />
+                    </div>
+
+                    <div class="pa-field full">
+                        <label for="add_Description">
+                            Description
+                        </label>
+
+                        <textarea id="add_Description"
+                                  name="description"
+                                  class="pa-input"
+                                  maxlength="1000"
+                                  placeholder="Describe the product, size or important details."></textarea>
+                    </div>
+
+                    <div class="pa-field full">
+                        <label for="add_Category">
+                            Category <span class="pa-required">*</span>
+                        </label>
+
+                        <select id="add_Category"
+                                name="category"
+                                class="pa-input"
+                                required>
+                            <option value="">Select a category</option>
+
+                            @foreach (var category in categories)
+                            {
+                                <option value="@category">@category</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="pa-field">
+                        <label for="add_NormalPrice">
+                            Selling price (R)
+                            <span class="pa-required">*</span>
+                        </label>
+
+                        <input id="add_NormalPrice"
+                               name="normalPrice"
+                               class="pa-input"
+                               type="number"
+                               min="0.01"
+                               step="0.01"
+                               inputmode="decimal"
+                               required />
+
+                        <span class="pa-field-help">
+                            Price charged to the member.
+                        </span>
+                    </div>
+
+                    <div class="pa-field">
+                        <label for="add_QuantityOnHand">
+                            Opening quantity
+                            <span class="pa-required">*</span>
+                        </label>
+
+                        <input id="add_QuantityOnHand"
+                               name="quantityOnHand"
+                               class="pa-input"
+                               type="number"
+                               min="0"
+                               step="1"
+                               required />
+
+                        <span class="pa-field-help">
+                            Current units physically available.
+                        </span>
+                    </div>
+
+                    <div class="pa-field">
+                        <label for="add_ReorderLevel">
+                            Reorder level
+                        </label>
+
+                        <input id="add_ReorderLevel"
+                               name="reorderLevel"
+                               class="pa-input"
+                               type="number"
+                               min="0"
+                               step="1"
+                               value="10" />
+
+                        <span class="pa-field-help">
+                            Low-stock warning threshold.
+                        </span>
+                    </div>
+
+                    <div class="pa-field">
+                        <label for="add_ExpiryDate">
+                            Expiry date
+                        </label>
+
+                        <input id="add_ExpiryDate"
+                               name="expiryDate"
+                               class="pa-input"
+                               type="date"
+                               min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+
+                        <span class="pa-field-help">
+                            Leave empty for non-expiring items.
+                        </span>
+                    </div>
+
+                    <div class="pa-field full">
+                        <label for="add_Image">
+                            Product image
+                        </label>
+
+                        <input id="add_Image"
+                               name="imageFile"
+                               class="pa-input pa-file"
+                               type="file"
+                               accept="image/jpeg,image/png,image/webp" />
+
+                        <span class="pa-field-help">
+                            Accepted formats: JPG, PNG or WebP.
+                        </span>
+                    </div>
+                </div>
+
+                <div class="pa-modal-footer">
+                    <button type="button"
+                            class="pa-button light"
+                            onclick="closeAddProductModal()">
+                        Cancel
+                    </button>
+
+                    <button type="submit"
+                            class="pa-button">
+                        <i class="fas fa-plus"></i>
+                        Add Product
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- EDIT PRODUCT MODAL -->
+<div id="editProductModal"
+     class="pa-modal"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="editProductTitle">
+
+    <div class="pa-modal-dialog">
+        <div class="pa-modal-header">
+            <div class="pa-modal-title">
+                <div class="pa-modal-title-icon">
+                    <i class="fas fa-pen"></i>
+                </div>
+
+                <div>
+                    <strong id="editProductTitle">Edit Product</strong>
+                    <span>Update catalogue and inventory information</span>
+                </div>
+            </div>
+
+            <button type="button"
+                    class="pa-modal-close"
+                    onclick="closeEditProductModal()"
+                    aria-label="Close modal">
+                <i class="fas fa-xmark"></i>
+            </button>
+        </div>
+
+        <div class="pa-modal-body">
+            @using (Html.BeginForm(
+                "EditProduct",
+                "StoreAdmin",
+                FormMethod.Post,
+                new { enctype = "multipart/form-data" }))
+            {
+                @Html.AntiForgeryToken()
+
+                <input id="edit_ProductId"
+                       name="productId"
+                       type="hidden" />
+
+                <div class="pa-form-grid">
+                    <div class="pa-field full">
+                        <label for="edit_Name">
+                            Product name <span class="pa-required">*</span>
+                        </label>
+
+                        <input id="edit_Name"
+                               name="name"
+                               class="pa-input"
+                               type="text"
+                               maxlength="150"
+                               required />
+                    </div>
+
+                    <div class="pa-field full">
+                        <label for="edit_Description">
+                            Description
+                        </label>
+
+                        <textarea id="edit_Description"
+                                  name="description"
+                                  class="pa-input"
+                                  maxlength="1000"></textarea>
+                    </div>
+
+                    <div class="pa-field full">
+                        <label for="edit_Category">
+                            Category <span class="pa-required">*</span>
+                        </label>
+
+                        <select id="edit_Category"
+                                name="category"
+                                class="pa-input"
+                                required>
+                            <option value="">Select a category</option>
+
+                            @foreach (var category in categories)
+                            {
+                                <option value="@category">@category</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="pa-field">
+                        <label for="edit_NormalPrice">
+                            Selling price (R)
+                            <span class="pa-required">*</span>
+                        </label>
+
+                        <input id="edit_NormalPrice"
+                               name="normalPrice"
+                               class="pa-input"
+                               type="number"
+                               min="0.01"
+                               step="0.01"
+                               inputmode="decimal"
+                               required />
+                    </div>
+
+                    <div class="pa-field">
+                        <label for="edit_QuantityOnHand">
+                            Quantity on hand
+                            <span class="pa-required">*</span>
+                        </label>
+
+                        <input id="edit_QuantityOnHand"
+                               name="quantityOnHand"
+                               class="pa-input"
+                               type="number"
+                               min="0"
+                               step="1"
+                               required />
+                    </div>
+
+                    <div class="pa-field">
+                        <label for="edit_ReorderLevel">
+                            Reorder level
+                        </label>
+
+                        <input id="edit_ReorderLevel"
+                               name="reorderLevel"
+                               class="pa-input"
+                               type="number"
+                               min="0"
+                               step="1" />
+                    </div>
+
+                    <div class="pa-field">
+                        <label for="edit_ExpiryDate">
+                            Expiry date
+                        </label>
+
+                        <input id="edit_ExpiryDate"
+                               name="expiryDate"
+                               class="pa-input"
+                               type="date" />
+                    </div>
+
+                    <div class="pa-field full">
+                        <label for="edit_Image">
+                            Replace product image
+                        </label>
+
+                        <input id="edit_Image"
+                               name="imageFile"
+                               class="pa-input pa-file"
+                               type="file"
+                               accept="image/jpeg,image/png,image/webp" />
+
+                        <span class="pa-field-help">
+                            Leave empty to keep the existing image.
+                        </span>
+                    </div>
+
+                    <div class="pa-field full">
+                        <label class="pa-checkbox">
+                            <input id="edit_IsActive"
+                                   name="isActive"
+                                   type="checkbox"
+                                   value="true" />
+
+                            <span>
+                                <strong>Active and visible to members</strong>
+                                <br />
+                                Inactive products remain in business records
+                                but cannot be purchased.
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="pa-modal-footer">
+                    <button type="button"
+                            class="pa-button light"
+                            onclick="closeEditProductModal()">
+                        Cancel
+                    </button>
+
+                    <button type="submit"
+                            class="pa-button">
+                        <i class="fas fa-floppy-disk"></i>
+                        Save Changes
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        "use strict";
+
+        var addModal =
+            document.getElementById("addProductModal");
+
+        var editModal =
+            document.getElementById("editProductModal");
+
+        var searchInput =
+            document.getElementById("productSearch");
+
+        var categoryFilter =
+            document.getElementById("categoryFilter");
+
+        var statusFilter =
+            document.getElementById("statusFilter");
+
+        var resultCount =
+            document.getElementById("productResultCount");
+
+        var emptyState =
+            document.getElementById("filteredEmptyState");
+
+        function openModal(modal) {
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.add("open");
+            document.body.classList.add("pa-modal-open");
+        }
+
+        function closeModal(modal) {
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.remove("open");
+
+            if (!document.querySelector(".pa-modal.open")) {
+                document.body.classList.remove("pa-modal-open");
+            }
+        }
+
+        window.openAddProductModal = function () {
+            openModal(addModal);
+
+            window.setTimeout(function () {
+                var nameInput =
+                    document.getElementById("add_Name");
+
+                if (nameInput) {
+                    nameInput.focus();
+                }
+            }, 100);
+        };
+
+        window.closeAddProductModal = function () {
+            closeModal(addModal);
+        };
+
+        window.openEditProductModal = function (
+            id,
+            name,
+            description,
+            category,
+            price,
+            quantity,
+            reorderLevel,
+            expiryDate,
+            isActive) {
+
+            document.getElementById("edit_ProductId").value =
+                id;
+
+            document.getElementById("edit_Name").value =
+                name || "";
+
+            document.getElementById("edit_Description").value =
+                description || "";
+
+            document.getElementById("edit_Category").value =
+                category || "";
+
+            document.getElementById("edit_NormalPrice").value =
+                price || "0.00";
+
+            document.getElementById("edit_QuantityOnHand").value =
+                quantity;
+
+            document.getElementById("edit_ReorderLevel").value =
+                reorderLevel;
+
+            document.getElementById("edit_ExpiryDate").value =
+                expiryDate || "";
+
+            document.getElementById("edit_IsActive").checked =
+                isActive === true;
+
+            openModal(editModal);
+
+            window.setTimeout(function () {
+                document.getElementById("edit_Name").focus();
+            }, 100);
+        };
+
+        window.closeEditProductModal = function () {
+            closeModal(editModal);
+        };
+
+        function applyFilters() {
+            var rows =
+                document.querySelectorAll(".pa-product-row");
+
+            var search =
+                searchInput
+                    ? searchInput.value.trim().toLowerCase()
+                    : "";
+
+            var selectedCategory =
+                categoryFilter
+                    ? categoryFilter.value.toLowerCase()
+                    : "";
+
+            var selectedStatus =
+                statusFilter
+                    ? statusFilter.value
+                    : "";
+
+            var visibleCount = 0;
+
+            rows.forEach(function (row) {
+                var name =
+                    row.getAttribute("data-name") || "";
+
+                var description =
+                    row.getAttribute("data-description") || "";
+
+                var category =
+                    (row.getAttribute("data-category") || "")
+                        .toLowerCase();
+
+                var stockStatus =
+                    row.getAttribute("data-stock-status") || "";
+
+                var activeStatus =
+                    row.getAttribute("data-active") || "";
+
+                var searchMatches =
+                    !search ||
+                    name.indexOf(search) >= 0 ||
+                    description.indexOf(search) >= 0;
+
+                var categoryMatches =
+                    !selectedCategory ||
+                    category === selectedCategory;
+
+                var statusMatches =
+                    !selectedStatus ||
+                    stockStatus === selectedStatus ||
+                    activeStatus === selectedStatus;
+
+                var visible =
+                    searchMatches &&
+                    categoryMatches &&
+                    statusMatches;
+
+                row.style.display = visible ? "" : "none";
+
+                if (visible) {
+                    visibleCount++;
+                }
+            });
+
+            if (resultCount) {
+                resultCount.textContent =
+                    visibleCount +
+                    (visibleCount === 1
+                        ? " product"
+                        : " products");
+            }
+
+            if (emptyState) {
+                emptyState.style.display =
+                    visibleCount === 0
+                        ? "block"
+                        : "none";
+            }
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener(
+                "input",
+                applyFilters);
+        }
+
+        if (categoryFilter) {
+            categoryFilter.addEventListener(
+                "change",
+                applyFilters);
+        }
+
+        if (statusFilter) {
+            statusFilter.addEventListener(
+                "change",
+                applyFilters);
+        }
+
+        document.querySelectorAll(".pa-modal")
+            .forEach(function (modal) {
+                modal.addEventListener(
+                    "mousedown",
+                    function (event) {
+                        if (event.target === modal) {
+                            closeModal(modal);
+                        }
+                    });
+            });
+
+        document.addEventListener(
+            "keydown",
+            function (event) {
+                if (event.key === "Escape") {
+                    closeModal(addModal);
+                    closeModal(editModal);
+                }
+            });
+    })();
+</script>

@@ -1,0 +1,613 @@
+﻿@model List<SwiftyS26.Models.TrainerScoreItem>
+@using SwiftyS26.Models
+
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.ActivePage = "trainer";
+    ViewBag.PageTitle = "Find a Trainer";
+
+    string memberGoal = ViewBag.MemberGoal as string ?? "";
+    bool hasProfile = (bool)(ViewBag.HasProfile ?? false);
+}
+
+@section head {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <style>
+        /* Find Trainer Styles */
+        .ft-wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Back Link */
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--muted);
+            font-size: 13px;
+            text-decoration: none;
+            margin-bottom: 24px;
+            transition: all 0.2s;
+        }
+
+            .back-link:hover {
+                color: var(--blue);
+                gap: 12px;
+            }
+
+        /* Header */
+        .ft-header {
+            margin-bottom: 28px;
+        }
+
+        .ft-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .ft-subtitle {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        /* Goal Banner */
+        .goal-banner {
+            background: var(--gold-light);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            border-radius: var(--radius-lg);
+            padding: 16px 22px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+            .goal-banner i {
+                font-size: 24px;
+                color: var(--gold);
+            }
+
+        .goal-banner-text {
+            flex: 1;
+        }
+
+            .goal-banner-text strong {
+                color: var(--gold);
+            }
+
+            .goal-banner-text p {
+                font-size: 12px;
+                color: var(--muted);
+                margin-top: 4px;
+            }
+
+        /* No Profile Tip */
+        .tip-box {
+            background: var(--blue-light);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: var(--radius);
+            padding: 14px 18px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+        }
+
+            .tip-box i {
+                color: var(--blue);
+                font-size: 18px;
+            }
+
+            .tip-box a {
+                color: var(--blue);
+                font-weight: 700;
+                text-decoration: none;
+            }
+
+        /* Filters */
+        .ft-filters {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 28px;
+            align-items: center;
+        }
+
+        .ft-search {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 14px;
+            background: var(--bg3);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            color: var(--text);
+            outline: none;
+            transition: all 0.2s;
+        }
+
+            .ft-search:focus {
+                border-color: var(--blue);
+                box-shadow: 0 0 0 3px var(--blue-light);
+                background: var(--bg2);
+            }
+
+        .ft-select {
+            padding: 10px 14px;
+            background: var(--bg3);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            color: var(--text);
+            cursor: pointer;
+            outline: none;
+            min-width: 180px;
+        }
+
+            .ft-select:focus {
+                border-color: var(--blue);
+            }
+
+        /* Trainer Grid */
+        .ft-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 20px;
+        }
+
+        /* Trainer Card */
+        .ft-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+            .ft-card:hover {
+                transform: translateY(-3px);
+                box-shadow: var(--shadow-md);
+                border-color: rgba(59, 130, 246, 0.3);
+            }
+
+            .ft-card.is-match {
+                border-left: 3px solid var(--gold);
+            }
+
+        .ft-card-header {
+            padding: 18px 20px 0;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .trainer-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--blue), var(--blue-bright));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .trainer-info {
+            flex: 1;
+        }
+
+        .trainer-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 2px;
+        }
+
+        .trainer-spec {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        /* Badges */
+        .badge-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .badge-gold {
+            background: var(--gold-light);
+            color: var(--gold);
+        }
+
+        .badge-blue {
+            background: var(--blue-light);
+            color: var(--blue);
+        }
+
+        .badge-green {
+            background: var(--green-light);
+            color: var(--green);
+        }
+
+        .badge-muted {
+            background: var(--bg3);
+            color: var(--muted);
+        }
+
+        .badge-match {
+            background: var(--gold-light);
+            color: var(--gold);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        /* Capacity Bar */
+        .capacity-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .capacity-bar {
+            flex: 1;
+            height: 5px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .capacity-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        .capacity-text {
+            font-size: 11px;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        /* Availability Chips */
+        .avail-chips {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .avail-chip {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 10px;
+            color: var(--muted);
+        }
+
+            .avail-chip span {
+                color: var(--blue);
+                font-weight: 600;
+                margin-left: 4px;
+            }
+
+        .avail-more {
+            font-size: 10px;
+            color: var(--muted);
+            padding: 4px 0;
+        }
+
+        /* Card Footer */
+        .ft-card-footer {
+            padding: 14px 20px;
+            border-top: 1px solid var(--border);
+            background: var(--bg3);
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            flex: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 9px 16px;
+            background: linear-gradient(135deg, var(--blue), var(--blue-bright));
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+            .btn-primary:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+            }
+
+        .btn-secondary {
+            flex: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 9px 16px;
+            background: transparent;
+            border: 1.5px solid var(--border);
+            color: var(--muted);
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+            .btn-secondary:hover {
+                background: var(--bg2);
+                border-color: var(--blue);
+                color: var(--blue);
+            }
+
+        .btn-disabled {
+            flex: 1;
+            padding: 9px 16px;
+            background: var(--bg3);
+            border: 1.5px solid var(--border);
+            color: var(--muted);
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            cursor: not-allowed;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--muted);
+        }
+
+            .empty-state i {
+                font-size: 48px;
+                margin-bottom: 16px;
+                opacity: 0.5;
+            }
+
+            .empty-state p {
+                font-size: 14px;
+            }
+
+        /* Responsive */
+        @@media (max-width: 768px) {
+            .ft-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .ft-filters {
+                flex-direction: column;
+            }
+
+            .ft-search, .ft-select {
+                width: 100%;
+            }
+
+            .ft-title {
+                font-size: 24px;
+            }
+
+            .badge-group {
+                gap: 6px;
+            }
+        }
+    </style>
+}
+
+<div class="ft-wrap">
+
+    <a href="@Url.Action("TrainerHub", "Dashboard")" class="back-link">
+        <i class="fas fa-arrow-left"></i> Back to Trainer Hub
+    </a>
+
+    <div class="ft-header">
+        <div class="ft-title">Find a Trainer</div>
+        <div class="ft-subtitle">Browse available trainers and book your personal coach</div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(memberGoal))
+    {
+        <div class="goal-banner">
+            <i class="fas fa-bullseye"></i>
+            <div class="goal-banner-text">
+                <strong>Goal: @memberGoal</strong>
+                <p>Trainers highlighted with <i class="fas fa-star" style="color: var(--gold);"></i> Best Match are specialised for your goal.</p>
+            </div>
+        </div>
+    }
+    else if (!hasProfile)
+    {
+        <div class="tip-box">
+            <i class="fas fa-lightbulb"></i>
+            <span><strong>Tip:</strong> Set up your <a href="/Dashboard/FitnessGoals">fitness profile</a> to get personalised trainer recommendations based on your goal.</span>
+        </div>
+    }
+
+    <!-- Filters -->
+    <div class="ft-filters">
+        <input type="text" id="searchInput" class="ft-search" placeholder="Search by name or specialization..." oninput="filterCards()" />
+        <select class="ft-select" id="specFilter" onchange="filterCards()">
+            <option value="">All Specializations</option>
+            <option value="Weight Loss &amp; Cardio">Weight Loss &amp; Cardio</option>
+            <option value="Muscle Building &amp; Strength">Muscle Building &amp; Strength</option>
+            <option value="Yoga &amp; Flexibility">Yoga &amp; Flexibility</option>
+            <option value="CrossFit &amp; HIIT">CrossFit &amp; HIIT</option>
+            <option value="Sports Performance">Sports Performance</option>
+            <option value="Rehabilitation &amp; Injury Recovery">Rehabilitation &amp; Injury Recovery</option>
+            <option value="General Fitness">General Fitness</option>
+        </select>
+        <select class="ft-select" id="expFilter" onchange="filterCards()">
+            <option value="">All Experience Levels</option>
+            <option value="Beginner">Beginner (0-2 years)</option>
+            <option value="Intermediate">Intermediate (3-5 years)</option>
+            <option value="Senior">Senior (6-10 years)</option>
+            <option value="Elite">Elite (10+ years)</option>
+        </select>
+    </div>
+
+    <!-- Trainer Grid -->
+    <div class="ft-grid" id="trainerGrid">
+        @if (!Model.Any())
+        {
+            <div class="empty-state">
+                <i class="fas fa-chalkboard-user"></i>
+                <p>No trainers available right now. Please check back soon.</p>
+            </div>
+        }
+
+        @foreach (var item in Model)
+        {
+            var tr = item.Trainer;
+
+            int capPct = tr.MaxCapacity > 0 ? (int)Math.Round((double)item.CurrentLoad / tr.MaxCapacity * 100) : 0;
+            bool full = item.CurrentLoad >= tr.MaxCapacity;
+
+            string initials = "";
+            if (tr.FullName != null)
+            {
+                foreach (var p in tr.FullName.Split(' '))
+                {
+                    if (p.Length > 0) { initials += p[0]; }
+                }
+            }
+
+            string capColor = capPct > 80 ? "#ef4444" : capPct > 60 ? "#f59e0b" : "#3b82f6";
+
+            var avail = tr.Availabilities != null ? tr.Availabilities.Where(a => a.IsAvailable).Take(3).ToList() : new List<TrainerAvailability>();
+            int extraDays = tr.Availabilities != null ? tr.Availabilities.Count(a => a.IsAvailable) - 3 : 0;
+
+            <div class="ft-card @(item.IsMatch ? "is-match" : "")"
+                 data-name="@(tr.FullName?.ToLower() ?? "")"
+                 data-spec="@tr.Specialization"
+                 data-exp="@(tr.ExperienceLevel?.Split('(')[0].Trim() ?? "")">
+
+                <div class="ft-card-header">
+                    <div class="trainer-avatar">@initials</div>
+                    <div class="trainer-info">
+                        <div class="trainer-name">@tr.FullName</div>
+                        <div class="trainer-spec">@tr.Specialization</div>
+                    </div>
+                </div>
+
+                <div style="padding: 12px 20px;">
+                    <div class="badge-group">
+                        @if (item.IsMatch)
+                        {
+                            <span class="badge badge-match"><i class="fas fa-star"></i> Best Match</span>
+                        }
+                        <span class="badge badge-blue"><i class="fas fa-tag"></i> @tr.Specialization</span>
+                        <span class="badge badge-muted"><i class="fas fa-chart-line"></i> @tr.ExperienceLevel</span>
+                        <span class="badge badge-green"><i class="fas fa-briefcase"></i> @tr.EmploymentType</span>
+                    </div>
+
+                    <div class="capacity-row">
+                        <span class="capacity-text">Capacity</span>
+                        <div class="capacity-bar">
+                            <div class="capacity-fill" style="width: @capPct%; background: @capColor;"></div>
+                        </div>
+                        <span class="capacity-text">@item.CurrentLoad / @tr.MaxCapacity</span>
+                    </div>
+
+                    @if (avail.Any())
+                    {
+                        <div class="avail-chips">
+                            @foreach (var a in avail)
+                            {
+                                <div class="avail-chip">
+                                    <i class="fas fa-calendar-day"></i> @a.DayOfWeek.Substring(0, 3)
+                                    <span>@a.StartTime</span>
+                                </div>
+                            }
+                            @if (extraDays > 0)
+                            {
+                                <div class="avail-more">+@extraDays more days</div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="avail-more"><i class="fas fa-clock"></i> No availability set yet</div>
+                    }
+                </div>
+
+                <div class="ft-card-footer">
+                    @if (full)
+                    {
+                        <span class="btn-disabled"><i class="fas fa-ban"></i> Full Capacity</span>
+                    }
+                    else
+                    {
+                        using (Html.BeginForm("RequestTrainer", "Dashboard", FormMethod.Post, new { style = "flex:1;display:flex;" }))
+                        {
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="trainerId" value="@tr.TrainerId" />
+                            <button type="submit" class="btn-primary" onclick="return confirm('Assign @tr.FullName as your personal trainer?');">
+                                <i class="fas fa-calendar-plus"></i> Book This Trainer
+                            </button>
+                        }
+                    }
+                    <a href="@Url.Action("TrainerProfile", "Dashboard", new { id = tr.TrainerId })" class="btn-secondary">
+                        <i class="fas fa-user-circle"></i> View Profile
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    function filterCards() {
+        var search = document.getElementById('searchInput').value.toLowerCase();
+        var spec = document.getElementById('specFilter').value;
+        var exp = document.getElementById('expFilter').value;
+        var cards = document.querySelectorAll('#trainerGrid .ft-card');
+
+        cards.forEach(function (card) {
+            var name = card.getAttribute('data-name') || '';
+            var cSpec = card.getAttribute('data-spec') || '';
+            var cExp = card.getAttribute('data-exp') || '';
+
+            var matchSearch = !search || name.includes(search) || cSpec.toLowerCase().includes(search);
+            var matchSpec = !spec || cSpec === spec;
+            var matchExp = !exp || cExp.toLowerCase().startsWith(exp.toLowerCase());
+
+            card.style.display = (matchSearch && matchSpec && matchExp) ? '' : 'none';
+        });
+    }
+</script>

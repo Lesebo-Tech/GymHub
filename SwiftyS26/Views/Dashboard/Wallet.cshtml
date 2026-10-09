@@ -1,0 +1,185 @@
+﻿@model SwiftyS26.Models.MemberForm
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.ActivePage = "wallet";
+    ViewBag.PageTitle = "Wallet & Points";
+    string nextBillingDate = ViewBag.NextBillingDate ?? "—";
+}
+
+@section head {
+    <link href="~/Content/Wallet.css" rel="stylesheet" />
+}
+
+<main class="main-content">
+    <div class="section-header">
+        <div class="section-title">Wallet & Points</div>
+        <div class="section-sub">Manage your loyalty points, e-wallet balance, and café rewards</div>
+    </div>
+
+    <!-- Balance Summary Cards -->
+    <div class="stats-grid-2">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-star"></i>
+            </div>
+            <div class="stat-info">
+                <div class="stat-label">Points Balance</div>
+                <div class="stat-value orange" id="wp-points-balance">—</div>
+                <div class="stat-sub">Points available to spend at the café</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-wallet"></i>
+            </div>
+            <div class="stat-info">
+                <div class="stat-label">Wallet Balance</div>
+                <div class="stat-value green" id="wp-wallet-balance">—</div>
+                <div class="stat-sub">Convert to points or top up below</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GymHub Café Section -->
+    <div class="dash-card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-mug-hot"></i>
+                GymHub Café
+            </div>
+            <a href="/Cafe/Index" target="_blank" class="btn-link">
+                Browse Menu <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+        <p class="card-desc">
+            Redeem your loyalty points for food, drinks, and supplements.
+            Present your <strong class="highlight">collection code</strong> at the café counter to collect your items.
+        </p>
+        <div id="cafe-products-grid" class="products-grid">
+            <div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading products…</div>
+        </div>
+        <div id="cafe-redeem-error" class="error-box" style="display: none;"></div>
+        <div id="cafe-redeem-success" class="success-box" style="display: none;"></div>
+    </div>
+
+    <!-- Convert Wallet to Points -->
+    <div class="dash-card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-exchange-alt"></i>
+                Convert Wallet to Points
+            </div>
+        </div>
+        <p class="card-desc">
+            Convert your wallet balance into loyalty points to spend at the café.
+            <strong class="highlight">R1 = 10 points</strong>
+            <span class="badge">Minimum R10.00 (100 points)</span>
+        </p>
+        <div class="quick-btns">
+            <button onclick="setConvertAmount(10)" class="topup-quick-btn">R10</button>
+            <button onclick="setConvertAmount(50)" class="topup-quick-btn">R50</button>
+            <button onclick="setConvertAmount(100)" class="topup-quick-btn">R100</button>
+            <button onclick="setConvertAmount(200)" class="topup-quick-btn">R200</button>
+        </div>
+        <div class="convert-row">
+            <div class="input-wrap">
+                <label><i class="fas fa-coins"></i> Amount (ZAR)</label>
+                <input type="number" id="wp-convert-input" min="10" step="10" placeholder="Enter amount, e.g., 50" oninput="updateConvertPreview()" />
+            </div>
+            <div class="preview">
+                <div class="preview-label">You will receive</div>
+                <div id="wp-convert-preview" class="preview-value">0 points</div>
+            </div>
+        </div>
+        <div id="wp-convert-error" class="error-box" style="display: none;"></div>
+        <div id="wp-convert-success" class="success-box" style="display: none;"></div>
+        <button onclick="convertWalletToPoints()" id="wp-convert-btn" class="btn-warning">
+            <i class="fas fa-sync-alt"></i> Convert to Points
+        </button>
+    </div>
+
+    <!-- Top Up Wallet -->
+    <div class="dash-card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-credit-card"></i>
+                Top Up Wallet
+            </div>
+        </div>
+        <p class="card-desc">
+            Add funds to your GymHub e-wallet via secure card payment.
+            <strong class="highlight">Minimum R10.00</strong>
+            <span class="badge">Maximum R5,000.00</span>
+        </p>
+        <div class="quick-btns">
+            <button onclick="setTopUp(50)" class="topup-quick-btn">R50</button>
+            <button onclick="setTopUp(100)" class="topup-quick-btn">R100</button>
+            <button onclick="setTopUp(200)" class="topup-quick-btn">R200</button>
+            <button onclick="setTopUp(500)" class="topup-quick-btn">R500</button>
+        </div>
+        <div class="input-wrap">
+            <label><i class="fas fa-money-bill-wave"></i> Amount (ZAR)</label>
+            <input type="number" id="topup-input" min="10" max="5000" step="10" placeholder="Enter amount, e.g., 100" />
+        </div>
+        <div id="topup-error" class="error-box" style="display: none;"></div>
+        <div id="topup-success" class="success-box" style="display: none;"></div>
+        <button onclick="startTopUp()" id="topup-btn" class="btn-primary">
+            <i class="fas fa-plus-circle"></i> Add Funds
+        </button>
+    </div>
+
+    <!-- Transaction Histories -->
+    <div class="history-grid">
+        <div class="dash-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-history"></i>
+                    Points History
+                </div>
+                <button class="card-action-btn" onclick="loadPointsHistory()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            <div id="wp-points-history">
+                <div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading history…</div>
+            </div>
+        </div>
+        <div class="dash-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-history"></i>
+                    Wallet History
+                </div>
+                <button class="card-action-btn" onclick="loadWalletHistory()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            <div id="wp-wallet-history">
+                <div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading history…</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Café Redemption History -->
+    <div class="dash-card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-receipt"></i>
+                Café Redemption History
+            </div>
+            <button class="card-action-btn" onclick="loadRedemptionHistory()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+        <div id="wp-redemption-history">
+            <div class="loading"><i class="fas fa-spinner fa-pulse"></i> Loading redemption history…</div>
+        </div>
+    </div>
+</main>
+
+@section scripts {
+    <script src="https://js.paystack.co/v1/inline.js"></script>
+    <script src="~/Scripts/wallet.js"></script>
+}
+
+@Html.AntiForgeryToken()

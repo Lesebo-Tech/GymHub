@@ -1,0 +1,142 @@
+﻿@model SwiftyS26.Models.MemberForm
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.ActivePage = "profile";
+    ViewBag.PageTitle = "My Profile";
+    string nextBillingDate = ViewBag.NextBillingDate ?? "—";
+}
+
+@section head {
+    <link href="~/Content/profile.css" rel="stylesheet" />
+}
+
+<div class="section-header">
+    <div class="section-title">My Profile</div>
+    <div class="section-sub">Manage your personal information</div>
+</div>
+
+<div class="profile-grid">
+    <!-- Personal Information Card -->
+    <div class="dash-card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-user-edit"></i> Personal Information
+            </div>
+        </div>
+
+        <div id="profile-error-banner" class="error-banner" style="display: none;"></div>
+        <div id="profile-success-banner" class="success-banner" style="display: none;"></div>
+
+        <!-- Editable Fields -->
+        <div class="profile-zone-label editable">
+            <i class="fas fa-pencil-alt"></i> Editable Fields
+        </div>
+        <div class="profile-fields-grid">
+            <div class="profile-field-group">
+                <label class="profile-field-label"><i class="fas fa-user"></i> First Name *</label>
+                <input type="text" id="prof-firstname" class="profile-field-input" placeholder="First name" maxlength="50" />
+            </div>
+            <div class="profile-field-group">
+                <label class="profile-field-label"><i class="fas fa-user"></i> Last Name *</label>
+                <input type="text" id="prof-lastname" class="profile-field-input" placeholder="Last name" maxlength="50" />
+            </div>
+            <div class="profile-field-group">
+                <label class="profile-field-label"><i class="fas fa-envelope"></i> Email Address *</label>
+                <input type="email" id="prof-email" class="profile-field-input" placeholder="your@email.com" maxlength="100" />
+            </div>
+            <div class="profile-field-group">
+                <label class="profile-field-label"><i class="fas fa-phone"></i> Mobile Number *</label>
+                <input type="tel" id="prof-phone" class="profile-field-input" placeholder="+27 000 000 0000" maxlength="15" />
+            </div>
+        </div>
+
+        <!-- Read-only Fields -->
+        <div class="profile-zone-label readonly">
+            <i class="fas fa-lock"></i> Cannot Be Changed — Contact Support
+        </div>
+        <div class="profile-readonly-grid">
+            <div class="profile-field-group">
+                <label class="profile-field-label"><i class="fas fa-id-card"></i> SA ID Number</label>
+                <input type="text" id="prof-idnumber" class="profile-field-input" readonly />
+            </div>
+            <div class="profile-field-group">
+                <label class="profile-field-label"><i class="fas fa-cake-candles"></i> Date of Birth</label>
+                <input type="text" id="prof-dob" class="profile-field-input" readonly />
+            </div>
+            <div class="profile-field-group">
+                <label class="profile-field-label"><i class="fas fa-venus-mars"></i> Gender</label>
+                <input type="text" id="prof-gender" class="profile-field-input" readonly />
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="profile-btn-row">
+            <button id="prof-save-btn" onclick="saveProfile()">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+            <button id="prof-cancel-btn" onclick="loadProfile()">
+                <i class="fas fa-undo-alt"></i> Cancel
+            </button>
+        </div>
+    </div>
+
+    <!-- Account Details Card -->
+    <div class="dash-card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-id-card"></i> Account Details
+            </div>
+        </div>
+
+        <div class="account-details">
+            <div class="detail-row">
+                <span class="detail-label"><i class="fas fa-qrcode"></i> Member ID</span>
+                <span class="detail-value">@Model.MemberNumber</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label"><i class="fas fa-dumbbell"></i> Plan</span>
+                <span class="detail-value">@Model.Plan.ToUpper()</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label"><i class="fas fa-flag-checkered"></i> Status</span>
+                <span class="detail-value @(Model.Status == "Active" ? "status-active" : "status-suspended")">@Model.Status</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label"><i class="fas fa-calendar-alt"></i> Member Since</span>
+                <span class="detail-value">@Model.RegisteredAt.ToString("dd MMM yyyy")</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label"><i class="fas fa-calendar-check"></i> Next Billing</span>
+                <span class="detail-value">@nextBillingDate</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label"><i class="fas fa-clock"></i> Last Login</span>
+                <span class="detail-value">@(Model.LastLoginAt.HasValue ? Model.LastLoginAt.Value.ToString("dd MMM yyyy HH:mm") : "—")</span>
+            </div>
+        </div>
+
+        <!-- Avatar Preview -->
+        <div class="profile-avatar-wrap">
+            <div id="prof-avatar-preview" class="avatar-preview">
+                @(Model.FirstName.Substring(0, 1))@(Model.LastName.Substring(0, 1))
+            </div>
+            <div id="prof-preview-name" class="preview-name">@Model.FullName</div>
+            <div class="preview-plan">@Model.Plan.ToUpper() Member</div>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+    var memberInfo = {
+        name:            '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(Model.FullName))',
+        firstName:       '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(Model.FirstName))',
+        lastName:        '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(Model.LastName))',
+        email:           '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(Model.Email))',
+        memberNumber:    '@Model.MemberNumber',
+        plan:            '@Model.Plan',
+        status:          '@Model.Status',
+        nextBillingDate: '@nextBillingDate'
+    };
+    </script>
+}

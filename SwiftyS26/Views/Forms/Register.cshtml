@@ -1,0 +1,595 @@
+﻿@model SwiftyS26.Models.MemberForm
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GymHub – Register</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <link href="~/Content/register.css" rel="stylesheet" />
+</head>
+<body>
+
+    <!-- ===== NAVBAR ===== -->
+    <nav>
+        <div class="nav-logo">
+            <div class="logo-icon">GH</div>
+            <div class="logo-text">Gym<span>Hub</span></div>
+        </div>
+        <a href="/Home/About" class="btn-outline">← Back Home</a>
+
+    </nav>
+
+    <!-- ===== STEPPER — 5 STEPS ===== -->
+    <div class="stepper-wrap">
+        <div class="stepper">
+            <div class="stepper-line">
+                <div class="stepper-line-fill" id="stepperFill"></div>
+            </div>
+            <div class="step-item active" id="stepDot1">
+                <div class="step-circle">1</div>
+                <div class="step-label">Personal Info</div>
+            </div>
+            <div class="step-item" id="stepDot2">
+                <div class="step-circle">2</div>
+                <div class="step-label">Verify Email</div>
+            </div>
+            <div class="step-item" id="stepDot3">
+                <div class="step-circle">3</div>
+                <div class="step-label">Terms &amp; Conditions</div>
+            </div>
+            <div class="step-item" id="stepDot4">
+                <div class="step-circle">4</div>
+                <div class="step-label">Payment</div>
+            </div>
+            <div class="step-item" id="stepDot5">
+                <div class="step-circle">5</div>
+                <div class="step-label">Confirmation</div>
+            </div>
+        </div>
+    </div>
+
+    @* Anti-Forgery Token *@
+    @Html.AntiForgeryToken()
+
+    <!-- ===== SERVER ERROR BANNER ===== -->
+    <div id="server-error-banner"
+         style="display:none; background:rgba(239,68,68,0.1);
+                border:1px solid rgba(239,68,68,0.3); border-radius:10px;
+                padding:16px; margin:20px 5%; color:#EF4444;
+                font-size:14px; font-weight:600;">
+    </div>
+
+    <!-- ===== MAIN BODY ===== -->
+    <div class="page-body">
+        <div class="form-panel">
+
+            <!-- =========== STEP 1: PERSONAL INFO =========== -->
+            <div class="step-content active" id="step1">
+                <div class="panel-title">Personal Information</div>
+                <p class="panel-sub">Fill in your details accurately. Your ID number auto-fills your date of birth and gender.</p>
+
+                <!-- Plan selection at the top of Step 1 -->
+                <div class="plan-select-wrap">
+                    <span class="gender-label">Select Your Membership Plan *</span>
+                    <div class="plan-select-grid">
+                        <div class="plan-select-card" id="plan-basic" onclick="selectPlan('basic')">
+                            <div class="plan-select-name">BASIC</div>
+                            <div class="plan-select-price">R199<span>/mo</span></div>
+                        </div>
+                        <div class="plan-select-card featured" id="plan-standard" onclick="selectPlan('standard')">
+                            <div class="plan-select-badge">Popular</div>
+                            <div class="plan-select-name">STANDARD</div>
+                            <div class="plan-select-price">R399<span>/mo</span></div>
+                        </div>
+                        <div class="plan-select-card" id="plan-premium" onclick="selectPlan('premium')">
+                            <div class="plan-select-name">PREMIUM</div>
+                            <div class="plan-select-price">R699<span>/mo</span></div>
+                        </div>
+                    </div>
+                    <div class="field-error" id="err-plan">Please select a membership plan.</div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>First Name *</label>
+                        <input type="text" id="firstName" placeholder="e.g. Sipho" oninput="updateSummary()" />
+                        <div class="field-error" id="err-firstName">Please enter your first name.</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Last Name *</label>
+                        <input type="text" id="lastName" placeholder="e.g. Dlamini" oninput="updateSummary()" />
+                        <div class="field-error" id="err-lastName">Please enter your last name.</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>South African ID Number *</label>
+                    <div class="input-wrap">
+                        <input type="text" id="idNumber" placeholder="13-digit SA ID number"
+                               maxlength="13" oninput="handleIdInput(this)" />
+                        <span class="input-badge" id="idBadge"></span>
+                    </div>
+                    <div class="field-hint">Your ID number automatically fills your date of birth and gender below.</div>
+                    <div class="field-error" id="err-id">Please enter a valid 13-digit SA ID number.</div>
+                    <div class="field-success" id="ok-id">✓ Valid SA ID number detected!</div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Date of Birth *</label>
+                        <input type="date" id="dob" oninput="updateSummary()" />
+                        <div class="field-hint">Auto-filled from ID — you can also edit manually.</div>
+                        <div class="field-error" id="err-dob">Please enter your date of birth.</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Age</label>
+                        <input type="text" id="ageField" placeholder="Auto-calculated" readonly
+                               style="background:rgba(255,255,255,0.03);color:var(--muted);cursor:default;" />
+                    </div>
+                </div>
+
+                <div style="margin-bottom:18px;">
+                    <span class="gender-label">Gender *</span>
+                    <div class="gender-group">
+                        <button type="button" class="gender-btn" id="gBtn-male" onclick="selectGender('Male')">Male</button>
+                        <button type="button" class="gender-btn" id="gBtn-female" onclick="selectGender('Female')">Female</button>
+                        <button type="button" class="gender-btn" id="gBtn-notspecified" onclick="selectGender('Not Specified')">Not Specified</button>
+                    </div>
+                    <div class="field-error" id="err-gender">Please select your gender.</div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Mobile Number *</label>
+                        <input type="tel" id="phone" placeholder="+27 000 000 0000" />
+                        <div class="field-error" id="err-phone">Please enter a valid mobile number.</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address *</label>
+                        <input type="email" id="email" placeholder="you[at]example.com" oninput="updateSummary()" />
+                        <div class="field-error" id="err-email">Please enter a valid email address.</div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Password *</label>
+                        <div class="input-wrap">
+                            <input type="password"
+                                   id="password"
+                                   placeholder="Create a strong password"
+                                   oninput="checkPasswordStrength(this.value)" />
+                            <span id="passToggle"
+                                  onclick="togglePassword('password', this)"
+                                  style="position:absolute;right:12px;top:50%;
+                         transform:translateY(-50%);
+                         font-size:16px;cursor:pointer;
+                         pointer-events:auto;
+                         user-select:none;">👁</span>
+                        </div>
+                        <!-- Strength bar -->
+                        <div class="strength-wrap">
+                            <div class="strength-track">
+                                <div id="strengthBar"></div>
+                            </div>
+                            <div id="strengthText"></div>
+                        </div>
+                        <div class="field-hint">
+                            Min 8 characters, 1 uppercase, 1 number, 1 special character
+                        </div>
+                        <div class="field-error" id="err-password">
+                            Password must meet all requirements above.
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Confirm Password *</label>
+                        <div class="input-wrap">
+                            <input type="password"
+                                   id="confirmPassword"
+                                   placeholder="Repeat your password"
+                                   oninput="checkPasswordMatch()" />
+                            <span id="confirmToggle"
+                                  onclick="togglePassword('confirmPassword', this)"
+                                  style="position:absolute;right:12px;top:50%;
+                         transform:translateY(-50%);
+                         font-size:16px;cursor:pointer;
+                         pointer-events:auto;
+                         user-select:none;">👁</span>
+                        </div>
+                        <div class="field-error" id="err-confirmPassword">
+                            Passwords do not match.
+                        </div>
+                        <div class="field-success" id="ok-confirmPassword"
+                             style="display:none;">✓ Passwords match!</div>
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button type="button" class="btn-next" onclick="submitStep1()">
+                        Continue to Email Verification →
+                    </button>
+                </div>
+            </div>
+
+            <!-- =========== STEP 2: OTP =========== -->
+            <div class="step-content" id="step2">
+                <div class="panel-title">Verify Your Email</div>
+                <p class="panel-sub">
+                    We've sent a 6-digit verification code to
+                    <strong id="emailDisplay" style="color:#fff;"></strong>.
+                    Enter it below to continue.
+                </p>
+
+                <div class="otp-sent-msg">
+                    📧 Verification code sent to <strong id="emailDisplay2"></strong>
+                </div>
+
+                <div class="otp-wrap">
+                    <input class="otp-input" type="text" maxlength="1" id="otp1" oninput="otpMove(this,'otp2')" onkeydown="otpBack(event,this,'')" />
+                    <input class="otp-input" type="text" maxlength="1" id="otp2" oninput="otpMove(this,'otp3')" onkeydown="otpBack(event,this,'otp1')" />
+                    <input class="otp-input" type="text" maxlength="1" id="otp3" oninput="otpMove(this,'otp4')" onkeydown="otpBack(event,this,'otp2')" />
+                    <input class="otp-input" type="text" maxlength="1" id="otp4" oninput="otpMove(this,'otp5')" onkeydown="otpBack(event,this,'otp3')" />
+                    <input class="otp-input" type="text" maxlength="1" id="otp5" oninput="otpMove(this,'otp6')" onkeydown="otpBack(event,this,'otp4')" />
+                    <input class="otp-input" type="text" maxlength="1" id="otp6" oninput="otpMove(this,'')" onkeydown="otpBack(event,this,'otp5')" />
+                </div>
+
+                <div class="field-error" id="err-otp" style="text-align:center;display:none;">Incorrect code. Please try again.</div>
+                <div class="field-success" id="ok-otp" style="text-align:center;display:none;">✓ Email verified successfully!</div>
+                <div id="resend-msg" style="display:none;text-align:center;color:#22C55E;font-size:13px;margin-top:8px;"></div>
+
+                <div class="resend-link">
+                    Didn't receive the code?
+                    <span onclick="resendOtp()">Resend code</span>
+                    <span id="resendTimer" style="color:var(--muted);"></span>
+                </div>
+
+                <div class="btn-row">
+                    <button type="button" class="btn-prev" onclick="goPrev(2)">← Back</button>
+                    <button type="button" class="btn-next" onclick="submitStep2()">Verify &amp; Continue →</button>
+                </div>
+            </div>
+
+            <!-- =========== STEP 3: T&C =========== -->
+            <div class="step-content" id="step3">
+                <div class="panel-title">Terms &amp; Conditions</div>
+                <p class="panel-sub">Please read and accept our terms before proceeding to payment.</p>
+
+                <div class="tc-box">
+                    <h4>1. Membership Agreement</h4>
+                    <p>By registering with GymHub, you agree to abide by all rules and regulations set out by GymHub management. Your membership is personal and non-transferable.</p>
+                    <h4>2. Payment Terms</h4>
+                    <p>Monthly fees are debited on the 1st of each month via debit order. GymHub reserves the right to suspend access if payment fails. A 30-day written cancellation notice is required to terminate your membership.</p>
+                    <h4>3. Code of Conduct</h4>
+                    <p>Members must treat all staff and fellow members with respect. GymHub management reserves the right to terminate membership in the event of misconduct, damage to equipment, or harassment.</p>
+                    <h4>4. Health &amp; Safety</h4>
+                    <p>Members confirm they are medically fit to participate in physical exercise. GymHub is not liable for any injury sustained on the premises provided reasonable safety standards were followed.</p>
+                    <h4>5. Privacy Policy</h4>
+                    <p>Your personal information is collected for membership purposes only and will not be shared with third parties without your consent, except where required by law.</p>
+                    <h4>6. Facilities &amp; Access</h4>
+                    <p>Access is limited to your registered branch and plan tier. Operating hours may change during public holidays. GymHub reserves the right to close facilities temporarily for maintenance without prior notice.</p>
+                </div>
+
+                <label class="checkbox-row">
+                    <input type="checkbox" id="tc1" />
+                    <span>I have read and agree to the <strong style="color:#fff;">Terms &amp; Conditions</strong> of GymHub membership.</span>
+                </label>
+                <label class="checkbox-row">
+                    <input type="checkbox" id="tc2" />
+                    <span>I confirm that I am 18 years or older and medically fit to participate in physical exercise.</span>
+                </label>
+                <label class="checkbox-row">
+                    <input type="checkbox" id="tc3" />
+                    <span>I consent to GymHub processing my personal information in accordance with the <strong style="color:#fff;">Privacy Policy</strong>.</span>
+                </label>
+
+                <div class="field-error" id="err-tc">Please accept all terms and conditions to continue.</div>
+
+                <div class="btn-row">
+                    <button type="button" class="btn-prev" onclick="goPrev(3)">← Back</button>
+                    <button type="button" class="btn-next" onclick="submitStep3()">Accept &amp; Proceed to Payment →</button>
+                </div>
+            </div>
+
+            <!-- =========== STEP 4: PAYMENT =========== -->
+            <div class="step-content" id="step4">
+                <div class="panel-title">Payment</div>
+                <p class="panel-sub">Complete your payment to activate your GymHub membership. Your first debit will include the once-off joining fee.</p>
+
+                <!-- Payment amount summary -->
+                <div class="payment-summary-box">
+                    <div class="payment-summary-row">
+                        <span>Monthly Fee (<span id="pay-plan-label">—</span>)</span>
+                        <span id="pay-monthly">—</span>
+                    </div>
+                    <div class="payment-summary-row">
+                        <span>Once-off Joining Fee</span>
+                        <span>R150.00</span>
+                    </div>
+                    <div class="payment-summary-row total">
+                        <span>Total Due Today</span>
+                        <span id="pay-total">—</span>
+                    </div>
+                </div>
+
+                <!-- Payment method selector -->
+                <div style="margin-bottom:24px;">
+                    <span class="gender-label">Payment Method *</span>
+                    <div class="gender-group">
+                        <button type="button" class="gender-btn" id="pay-card" onclick="selectPayMethod('card')">💳 Card</button>
+                        <button type="button" class="gender-btn" id="pay-eft" onclick="selectPayMethod('eft')">🏦 EFT</button>
+                        <button type="button" class="gender-btn" id="pay-debit" onclick="selectPayMethod('debit')">📋 Debit Order</button>
+                    </div>
+                    <div class="field-error" id="err-paymethod">Please select a payment method.</div>
+                </div>
+
+                <!-- Card payment fields -->
+                <div id="card-fields" style="display:none;">
+                    <div class="form-group">
+                        <label>Cardholder Name *</label>
+                        <input type="text" id="cardName" placeholder="Name as on card" />
+                        <div class="field-error" id="err-cardName">Please enter the cardholder name.</div>
+                    </div>
+                    <div class="form-group">
+                        <label>Card Number *</label>
+                        <div class="input-wrap">
+                            <input type="text" id="cardNumber" placeholder="0000 0000 0000 0000"
+                                   maxlength="19" oninput="formatCardNumber(this)" />
+                            <span class="input-badge" id="cardBrand"></span>
+                        </div>
+                        <div class="field-error" id="err-cardNumber">Please enter a valid card number.</div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Expiry Date *</label>
+                            <input type="text" id="cardExpiry" placeholder="MM/YY" maxlength="5" oninput="formatExpiry(this)" />
+                            <div class="field-error" id="err-cardExpiry">Please enter a valid expiry date.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>CVV *</label>
+                            <input type="text" id="cardCvv" placeholder="3-digit code" maxlength="3" />
+                            <div class="field-error" id="err-cardCvv">Please enter your CVV.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EFT fields -->
+                <div id="eft-fields" style="display:none;">
+                    <div class="eft-info-box">
+                        <div class="eft-info-title">🏦 GymHub Banking Details</div>
+                        <div class="eft-info-row"><span>Bank</span><strong>First National Bank</strong></div>
+                        <div class="eft-info-row"><span>Account Name</span><strong>GymHub (Pty) Ltd</strong></div>
+                        <div class="eft-info-row"><span>Account Number</span><strong>62 000 000 00</strong></div>
+                        <div class="eft-info-row"><span>Branch Code</span><strong>250 655</strong></div>
+                        <div class="eft-info-row"><span>Reference</span><strong id="eft-ref">GH-PENDING</strong></div>
+                    </div>
+                    <p style="font-size:13px;color:var(--muted);margin-top:12px;line-height:1.6;">
+                        Please use your name and surname as the payment reference. Your membership will be activated within 24 hours of payment confirmation.
+                    </p>
+                </div>
+
+                <!-- Debit order fields -->
+                <div id="debit-fields" style="display:none;">
+                    <div class="form-group">
+                        <label>Account Holder Name *</label>
+                        <input type="text" id="debitName" placeholder="Name as on bank account" />
+                        <div class="field-error" id="err-debitName">Please enter the account holder name.</div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Bank Name *</label>
+                            <select id="debitBank">
+                                <option value="">Select bank...</option>
+                                <option value="fnb">FNB</option>
+                                <option value="absa">ABSA</option>
+                                <option value="standard">Standard Bank</option>
+                                <option value="nedbank">Nedbank</option>
+                                <option value="capitec">Capitec</option>
+                                <option value="african">African Bank</option>
+                            </select>
+                            <div class="field-error" id="err-debitBank">Please select your bank.</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Account Number *</label>
+                            <input type="text" id="debitAccount" placeholder="Your account number" />
+                            <div class="field-error" id="err-debitAccount">Please enter your account number.</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Debit Date</label>
+                        <select id="debitDate">
+                            <option value="1">1st of every month</option>
+                            <option value="15">15th of every month</option>
+                            <option value="25">25th of every month</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="field-error" id="err-payment" style="margin-top:8px;"></div>
+
+                <div class="btn-row">
+                    <button type="button" class="btn-prev" onclick="goPrev(4)">← Back</button>
+                    <button type="button" class="btn-next" onclick="submitStep4()">
+                        Confirm Payment &amp; Complete Registration →
+                    </button>
+                </div>
+            </div>
+
+            <!-- =========== STEP 5: CONFIRMATION + QR =========== -->
+            <div class="step-content" id="step5">
+                <div style="text-align:center; padding:20px 0;">
+
+                    <!-- Animated success ring -->
+                    <div style="margin:0 auto 28px; width:100px; height:100px; position:relative;">
+                        <svg viewBox="0 0 100 100" width="100" height="100">
+                            <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(34,197,94,0.15)" stroke-width="6" />
+                            <circle cx="50" cy="50" r="44" fill="none" stroke="#22C55E"
+                                    stroke-width="6" stroke-linecap="round"
+                                    stroke-dasharray="276" stroke-dashoffset="276"
+                                    transform="rotate(-90 50 50)" id="successRing"
+                                    style="transition: stroke-dashoffset 1s ease;" />
+                        </svg>
+                        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:36px;">✅</div>
+                    </div>
+
+                    @*<div style="display:inline-flex;align-items:center;gap:8px;
+                                    background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);
+                                    border-radius:50px;padding:6px 18px;color:#22C55E;
+                                    font-size:12px;font-weight:600;letter-spacing:1.5px;
+                                    text-transform:uppercase;margin-bottom:20px;">
+                            ● Registration Complete
+                        </div>*@
+
+                    <div style="font-family:'Bebas Neue';font-size:clamp(36px,6vw,56px);
+                                letter-spacing:2px;line-height:1;margin-bottom:12px;">
+                        WELCOME <br />
+                        <span style="color:var(--blue-bright);" id="confirmName">GYMHUB</span>
+                    </div>
+
+                    <p style="font-size:15px;color:var(--muted);line-height:1.7;
+                               max-width:460px;margin:0 auto 32px;">
+                        Your membership is now active. Show your QR code at the front desk to access the gym.
+                    </p>
+
+                    <!-- Registration Summary + QR code side by side -->
+                    <div class="confirmation-grid">
+
+                        <!-- Summary -->
+                        <div class="conf-summary-box">
+                            <div class="conf-summary-title">Registration Summary</div>
+                            <div class="conf-row">
+                                <div class="conf-label">Full Name</div>
+                                <div class="conf-value" id="conf-name">–</div>
+                            </div>
+                            <div class="conf-row">
+                                <div class="conf-label">Email</div>
+                                <div class="conf-value" id="conf-email">–</div>
+                            </div>
+                            <div class="conf-row">
+                                <div class="conf-label">Plan</div>
+                                <div class="conf-value accent" id="conf-plan">–</div>
+                            </div>
+                            <div class="conf-row">
+                                <div class="conf-label">Payment Method</div>
+                                <div class="conf-value" id="conf-payment">–</div>
+                            </div>
+                            <div class="conf-row">
+                                <div class="conf-label">Member ID</div>
+                                <div class="conf-value gold" id="conf-id">–</div>
+                            </div>
+                            <div class="conf-row">
+                                <div class="conf-label">Status</div>
+                                <div class="conf-value" style="color:#22C55E;font-weight:600;">✓ Active</div>
+                            </div>
+                        </div>
+
+                        <!-- QR Code -->
+                        <div class="qr-box">
+                            <div class="qr-title">🏷️ Your Access QR Code</div>
+                            <div class="qr-code-wrap" id="qrCodeWrap">
+                                <!-- QR generated by JS -->
+                            </div>
+                            <div class="qr-member-id" id="qr-member-id">GH-——</div>
+                            <p class="qr-hint">Show this at the front desk or scan to enter</p>
+                            <button class="qr-download-btn" onclick="downloadQR()">⬇ Download QR Code</button>
+                        </div>
+
+                    </div>
+
+                    <a href="/Home/About"
+                       style="display:inline-block;margin-top:28px;padding:14px 32px;
+                              border:1.5px solid var(--border);color:var(--muted);
+                              border-radius:10px;font-weight:500;font-size:14px;
+                              transition:all 0.25s ease;">
+                        🏠 Back to Home
+                    </a>
+                </div>
+            </div>
+
+        </div><!-- end form-panel -->
+        <!-- ===== SUMMARY SIDEBAR ===== -->
+        <div class="summary-sidebar">
+            <div class="summary-header">
+                <h3>Summary</h3>
+            </div>
+            <div class="summary-body">
+
+                <div class="summary-row">
+                    <div class="summary-row-label">Package</div>
+                    <div class="summary-row-value accent" id="sum-plan">— Select a plan</div>
+                </div>
+                <div class="summary-row">
+                    <div class="summary-row-label">Member Name</div>
+                    <div class="summary-row-value" id="sum-name">—</div>
+                </div>
+                <div class="summary-row">
+                    <div class="summary-row-label">Email</div>
+                    <div class="summary-row-value" id="sum-email" style="font-size:13px;word-break:break-all;">—</div>
+                </div>
+                <div class="summary-row">
+                    <div class="summary-row-label">Gender</div>
+                    <div class="summary-row-value" id="sum-gender">—</div>
+                </div>
+                <div class="summary-row">
+                    <div class="summary-row-label">Date of Birth</div>
+                    <div class="summary-row-value" id="sum-dob">—</div>
+                </div>
+
+                <!-- Price rows — show dashes until plan selected -->
+                <div class="summary-price-row">
+                    <div class="price-line">
+                        <span class="label">Monthly Fee</span>
+                        <span class="amount" id="sum-monthly">—</span>
+                    </div>
+                    <div class="price-line">
+                        <span class="label">Once-off Joining Fee</span>
+                        <span class="amount" id="sum-joining">—</span>
+                    </div>
+                    <div class="price-line total">
+                        <span class="label">Due Today</span>
+                        <span class="amount" id="sum-total">—</span>
+                    </div>
+                </div>
+
+                <!-- Member ID — hidden until step 5 -->
+                <div id="sum-memberid-wrap" style="display:none;margin-top:18px;
+                     text-align:center;padding:14px;
+                     border:1px dashed rgba(240,192,64,0.3);
+                     border-radius:10px;background:rgba(240,192,64,0.04);">
+                    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;
+                                letter-spacing:1px;margin-bottom:6px;">Member ID</div>
+                    <div style="font-family:'Bebas Neue';font-size:24px;
+                                color:var(--gold);letter-spacing:3px;"
+                         id="sum-memberid">—</div>
+                </div>
+
+                <div id="sum-memberid-placeholder"
+                     style="margin-top:18px;text-align:center;padding:14px;
+                            border:1px dashed rgba(255,255,255,0.1);
+                            border-radius:10px;background:rgba(255,255,255,0.02);">
+                    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;
+                                letter-spacing:1px;margin-bottom:6px;">Member ID</div>
+                    <div style="font-size:13px;color:rgba(255,255,255,0.2);font-style:italic;">
+                        Generated after registration
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div><!-- end page-body -->
+    <!-- QR code library -->
+   
+
+    <!-- QR code library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- Paystack inline -->
+    <script src="https://js.paystack.co/v1/inline.js"></script>
+    <!-- Main register logic -->
+    <script src="~/Scripts/register.js"></script>
+</body>
+
+</html>

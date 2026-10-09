@@ -1,0 +1,201 @@
+﻿@model List<SwiftyS26.Models.MealPlan>
+@using System.Linq
+
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.PageTitle = "My Meal Plans";
+    ViewBag.ActivePage = "nutrition";
+}
+
+<style>
+    .plans-page {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .plans-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .plans-title {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 30px;
+        letter-spacing: 1px;
+        color: #0F172A;
+    }
+
+    .plans-subtitle {
+        color: #64748B;
+        margin-top: 4px;
+        font-size: 13.5px;
+    }
+
+    .new-plan-btn {
+        text-decoration: none;
+        padding: 12px 22px;
+        background: linear-gradient(135deg, #2563EB, #1D4ED8);
+        color: #fff;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 13.5px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, .3);
+        transition: transform .15s;
+    }
+
+        .new-plan-btn:hover {
+            transform: translateY(-2px);
+            color: #fff;
+        }
+
+    .plans-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .plan-card {
+        background: #fff;
+        border: 1px solid #E2E8F0;
+        border-radius: 14px;
+        padding: 20px;
+        text-decoration: none;
+        display: block;
+        transition: box-shadow .15s, transform .15s;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .plan-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #2563EB;
+        }
+
+        .plan-card:hover {
+            box-shadow: 0 6px 18px rgba(15, 23, 42, .08);
+            transform: translateY(-2px);
+        }
+
+        .plan-card.accepted::before {
+            background: #16A34A;
+        }
+
+    .plan-card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .plan-goal {
+        font-weight: 800;
+        font-size: 15px;
+        color: #0F172A;
+    }
+
+    .plan-status {
+        font-size: 10.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        padding: 4px 10px;
+        border-radius: 20px;
+        background: #F1F5F9;
+        color: #64748B;
+    }
+
+        .plan-status.accepted {
+            background: #F0FDF4;
+            color: #15803D;
+        }
+
+    .plan-date {
+        color: #94A3B8;
+        font-size: 12px;
+        margin-bottom: 14px;
+    }
+
+    .plan-macros {
+        display: flex;
+        gap: 16px;
+        font-size: 12.5px;
+        color: #475569;
+        font-weight: 600;
+    }
+
+        .plan-macros span strong {
+            color: #0F172A;
+            font-weight: 800;
+        }
+
+    .empty-note {
+        color: #94A3B8;
+        font-size: 13px;
+        padding: 40px 0;
+        text-align: center;
+        background: #fff;
+        border: 1px solid #E2E8F0;
+        border-radius: 14px;
+    }
+
+    @@media (max-width: 700px) {
+        .plans-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="plans-page">
+
+    <div class="plans-header">
+        <div>
+            <h1 class="plans-title"><i class="fas fa-list-check" style="color:#2563EB;margin-right:8px;font-size:26px;"></i>My Meal Plans</h1>
+            <div class="plans-subtitle">All your generated 7-day meal plans.</div>
+        </div>
+        <a href="@Url.Action("DietPlan", "Meal")" class="new-plan-btn"><i class="fas fa-plus"></i> Generate New Plan</a>
+    </div>
+
+    @if (Model.Any())
+    {
+        <div class="plans-grid">
+            @foreach (var plan in Model)
+            {
+                <a href="@Url.Action("ViewPlan", "Meal", new { id = plan.MealPlanId })"
+                   class="plan-card @(plan.IsAccepted ? "accepted" : "")">
+                    <div class="plan-card-top">
+                        <div class="plan-goal">@plan.GoalType</div>
+                        <span class="plan-status @(plan.IsAccepted ? "accepted" : "")">
+                            @(plan.IsAccepted ? "Accepted" : "Draft")
+                        </span>
+                    </div>
+                    <div class="plan-date">Generated @plan.GeneratedAt.ToString("dd MMM yyyy, HH:mm")</div>
+                    <div class="plan-macros">
+                        <span><strong>@plan.TargetCalories</strong> kcal</span>
+                        <span><strong>@plan.TargetProtein g</strong> protein</span>
+                        <span><strong>@plan.Items.Count</strong> meals</span>
+                    </div>
+                </a>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="empty-note">
+            <i class="fas fa-calendar-xmark" style="font-size:24px;opacity:.3;display:block;margin-bottom:10px;"></i>
+            No meal plans yet. Generate your first one to get started.
+        </div>
+    }
+
+</div>

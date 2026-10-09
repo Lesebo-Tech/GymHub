@@ -1,0 +1,1380 @@
+﻿@model List<SwiftyS26.Models.StoreOrder>
+
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.Title = "My Orders";
+    ViewBag.PageTitle = "MY ORDERS";
+
+    var returnsByItem =
+        ViewBag.ReturnsByItem as
+            Dictionary<int, SwiftyS26.Models.ReturnRequest>
+        ?? new Dictionary<int, SwiftyS26.Models.ReturnRequest>();
+}
+
+<style>
+    @@keyframes mo-fade-up {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes mo-pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: .35;
+        }
+    }
+
+    @@keyframes mo-modal-in {
+        from {
+            opacity: 0;
+            transform: scale(.94) translateY(8px);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+    }
+
+    .mo-page {
+        max-width: 1450px;
+        margin: 0 auto;
+    }
+
+    .mo-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 22px;
+        flex-wrap: wrap;
+    }
+
+    .mo-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .mo-title-icon {
+        color: #2563eb;
+        font-size: 27px;
+    }
+
+    .mo-title h2 {
+        margin: 0;
+        color: #0f172a;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 30px;
+        letter-spacing: 1px;
+    }
+
+    .mo-subtitle {
+        margin: 4px 0 0;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .mo-store-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 10px 17px;
+        border-radius: 9px;
+        background: #2563eb;
+        color: #fff;
+        font-size: 12.5px;
+        font-weight: 800;
+        text-decoration: none;
+        transition: .2s ease;
+    }
+
+        .mo-store-link:hover {
+            background: #1d4ed8;
+            color: #fff;
+            text-decoration: none;
+            transform: translateY(-1px);
+        }
+
+    .mo-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 13px 16px;
+        margin-bottom: 16px;
+        border: 1px solid;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .mo-alert-success {
+        color: #15803d;
+        background: #f0fdf4;
+        border-color: #bbf7d0;
+    }
+
+    .mo-alert-error {
+        color: #dc2626;
+        background: #fef2f2;
+        border-color: #fecaca;
+    }
+
+    .mo-order-card {
+        margin-bottom: 16px;
+        overflow: hidden;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        box-shadow: 0 8px 25px rgba(15, 23, 42, .035);
+        animation: mo-fade-up .35s ease both;
+    }
+
+    .mo-order-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 19px 21px 15px;
+        flex-wrap: wrap;
+    }
+
+    .mo-reference {
+        color: #0f172a;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 18px;
+        letter-spacing: .6px;
+    }
+
+    .mo-order-date {
+        margin-top: 2px;
+        color: #64748b;
+        font-size: 12px;
+    }
+
+    .mo-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 11px;
+        border-radius: 20px;
+        font-size: 10.5px;
+        font-weight: 800;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .mo-status-paid,
+    .mo-status-preparing {
+        color: #b45309;
+        background: #fffbeb;
+    }
+
+    .mo-status-ready {
+        color: #1d4ed8;
+        background: #eff6ff;
+    }
+
+    .mo-status-collected {
+        color: #15803d;
+        background: #f0fdf4;
+    }
+
+    .mo-status-uncollected,
+    .mo-status-uncollected-review {
+        color: #dc2626;
+        background: #fef2f2;
+    }
+
+    .mo-status-refund-pending {
+        color: #7e22ce;
+        background: #faf5ff;
+    }
+
+    .mo-status-refunded {
+        color: #15803d;
+        background: #f0fdf4;
+    }
+
+    .mo-status-resolved {
+        color: #475569;
+        background: #f1f5f9;
+    }
+
+    .mo-status-cancelled {
+        color: #64748b;
+        background: #f1f5f9;
+    }
+
+    .mo-order-summary {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 0 21px 16px;
+        color: #64748b;
+        font-size: 12.5px;
+        flex-wrap: wrap;
+    }
+
+    .mo-summary-value {
+        color: #0f172a;
+        font-weight: 800;
+    }
+
+    .mo-discount {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: #15803d;
+        font-weight: 800;
+    }
+
+    .mo-discount-label {
+        padding: 3px 8px;
+        border-radius: 20px;
+        color: #15803d;
+        background: #f0fdf4;
+        font-size: 9.5px;
+        text-transform: uppercase;
+    }
+
+    .mo-deadline {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        margin: 0 21px 16px;
+        padding: 11px 14px;
+        border-radius: 10px;
+        font-size: 12.5px;
+        font-weight: 700;
+    }
+
+    .mo-deadline-normal {
+        color: #1d4ed8;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+    }
+
+    .mo-deadline-warning {
+        color: #b45309;
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+    }
+
+    .mo-deadline-urgent {
+        color: #dc2626;
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+    }
+
+    .mo-deadline-dot {
+        width: 7px;
+        height: 7px;
+        margin-top: 5px;
+        border-radius: 50%;
+        background: currentColor;
+        animation: mo-pulse 1.5s ease-in-out infinite;
+        flex: 0 0 auto;
+    }
+
+    .mo-uncollected-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        margin: 0 21px 16px;
+        padding: 11px 14px;
+        border: 1px solid #fecaca;
+        border-radius: 10px;
+        color: #b91c1c;
+        background: #fef2f2;
+        font-size: 12px;
+        line-height: 1.55;
+    }
+
+    .mo-items {
+        margin: 0 21px;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .mo-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 14px 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+        .mo-item:last-child {
+            border-bottom: none;
+        }
+
+    .mo-item-information {
+        min-width: 0;
+    }
+
+    .mo-item-name {
+        color: #334155;
+        font-size: 13.5px;
+        font-weight: 700;
+    }
+
+    .mo-item-meta {
+        margin-top: 3px;
+        color: #64748b;
+        font-size: 11.5px;
+    }
+
+    .mo-return-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 7px 14px;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        color: #dc2626;
+        background: #fef2f2;
+        font-size: 11.5px;
+        font-weight: 800;
+        text-decoration: none;
+        white-space: nowrap;
+        transition: .2s ease;
+    }
+
+        .mo-return-button:hover {
+            color: #b91c1c;
+            background: #fee2e2;
+            text-decoration: none;
+            transform: translateY(-1px);
+        }
+
+    .mo-return-area {
+        display: flex;
+        align-items: flex-end;
+        justify-content: flex-end;
+        gap: 7px;
+        max-width: 580px;
+        flex-wrap: wrap;
+    }
+
+    .mo-return-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 10.5px;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .mo-return-pending {
+        color: #b45309;
+        background: #fffbeb;
+    }
+
+    .mo-return-admin {
+        color: #7e22ce;
+        background: #faf5ff;
+    }
+
+    .mo-return-processing {
+        color: #c2410c;
+        background: #fff7ed;
+    }
+
+    .mo-return-approved {
+        color: #15803d;
+        background: #f0fdf4;
+    }
+
+    .mo-return-exchange {
+        color: #1d4ed8;
+        background: #eff6ff;
+    }
+
+    .mo-return-completed {
+        color: #047857;
+        background: #ecfdf5;
+    }
+
+    .mo-return-rejected {
+        color: #dc2626;
+        background: #fef2f2;
+    }
+
+    .mo-return-cancelled {
+        color: #64748b;
+        background: #f1f5f9;
+    }
+
+    .mo-return-detail {
+        width: 100%;
+        color: #64748b;
+        font-size: 10.5px;
+        line-height: 1.45;
+        text-align: right;
+    }
+
+    .mo-return-qr,
+    .mo-exchange-payment {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 7px 12px;
+        border-radius: 8px;
+        font-size: 11px;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
+        transition: .2s ease;
+    }
+
+    .mo-return-qr {
+        border: 1px solid #bfdbfe;
+        color: #2563eb;
+        background: #eff6ff;
+    }
+
+        .mo-return-qr:hover {
+            color: #1d4ed8;
+            background: #dbeafe;
+            text-decoration: none;
+            transform: translateY(-1px);
+        }
+
+    .mo-exchange-payment {
+        border: none;
+        color: #fff;
+        background: #2563eb;
+    }
+
+        .mo-exchange-payment:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+    .mo-actions {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 15px 21px 19px;
+        flex-wrap: wrap;
+    }
+
+    .mo-action-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 9px 16px;
+        border-radius: 9px;
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: .2s ease;
+    }
+
+    .mo-pickup-qr-button {
+        border: 1px solid #2563eb;
+        color: #2563eb;
+        background: #fff;
+    }
+
+        .mo-pickup-qr-button:hover {
+            color: #fff;
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+    .mo-reorder-button {
+        border: none;
+        color: #334155;
+        background: #f1f5f9;
+    }
+
+        .mo-reorder-button:hover {
+            background: #e2e8f0;
+            transform: translateY(-1px);
+        }
+
+    .mo-empty {
+        padding: 70px 25px;
+        border: 1px dashed #cbd5e1;
+        border-radius: 16px;
+        color: #64748b;
+        background: #fff;
+        text-align: center;
+    }
+
+    .mo-empty-icon {
+        display: block;
+        margin-bottom: 12px;
+        color: #94a3b8;
+        font-size: 35px;
+    }
+
+    .mo-empty-title {
+        color: #0f172a;
+        font-size: 16px;
+        font-weight: 800;
+    }
+
+    .mo-empty-text {
+        margin: 6px 0 18px;
+        font-size: 13px;
+    }
+
+    .mo-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        background: rgba(15, 23, 42, .7);
+        backdrop-filter: blur(3px);
+    }
+
+    .mo-modal-box {
+        width: 100%;
+        max-width: 380px;
+        padding: 26px;
+        border-radius: 18px;
+        background: #fff;
+        box-shadow: 0 25px 60px rgba(15, 23, 42, .25);
+        text-align: center;
+        animation: mo-modal-in .25s ease both;
+    }
+
+    .mo-modal-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        margin-bottom: 10px;
+        border-radius: 12px;
+        color: #2563eb;
+        background: #eff6ff;
+        font-size: 20px;
+    }
+
+    .mo-modal-title {
+        color: #0f172a;
+        font-size: 17px;
+        font-weight: 800;
+    }
+
+    .mo-modal-text {
+        margin: 5px 0 18px;
+        color: #64748b;
+        font-size: 12px;
+        line-height: 1.5;
+    }
+
+    .mo-qr-image {
+        width: 230px;
+        height: 230px;
+        max-width: 100%;
+        padding: 8px;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #fff;
+        object-fit: contain;
+    }
+
+    .mo-modal-reference {
+        margin-top: 10px;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .mo-modal-close {
+        width: 100%;
+        margin-top: 17px;
+        padding: 10px 18px;
+        border: none;
+        border-radius: 9px;
+        color: #334155;
+        background: #f1f5f9;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+        .mo-modal-close:hover {
+            background: #e2e8f0;
+        }
+
+    @@media (max-width: 800px) {
+        .mo-item {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .mo-return-area {
+            width: 100%;
+            max-width: none;
+            align-items: flex-start;
+            justify-content: flex-start;
+        }
+
+        .mo-return-detail {
+            text-align: left;
+        }
+    }
+
+    @@media (max-width: 520px) {
+        .mo-order-header,
+        .mo-order-summary,
+        .mo-actions {
+            padding-left: 15px;
+            padding-right: 15px;
+        }
+
+        .mo-items {
+            margin-left: 15px;
+            margin-right: 15px;
+        }
+
+        .mo-deadline,
+        .mo-uncollected-note {
+            margin-left: 15px;
+            margin-right: 15px;
+        }
+
+        .mo-header {
+            flex-direction: column;
+        }
+
+        .mo-store-link {
+            width: 100%;
+        }
+
+        .mo-actions form,
+        .mo-action-button {
+            width: 100%;
+        }
+
+        .mo-return-button,
+        .mo-return-qr,
+        .mo-exchange-payment {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="mo-page">
+    <div class="mo-header">
+        <div>
+            <div class="mo-title">
+                <i class="fas fa-receipt mo-title-icon"></i>
+                <h2>My Orders</h2>
+            </div>
+
+            <p class="mo-subtitle">
+                Track purchases, collection deadlines, returns and exchanges.
+            </p>
+        </div>
+
+        <a href="@Url.Action("Index", "Store")"
+           class="mo-store-link">
+            <i class="fas fa-store"></i>
+            Continue Shopping
+        </a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="mo-alert mo-alert-success">
+            <i class="fas fa-circle-check"></i>
+            <span>@TempData["Success"]</span>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="mo-alert mo-alert-error">
+            <i class="fas fa-circle-exclamation"></i>
+            <span>@TempData["Error"]</span>
+        </div>
+    }
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="mo-empty">
+            <i class="fas fa-bag-shopping mo-empty-icon"></i>
+
+            <div class="mo-empty-title">You have not placed any orders yet</div>
+
+            <div class="mo-empty-text">
+                Your completed and active store orders will appear here.
+            </div>
+
+            <a href="@Url.Action("Index", "Store")"
+               class="mo-store-link">
+                Browse Store
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    }
+    else
+    {
+        int cardIndex = 0;
+
+        foreach (var order in Model)
+        {
+            cardIndex++;
+
+            string statusText = order.Status;
+            string statusClass = "mo-status-cancelled";
+            string statusIcon = "fas fa-circle";
+
+            switch (order.Status)
+            {
+                case "Paid":
+                    statusText = "Payment Received";
+                    statusClass = "mo-status-paid";
+                    statusIcon = "fas fa-credit-card";
+                    break;
+
+                case "Preparing":
+                    statusText = "Preparing";
+                    statusClass = "mo-status-preparing";
+                    statusIcon = "fas fa-box";
+                    break;
+
+                case "ReadyForPickup":
+                    statusText = "Ready for Pickup";
+                    statusClass = "mo-status-ready";
+                    statusIcon = "fas fa-store";
+                    break;
+
+                case "Collected":
+                    statusText = "Collected";
+                    statusClass = "mo-status-collected";
+                    statusIcon = "fas fa-circle-check";
+                    break;
+
+                case "Uncollected":
+                    statusText = "Uncollected";
+                    statusClass = "mo-status-uncollected";
+                    statusIcon = "fas fa-clock-rotate-left";
+                    break;
+
+                case "UncollectedPendingReview":
+                    statusText = "Uncollected – Under Review";
+                    statusClass = "mo-status-uncollected-review";
+                    statusIcon = "fas fa-magnifying-glass";
+                    break;
+
+                case "UncollectedRefundPending":
+                    statusText = "Refund Pending";
+                    statusClass = "mo-status-refund-pending";
+                    statusIcon = "fas fa-hourglass-half";
+                    break;
+
+                case "UncollectedRefunded":
+                    statusText = "Refunded";
+                    statusClass = "mo-status-refunded";
+                    statusIcon = "fas fa-money-bill-transfer";
+                    break;
+
+                case "UncollectedResolved":
+                    statusText = "Resolved";
+                    statusClass = "mo-status-resolved";
+                    statusIcon = "fas fa-circle-check";
+                    break;
+
+                case "Cancelled":
+                    statusText = "Cancelled";
+                    statusClass = "mo-status-cancelled";
+                    statusIcon = "fas fa-ban";
+                    break;
+            }
+
+            string deadlineClass = null;
+            string deadlineText = null;
+
+            if (order.Status == "ReadyForPickup" &&
+                order.PickupDeadline.HasValue)
+            {
+                TimeSpan remaining =
+                    order.PickupDeadline.Value - DateTime.Now;
+
+                if (remaining.TotalMinutes <= 0)
+                {
+                    deadlineClass = "mo-deadline-urgent";
+                    deadlineText =
+                        "The collection deadline has passed. " +
+                        "The order is awaiting an automatic status update.";
+                }
+                else if (remaining.TotalHours <= 24)
+                {
+                    int remainingHours =
+                        Math.Max(0, (int)Math.Floor(remaining.TotalHours));
+
+                    int remainingMinutes =
+                        Math.Max(0, remaining.Minutes);
+
+                    deadlineClass = "mo-deadline-urgent";
+                    deadlineText =
+                        "Urgent: collect within " +
+                        remainingHours + " hour(s) and " +
+                        remainingMinutes + " minute(s).";
+                }
+                else if (remaining.TotalHours <= 96)
+                {
+                    deadlineClass = "mo-deadline-warning";
+                    deadlineText =
+                        "Collection reminder: collect by " +
+                        order.PickupDeadline.Value
+                            .ToString("dd MMM yyyy, HH:mm") + ".";
+                }
+                else
+                {
+                    deadlineClass = "mo-deadline-normal";
+                    deadlineText =
+                        "Ready for collection until " +
+                        order.PickupDeadline.Value
+                            .ToString("dd MMM yyyy, HH:mm") + ".";
+                }
+            }
+
+            <section class="mo-order-card"
+                     style="animation-delay:@((cardIndex * .03).ToString("0.00"))s;">
+
+                <div class="mo-order-header">
+                    <div>
+                        <div class="mo-reference">
+                            @order.ReferenceNumber
+                        </div>
+
+                        <div class="mo-order-date">
+                            Ordered on
+                            @order.CreatedAt.ToString("dd MMM yyyy, HH:mm")
+                        </div>
+                    </div>
+
+                    <span class="mo-status @statusClass">
+                        <i class="@statusIcon"></i>
+                        @statusText
+                    </span>
+                </div>
+
+                <div class="mo-order-summary">
+                    <span>
+                        Subtotal:
+                        <span class="mo-summary-value">
+                            R@(order.Subtotal.ToString("F2"))
+                        </span>
+                    </span>
+
+                    @if (order.WasDiscounted)
+                    {
+                        <span class="mo-discount">
+                            <span class="mo-discount-label">
+                                Premium benefit
+                            </span>
+
+                            <span>
+                                -R@(order.DiscountAmount.ToString("F2"))
+                            </span>
+                        </span>
+                    }
+
+                    <span>
+                        Amount paid:
+                        <span class="mo-summary-value">
+                            R@(order.FinalTotal.ToString("F2"))
+                        </span>
+                    </span>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(deadlineText))
+                {
+                    <div class="mo-deadline @deadlineClass">
+                        <span class="mo-deadline-dot"></span>
+                        <span>@deadlineText</span>
+                    </div>
+                }
+
+                @if (order.Status == "Uncollected" ||
+                     order.Status == "UncollectedPendingReview")
+                {
+                    <div class="mo-uncollected-note">
+                        <i class="fas fa-circle-info"></i>
+
+                        <span>
+                            This order was not collected before its deadline.
+                            GymHub staff will review the order and confirm the
+                            final resolution. Any applicable refund will be
+                            processed through the original payment transaction.
+                        </span>
+                    </div>
+                }
+
+                @if (order.Status == "UncollectedRefundPending")
+                {
+                    <div class="mo-uncollected-note">
+                        <i class="fas fa-money-bill-transfer"></i>
+
+                        <span>
+                            This order has been approved for a refund.
+                            Payment processing is currently in progress.
+                        </span>
+                    </div>
+                }
+
+                <div class="mo-items">
+                    @if (order.Items != null && order.Items.Any())
+                    {
+                        foreach (var item in order.Items)
+                        {
+                            SwiftyS26.Models.ReturnRequest returnRequest = null;
+
+                            returnsByItem.TryGetValue(
+                                item.StoreOrderItemId,
+                                out returnRequest);
+
+                            string productName =
+                                item.Product != null
+                                    ? item.Product.Name
+                                    : "Product";
+
+                            <div class="mo-item">
+                                <div class="mo-item-information">
+                                    <div class="mo-item-name">
+                                        @productName
+                                    </div>
+
+                                    <div class="mo-item-meta">
+                                        Quantity: @item.Quantity
+                                        &nbsp;&bull;&nbsp;
+                                        Line total:
+                                        R@(item.LineTotal.ToString("F2"))
+                                    </div>
+                                </div>
+
+                                @if (returnRequest != null)
+                                {
+                                    <div class="mo-return-area">
+                                        @switch (returnRequest.Status)
+                                        {
+                                            case "Pending":
+                                                <span class="mo-return-tag mo-return-pending">
+                                                    <i class="fas fa-clock"></i>
+                                                    Awaiting Item Inspection
+                                                </span>
+
+                                                <div class="mo-return-detail">
+                                                    Reference:
+                                                    <strong>
+                                                        @returnRequest.ReferenceNumber
+                                                    </strong>
+                                                    &bull; Bring the item to
+                                                    GymHub for inspection.
+                                                </div>
+                                                break;
+
+                                            case "StaffReviewed":
+                                            case "PendingAdminApproval":
+                                                <span class="mo-return-tag mo-return-admin">
+                                                    <i class="fas fa-user-shield"></i>
+                                                    Awaiting Admin Decision
+                                                </span>
+
+                                                <div class="mo-return-detail">
+                                                    Store Staff completed the
+                                                    physical inspection. An Admin
+                                                    must make the final decision.
+                                                </div>
+                                                break;
+
+                                            case "RefundProcessing":
+                                                <span class="mo-return-tag mo-return-processing">
+                                                    <i class="fas fa-spinner"></i>
+                                                    Refund Processing
+                                                </span>
+
+                                                <div class="mo-return-detail">
+                                                    Approved refund:
+                                                    <strong>
+                                                        R@(returnRequest.RefundAmount.HasValue
+                                                            ? returnRequest.RefundAmount.Value.ToString("F2")
+                                                            : "0.00")
+                                                    </strong>
+                                                </div>
+                                                break;
+
+                                            case "Approved":
+                                            case "Refunded":
+                                                <span class="mo-return-tag mo-return-approved">
+                                                    <i class="fas fa-circle-check"></i>
+                                                    Refund Approved
+                                                </span>
+
+                                                <div class="mo-return-detail">
+                                                    Refunded amount:
+                                                    <strong>
+                                                        R@(returnRequest.RefundAmount.HasValue
+                                                            ? returnRequest.RefundAmount.Value.ToString("F2")
+                                                            : "0.00")
+                                                    </strong>.
+                                                    This amount is based on the
+                                                    actual discounted purchase
+                                                    price paid for the returned
+                                                    quantity.
+                                                </div>
+                                                break;
+
+                                            case "ExchangeApproved":
+                                                <span class="mo-return-tag mo-return-exchange">
+                                                    <i class="fas fa-box"></i>
+                                                    Exchange Approved
+                                                </span>
+
+                                                <div class="mo-return-detail">
+                                                    Replacement:
+                                                    <strong>
+                                                        @(returnRequest.ExchangeProduct != null
+                                                            ? returnRequest.ExchangeProduct.Name
+                                                            : "Replacement product")
+                                                    </strong>
+                                                </div>
+                                                break;
+
+                                            case "AwaitingExchangePayment":
+                                                <span class="mo-return-tag mo-return-processing">
+                                                    <i class="fas fa-credit-card"></i>
+                                                    Exchange Payment Required
+                                                </span>
+
+                                                <div class="mo-return-detail">
+                                                    Replacement:
+                                                    <strong>
+                                                        @(returnRequest.ExchangeProduct != null
+                                                            ? returnRequest.ExchangeProduct.Name
+                                                            : "Replacement product")
+                                                    </strong>
+
+                                                    @if (returnRequest.ExchangeReservationExpiresAt.HasValue)
+                                                    {
+                                                        <text> &bull; Reserved until @returnRequest.ExchangeReservationExpiresAt.Value.ToString("dd MMM yyyy, HH:mm")</text>
+                                                    }
+                                                </div>
+
+                                                using (Html.BeginForm(
+                                                    "InitiateExchangePayment",
+                                                    "Store",
+                                                    FormMethod.Post,
+                                                    new
+                                                    {
+                                                        @class = "mo-inline-form"
+                                                    }))
+                                                {
+                                                    @Html.AntiForgeryToken()
+
+                                                    <input type="hidden"
+                                                           name="returnRequestId"
+                                                           value="@returnRequest.ReturnRequestId" />
+
+                                                    <button type="submit"
+                                                            class="mo-exchange-payment"
+                                                            onclick="return confirm('Continue to Paystack to pay the exchange price difference?');">
+                                                        <i class="fas fa-lock"></i>
+
+                                                        Pay
+                                                        R@(returnRequest
+                                                            .AdditionalPaymentAmount
+                                                            .HasValue
+                                                                ? returnRequest
+                                                                    .AdditionalPaymentAmount
+                                                                    .Value.ToString("F2")
+                                                                : "0.00")
+                                                    </button>
+                                                }
+                                                break;
+
+                                            case "ReadyForExchange":
+                                                <span class="mo-return-tag mo-return-exchange">
+                                                    <i class="fas fa-box-open"></i>
+                                                    Ready for In-Store Exchange
+                                                </span>
+
+                                                <div class="mo-return-detail">
+                                                    Bring the returned item to
+                                                    GymHub and present reference
+                                                    <strong>
+                                                        @returnRequest.ReferenceNumber
+                                                    </strong>.
+
+                                                    @if (returnRequest.ExchangeRefundAmount.HasValue &&
+                                                         returnRequest.ExchangeRefundAmount.Value > 0)
+                                                    {
+                                                        <text>
+                                                            A difference refund of
+                                                            <strong>
+                                                                R@(returnRequest.ExchangeRefundAmount.Value.ToString("F2"))
+                                                            </strong>
+                                                            will be processed when
+                                                            the exchange is completed.
+                                                        </text>
+                                                    }
+                                                </div>
+                                                break;
+
+                                            case "ExchangeCompleted":
+                                                <span class="mo-return-tag mo-return-completed">
+                                                    <i class="fas fa-circle-check"></i>
+                                                    Exchange Completed
+                                                </span>
+
+                                                <div class="mo-return-detail">
+                                                    Replacement:
+                                                    <strong>
+                                                        @(returnRequest.ExchangeProduct != null
+                                                            ? returnRequest.ExchangeProduct.Name
+                                                            : "Replacement product")
+                                                    </strong>
+
+                                                    @if (returnRequest.ExchangeCompletedAt.HasValue)
+                                                    {
+                                                        <text> &bull; Completed on @returnRequest.ExchangeCompletedAt.Value.ToString("dd MMM yyyy")</text>
+                                                    }
+                                                </div>
+                                                break;
+
+                                            case "Rejected":
+                                                <span class="mo-return-tag mo-return-rejected">
+                                                    <i class="fas fa-circle-xmark"></i>
+                                                    Request Declined
+                                                </span>
+
+                                                if (!string.IsNullOrWhiteSpace(
+                                                    returnRequest.AdminDecisionReason))
+                                                {
+                                                    <div class="mo-return-detail">
+                                                        Reason:
+                                                        <strong>
+                                                            @returnRequest.AdminDecisionReason
+                                                        </strong>
+                                                    </div>
+                                                }
+                                                break;
+
+                                            case "Cancelled":
+                                                <span class="mo-return-tag mo-return-cancelled">
+                                                    <i class="fas fa-ban"></i>
+                                                    Request Cancelled
+                                                </span>
+                                                break;
+
+                                            default:
+                                                <span class="mo-return-tag mo-return-pending">
+                                                    <i class="fas fa-clock"></i>
+                                                    @returnRequest.Status
+                                                </span>
+                                                break;
+                                        }
+
+                                        @if (!string.IsNullOrWhiteSpace(
+                                                returnRequest.ReturnQrBase64) &&
+                                             returnRequest.Status != "Refunded" &&
+                                             returnRequest.Status != "Approved" &&
+                                             returnRequest.Status != "Rejected" &&
+                                             returnRequest.Status != "Cancelled" &&
+                                             returnRequest.Status != "ExchangeCompleted")
+                                        {
+                                            <a href="@Url.Action(
+                                                "ReturnQr",
+                                                "Store",
+                                                new
+                                                {
+                                                    id = returnRequest.ReturnRequestId
+                                                })"
+                                               class="mo-return-qr"
+                                               title="Open return or exchange QR code">
+
+                                                <i class="fas fa-qrcode"></i>
+                                                View Return QR
+                                            </a>
+                                        }
+                                    </div>
+                                }
+                                else if (order.Status == "Collected")
+                                {
+                                    <a href="@Url.Action(
+                                        "RequestReturn",
+                                        "Store",
+                                        new
+                                        {
+                                            id = item.StoreOrderItemId
+                                        })"
+                                       class="mo-return-button">
+
+                                        <i class="fas fa-rotate-left"></i>
+                                        Return or Exchange
+                                    </a>
+                                }
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="mo-item">
+                            <div class="mo-item-information">
+                                <div class="mo-item-name">
+                                    Order item information is unavailable.
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <div class="mo-actions">
+                    @if (order.Status == "ReadyForPickup" &&
+                         !string.IsNullOrWhiteSpace(order.OrderQrBase64))
+                    {
+                        <button type="button"
+                                class="mo-action-button mo-pickup-qr-button"
+                                onclick="openPickupQr('@order.StoreOrderId')">
+
+                            <i class="fas fa-qrcode"></i>
+                            Show Pickup QR
+                        </button>
+
+                        <div id="pickupQrModal-@order.StoreOrderId"
+                             class="mo-modal"
+                             role="dialog"
+                             aria-modal="true"
+                             aria-labelledby="pickupQrTitle-@order.StoreOrderId"
+                             onclick="closePickupQrFromOverlay(event, '@order.StoreOrderId')">
+
+                            <div class="mo-modal-box">
+                                <div class="mo-modal-icon">
+                                    <i class="fas fa-qrcode"></i>
+                                </div>
+
+                                <div id="pickupQrTitle-@order.StoreOrderId"
+                                     class="mo-modal-title">
+                                    Collection QR Code
+                                </div>
+
+                                <div class="mo-modal-text">
+                                    Present this QR code to Store Staff when
+                                    collecting your order. Do not share it
+                                    with another person.
+                                </div>
+
+                                <img src="data:image/png;base64,@order.OrderQrBase64"
+                                     class="mo-qr-image"
+                                     alt="Pickup QR code for order @order.ReferenceNumber" />
+
+                                <div class="mo-modal-reference">
+                                    @order.ReferenceNumber
+                                </div>
+
+                                <button type="button"
+                                        class="mo-modal-close"
+                                        onclick="closePickupQr('@order.StoreOrderId')">
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    }
+
+                    @if (order.Status == "Collected" ||
+                         order.Status == "Uncollected" ||
+                         order.Status == "UncollectedResolved" ||
+                         order.Status == "UncollectedRefunded")
+                    {
+                        using (Html.BeginForm(
+                            "Reorder",
+                            "Store",
+                            FormMethod.Post))
+                        {
+                            @Html.AntiForgeryToken()
+
+                            <input type="hidden"
+                                   name="orderId"
+                                   value="@order.StoreOrderId" />
+
+                            <button type="submit"
+                                    class="mo-action-button mo-reorder-button">
+                                <i class="fas fa-rotate"></i>
+                                Reorder
+                            </button>
+                        }
+                    }
+                </div>
+            </section>
+        }
+    }
+</div>
+
+<script>
+    function openPickupQr(orderId) {
+        var modal = document.getElementById(
+            "pickupQrModal-" + orderId
+        );
+
+        if (!modal) {
+            return;
+        }
+
+        modal.style.display = "flex";
+        document.body.style.overflow = "hidden";
+    }
+
+    function closePickupQr(orderId) {
+        var modal = document.getElementById(
+            "pickupQrModal-" + orderId
+        );
+
+        if (!modal) {
+            return;
+        }
+
+        modal.style.display = "none";
+        document.body.style.overflow = "";
+    }
+
+    function closePickupQrFromOverlay(event, orderId) {
+        if (event.target === event.currentTarget) {
+            closePickupQr(orderId);
+        }
+    }
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key !== "Escape") {
+            return;
+        }
+
+        var openModals =
+            document.querySelectorAll(".mo-modal");
+
+        for (var i = 0; i < openModals.length; i++) {
+            if (openModals[i].style.display === "flex") {
+                openModals[i].style.display = "none";
+            }
+        }
+
+        document.body.style.overflow = "";
+    });
+</script>

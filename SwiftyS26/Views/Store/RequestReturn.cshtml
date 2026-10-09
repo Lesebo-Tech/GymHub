@@ -1,0 +1,1603 @@
+﻿@model SwiftyS26.Models.StoreOrderItem
+
+@using System.Collections.Generic
+@using System.Globalization
+
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.Title = "Return or Exchange";
+    ViewBag.PageTitle = "RETURN OR EXCHANGE";
+
+    var exchangeProducts =
+        ViewBag.ExchangeProducts
+        as List<SwiftyS26.Models.Product>
+        ?? new List<SwiftyS26.Models.Product>();
+
+    var exchangeNetPrices =
+        ViewBag.ExchangeNetPrices
+        as Dictionary<int, decimal>
+        ?? new Dictionary<int, decimal>();
+
+    bool isPremiumMember =
+        ViewBag.IsPremiumMember != null &&
+        (bool)ViewBag.IsPremiumMember;
+
+    int maximumReturnableQuantity =
+        ViewBag.MaximumReturnableQuantity != null
+            ? (int)ViewBag.MaximumReturnableQuantity
+            : Model.Quantity;
+
+    decimal estimatedReturnCredit =
+        ViewBag.EstimatedReturnCredit != null
+            ? (decimal)ViewBag.EstimatedReturnCredit
+            : Model.UnitPriceAtPurchase;
+
+    string returnCreditJs =
+        estimatedReturnCredit.ToString(
+            "0.00",
+            CultureInfo.InvariantCulture);
+
+    string productImagePath = null;
+
+    if (Model.Product != null &&
+        !string.IsNullOrWhiteSpace(Model.Product.ImagePath))
+    {
+        productImagePath =
+            Model.Product.ImagePath.StartsWith("~")
+                ? Url.Content(Model.Product.ImagePath)
+                : Url.Content(
+                    "~/" + Model.Product.ImagePath.TrimStart('/'));
+    }
+}
+
+<style>
+    @@keyframes rrFadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .rr-page,
+    .rr-page * {
+        box-sizing: border-box;
+    }
+
+    .rr-page {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 10px 0 45px;
+        color: #0f172a;
+    }
+
+    .rr-page-header {
+        margin-bottom: 22px;
+    }
+
+    .rr-title {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        margin: 0;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 30px;
+        letter-spacing: 1.1px;
+        color: #0f172a;
+    }
+
+    .rr-title-icon {
+        width: 38px;
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 11px;
+        background: #eff6ff;
+        color: #2563eb;
+        font-family: Arial, sans-serif;
+        font-size: 18px;
+    }
+
+    .rr-subtitle {
+        margin: 5px 0 0 49px;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .rr-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        margin-bottom: 18px;
+        padding: 13px 15px;
+        border: 1px solid #fecaca;
+        border-radius: 10px;
+        background: #fef2f2;
+        color: #dc2626;
+        font-size: 12.5px;
+        font-weight: 600;
+    }
+
+    .rr-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 20px;
+        align-items: start;
+    }
+
+    .rr-main {
+        min-width: 0;
+    }
+
+    .rr-panel {
+        margin-bottom: 18px;
+        overflow: hidden;
+        border: 1px solid #dbe3ee;
+        border-radius: 15px;
+        background: #fff;
+        animation: rrFadeUp .35s ease both;
+    }
+
+    .rr-panel-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+
+    .rr-panel-icon {
+        flex: 0 0 36px;
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        background: #eff6ff;
+        color: #2563eb;
+        font-size: 15px;
+    }
+
+    .rr-panel-heading {
+        min-width: 0;
+    }
+
+    .rr-panel-heading h3 {
+        margin: 0;
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .rr-panel-heading p {
+        margin: 3px 0 0;
+        color: #64748b;
+        font-size: 11.5px;
+    }
+
+    .rr-panel-body {
+        padding: 20px;
+    }
+
+    /* Product */
+
+    .rr-product {
+        display: grid;
+        grid-template-columns: 92px minmax(0, 1fr);
+        gap: 18px;
+        align-items: center;
+    }
+
+    .rr-product-image-wrap {
+        position: relative;
+        width: 92px;
+        height: 92px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        background: #f8fafc;
+    }
+
+    .rr-product-image {
+        display: block;
+        width: 100%;
+        height: 100%;
+        padding: 5px;
+        object-fit: contain;
+    }
+
+    .rr-product-placeholder {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8fafc;
+        color: #94a3b8;
+        font-size: 28px;
+    }
+
+    .rr-product-name {
+        margin-bottom: 7px;
+        color: #0f172a;
+        font-size: 17px;
+        font-weight: 800;
+        line-height: 1.3;
+    }
+
+    .rr-product-details {
+        color: #64748b;
+        font-size: 12.5px;
+        line-height: 1.8;
+    }
+
+    .rr-product-details strong {
+        color: #334155;
+    }
+
+    .rr-reference {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 8px;
+        padding: 5px 10px;
+        border-radius: 20px;
+        background: #eff6ff;
+        color: #1d4ed8;
+        font-size: 10.5px;
+        font-weight: 800;
+    }
+
+    /* Fields */
+
+    .rr-form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .rr-field {
+        margin-bottom: 17px;
+    }
+
+    .rr-field:last-child {
+        margin-bottom: 0;
+    }
+
+    .rr-field-full {
+        grid-column: 1 / -1;
+    }
+
+    .rr-label {
+        display: block;
+        margin-bottom: 6px;
+        color: #334155;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .rr-required {
+        color: #dc2626;
+    }
+
+    .rr-input,
+    .rr-select,
+    .rr-textarea {
+        display: block;
+        width: 100%;
+        padding: 11px 12px;
+        border: 1.5px solid #dbe3ee;
+        border-radius: 9px;
+        outline: none;
+        background: #fff;
+        color: #0f172a;
+        font-family: inherit;
+        font-size: 13px;
+        transition: border-color .2s ease,
+                    box-shadow .2s ease;
+    }
+
+    .rr-input:focus,
+    .rr-select:focus,
+    .rr-textarea:focus {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, .10);
+    }
+
+    .rr-input[readonly] {
+        background: #f1f5f9;
+        color: #475569;
+        cursor: not-allowed;
+    }
+
+    .rr-textarea {
+        min-height: 115px;
+        resize: vertical;
+        line-height: 1.5;
+    }
+
+    .rr-help {
+        display: block;
+        margin-top: 6px;
+        color: #64748b;
+        font-size: 11px;
+    }
+
+    /* Resolution */
+
+    .rr-resolution-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 13px;
+    }
+
+    .rr-resolution-option {
+        position: relative;
+        display: block;
+        width: 100%;
+        min-width: 0;
+        margin: 0;
+        cursor: pointer;
+    }
+
+    .rr-resolution-option > input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .rr-resolution-card {
+        display: block;
+        width: 100%;
+        min-height: 115px;
+        padding: 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        background: #fff;
+        transition: border-color .2s ease,
+                    background .2s ease,
+                    box-shadow .2s ease;
+    }
+
+    .rr-resolution-option:hover .rr-resolution-card {
+        border-color: #93c5fd;
+    }
+
+    .rr-resolution-option > input:checked +
+    .rr-resolution-card {
+        border-color: #2563eb;
+        background: #eff6ff;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, .08);
+    }
+
+    .rr-resolution-heading {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        margin-bottom: 7px;
+        color: #0f172a;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    .rr-resolution-heading i {
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: #fff;
+    }
+
+    .rr-resolution-description {
+        display: block;
+        color: #64748b;
+        font-size: 11.5px;
+        line-height: 1.55;
+    }
+
+    /* Exchange */
+
+    .rr-exchange-section {
+        display: none;
+        margin-top: 18px;
+        padding: 18px;
+        border: 1px solid #bfdbfe;
+        border-radius: 12px;
+        background: #f8fbff;
+    }
+
+    .rr-exchange-section.visible {
+        display: block;
+    }
+
+    .rr-section-label {
+        margin-bottom: 9px;
+        color: #334155;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .rr-exchange-types {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 17px;
+    }
+
+    .rr-type-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 43px;
+        margin: 0;
+        padding: 10px 12px;
+        border: 1px solid #dbe3ee;
+        border-radius: 9px;
+        background: #fff;
+        color: #334155;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .rr-type-option input {
+        width: auto;
+        margin: 0;
+        accent-color: #2563eb;
+    }
+
+    .rr-same-product {
+        margin-bottom: 16px;
+        padding: 13px;
+        border: 1px solid #bfdbfe;
+        border-radius: 9px;
+        background: #eff6ff;
+        color: #1e40af;
+        font-size: 11.5px;
+        line-height: 1.65;
+    }
+
+    .rr-different-product {
+        display: none;
+    }
+
+    .rr-different-product.visible {
+        display: block;
+    }
+
+    .rr-stock-message {
+        display: none;
+        margin-top: 6px;
+        font-size: 11px;
+        font-weight: 700;
+    }
+
+    .rr-stock-message.available {
+        display: block;
+        color: #16a34a;
+    }
+
+    .rr-stock-message.unavailable {
+        display: block;
+        color: #dc2626;
+    }
+
+    /* Calculation */
+
+    .rr-calculation {
+        margin-top: 17px;
+        padding: 15px;
+        border: 1px solid #dbeafe;
+        border-radius: 10px;
+        background: #fff;
+    }
+
+    .rr-calc-title {
+        margin-bottom: 6px;
+        color: #0f172a;
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+    }
+
+    .rr-calc-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        padding: 7px 0;
+        color: #64748b;
+        font-size: 12px;
+    }
+
+    .rr-calc-row strong {
+        color: #0f172a;
+        text-align: right;
+    }
+
+    .rr-calc-total {
+        margin-top: 5px;
+        padding-top: 12px;
+        border-top: 1px solid #e2e8f0;
+        color: #0f172a;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    /* Notices */
+
+    .rr-notice {
+        margin-top: 15px;
+        padding: 13px;
+        border-radius: 9px;
+        background: #fffbeb;
+        color: #92400e;
+        font-size: 11px;
+        line-height: 1.6;
+    }
+
+    .rr-premium-notice {
+        border: 1px solid #ddd6fe;
+        background: #f5f3ff;
+        color: #6d28d9;
+    }
+
+    /* Summary */
+
+    .rr-summary {
+        position: sticky;
+        top: 20px;
+    }
+
+    .rr-summary-card {
+        overflow: hidden;
+        border: 1px solid #dbe3ee;
+        border-radius: 15px;
+        background: #fff;
+        animation: rrFadeUp .4s ease both;
+    }
+
+    .rr-summary-header {
+        padding: 17px 20px;
+        background: #0f172a;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    .rr-summary-body {
+        padding: 20px;
+    }
+
+    .rr-summary-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 0;
+        color: #64748b;
+        font-size: 12px;
+    }
+
+    .rr-summary-row strong {
+        max-width: 180px;
+        color: #0f172a;
+        text-align: right;
+        overflow-wrap: anywhere;
+    }
+
+    .rr-summary-divider {
+        margin: 8px 0;
+        border: 0;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .rr-declaration {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-top: 15px;
+        padding: 13px;
+        border: 1px solid #dbe3ee;
+        border-radius: 9px;
+        background: #f8fafc;
+        color: #475569;
+        font-size: 11.5px;
+        line-height: 1.55;
+        cursor: pointer;
+    }
+
+    .rr-declaration input {
+        flex: 0 0 auto;
+        width: 15px;
+        height: 15px;
+        margin: 2px 0 0;
+        accent-color: #2563eb;
+    }
+
+    .rr-actions {
+        display: grid;
+        grid-template-columns: 1fr 1.45fr;
+        gap: 10px;
+        margin-top: 16px;
+    }
+
+    .rr-btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 10px 13px;
+        border-radius: 9px;
+        font-size: 12px;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .rr-btn-cancel {
+        border: 1px solid #dbe3ee;
+        background: #fff;
+        color: #475569;
+    }
+
+    .rr-btn-submit {
+        border: none;
+        background: #2563eb;
+        color: #fff;
+    }
+
+    .rr-btn-submit:hover {
+        background: #1d4ed8;
+    }
+
+    @@media (max-width: 900px) {
+        .rr-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .rr-summary {
+            position: static;
+        }
+    }
+
+    @@media (max-width: 620px) {
+        .rr-form-grid,
+        .rr-resolution-grid,
+        .rr-exchange-types {
+            grid-template-columns: 1fr;
+        }
+
+        .rr-product {
+            grid-template-columns: 75px minmax(0, 1fr);
+        }
+
+        .rr-product-image-wrap {
+            width: 75px;
+            height: 75px;
+        }
+
+        .rr-actions {
+            grid-template-columns: 1fr;
+        }
+
+        .rr-subtitle {
+            margin-left: 0;
+        }
+    }
+</style>
+
+<div class="rr-page">
+    <header class="rr-page-header">
+        <h2 class="rr-title">
+            <span class="rr-title-icon">
+                <i class="fas fa-rotate-left"></i>
+            </span>
+
+            Return or Exchange Request
+        </h2>
+
+        <p class="rr-subtitle">
+            Submit the product for inspection and select your preferred
+            resolution.
+        </p>
+    </header>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="rr-alert">
+            <i class="fas fa-circle-exclamation"></i>
+            <span>@TempData["Error"]</span>
+        </div>
+    }
+
+    @using (Html.BeginForm(
+        "RequestReturn",
+        "Store",
+        FormMethod.Post,
+        new
+        {
+            id = "returnRequestForm",
+            autocomplete = "off"
+        }))
+    {
+        @Html.AntiForgeryToken()
+
+        <input type="hidden"
+               name="storeOrderItemId"
+               value="@Model.StoreOrderItemId" />
+
+        <div class="rr-layout">
+            <main class="rr-main">
+                <!-- PURCHASED PRODUCT -->
+                <section class="rr-panel">
+                    <div class="rr-panel-header">
+                        <div class="rr-panel-icon">
+                            <i class="fas fa-box"></i>
+                        </div>
+
+                        <div class="rr-panel-heading">
+                            <h3>Purchased Product</h3>
+                            <p>Original product and transaction details</p>
+                        </div>
+                    </div>
+
+                    <div class="rr-panel-body">
+                        <div class="rr-product">
+                            <div class="rr-product-image-wrap">
+                                @if (!string.IsNullOrWhiteSpace(
+                                    productImagePath))
+                                {
+                                    <img class="rr-product-image"
+                                         src="@productImagePath"
+                                         alt="@Model.Product?.Name"
+                                         onerror="hideBrokenProductImage(this)" />
+
+                                    <div class="rr-product-placeholder"
+                                         style="display:none;">
+                                        <i class="fas fa-box-open"></i>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="rr-product-placeholder">
+                                        <i class="fas fa-box-open"></i>
+                                    </div>
+                                }
+                            </div>
+
+                            <div>
+                                <div class="rr-product-name">
+                                    @(Model.Product != null
+                                        ? Model.Product.Name
+                                        : "Product unavailable")
+                                </div>
+
+                                <div class="rr-product-details">
+                                    Purchased quantity:
+                                    <strong>@Model.Quantity</strong>
+                                    <br />
+
+                                    Unit price:
+                                    <strong>
+                                        R@(Model.UnitPriceAtPurchase.ToString("F2"))
+                                    </strong>
+                                    <br />
+
+                                    Total:
+                                    <strong>
+                                        R@(Model.LineTotal.ToString("F2"))
+                                    </strong>
+                                </div>
+
+                                <span class="rr-reference">
+                                    <i class="fas fa-receipt"></i>
+
+                                    @(Model.StoreOrder != null
+                                        ? Model.StoreOrder.ReferenceNumber
+                                        : "Store Order")
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- RETURN INFORMATION -->
+                <section class="rr-panel">
+                    <div class="rr-panel-header">
+                        <div class="rr-panel-icon">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+
+                        <div class="rr-panel-heading">
+                            <h3>Return Information</h3>
+                            <p>Tell us what is being returned and why</p>
+                        </div>
+                    </div>
+
+                    <div class="rr-panel-body">
+                        <div class="rr-form-grid">
+                            <div class="rr-field">
+                                <label class="rr-label"
+                                       for="returnQuantity">
+                                    Quantity to Return
+                                    <span class="rr-required">*</span>
+                                </label>
+
+                                <input class="rr-input"
+                                       id="returnQuantity"
+                                       type="number"
+                                       name="quantity"
+                                       min="1"
+                                       max="@maximumReturnableQuantity"
+                                       value="1"
+                                       required />
+
+                                <span class="rr-help">
+                                    Maximum returnable:
+                                    @maximumReturnableQuantity
+                                </span>
+                            </div>
+
+                            <div class="rr-field">
+                                <label class="rr-label"
+                                       for="returnReason">
+                                    Reason
+                                    <span class="rr-required">*</span>
+                                </label>
+
+                                <select class="rr-select"
+                                        id="returnReason"
+                                        name="reason"
+                                        required>
+                                    <option value="">
+                                        Select a reason
+                                    </option>
+
+                                    <option value="Defective">
+                                        Defective / Damaged
+                                    </option>
+
+                                    <option value="WrongItem">
+                                        Wrong Item Received
+                                    </option>
+
+                                    <option value="ChangedMind">
+                                        Changed My Mind
+                                    </option>
+
+                                    <option value="Other">
+                                        Other
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="rr-field rr-field-full">
+                                <label class="rr-label"
+                                       for="returnDescription">
+                                    Detailed Description
+                                    <span class="rr-required">*</span>
+                                </label>
+
+                                <textarea class="rr-textarea"
+                                          id="returnDescription"
+                                          name="description"
+                                          minlength="10"
+                                          maxlength="1000"
+                                          required
+                                          placeholder="Describe the product condition and explain why you want to return it."></textarea>
+
+                                <span class="rr-help">
+                                    Enter at least 10 characters.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- RESOLUTION -->
+                <section class="rr-panel">
+                    <div class="rr-panel-header">
+                        <div class="rr-panel-icon">
+                            <i class="fas fa-arrows-rotate"></i>
+                        </div>
+
+                        <div class="rr-panel-heading">
+                            <h3>Preferred Resolution</h3>
+                            <p>Select a refund or product exchange</p>
+                        </div>
+                    </div>
+
+                    <div class="rr-panel-body">
+                        <div class="rr-resolution-grid">
+                            <label class="rr-resolution-option">
+                                <input type="radio"
+                                       name="requestedResolution"
+                                       value="Refund"
+                                       checked />
+
+                                <span class="rr-resolution-card">
+                                    <span class="rr-resolution-heading">
+                                        <i class="fas fa-money-bill-transfer"
+                                           style="color:#16a34a;"></i>
+                                        Refund
+                                    </span>
+
+                                    <span class="rr-resolution-description">
+                                        Refund the approved amount through
+                                        the original Paystack transaction.
+                                    </span>
+                                </span>
+                            </label>
+
+                            <label class="rr-resolution-option">
+                                <input type="radio"
+                                       name="requestedResolution"
+                                       value="Exchange" />
+
+                                <span class="rr-resolution-card">
+                                    <span class="rr-resolution-heading">
+                                        <i class="fas fa-right-left"
+                                           style="color:#2563eb;"></i>
+                                        Exchange
+                                    </span>
+
+                                    <span class="rr-resolution-description">
+                                        Request the same product or choose
+                                        another currently available product.
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+
+                        <!-- EXCHANGE DETAILS -->
+                        <div id="exchangeSection"
+                             class="rr-exchange-section">
+                            <div class="rr-section-label">
+                                Exchange Type
+                                <span class="rr-required">*</span>
+                            </div>
+
+                            <div class="rr-exchange-types">
+                                <label class="rr-type-option">
+                                    <input type="radio"
+                                           name="exchangeType"
+                                           value="SameProduct"
+                                           checked />
+
+                                    Replace with the same product
+                                </label>
+
+                                <label class="rr-type-option">
+                                    <input type="radio"
+                                           name="exchangeType"
+                                           value="DifferentProduct" />
+
+                                    Choose a different product
+                                </label>
+                            </div>
+
+                            <div id="sameProductInformation"
+                                 class="rr-same-product">
+                                <i class="fas fa-circle-info"></i>
+
+                                Replacement product:
+                                <strong>
+                                    @(Model.Product != null
+                                        ? Model.Product.Name
+                                        : "Original product")
+                                </strong>
+
+                                <br />
+
+                                Exchange type:
+                                <strong>Like-for-like replacement</strong>
+
+                                @if (Model.Product != null)
+                                {
+                                    <br />
+
+                                    <span>
+                                        Current stock:
+                                        <strong>
+                                            @Model.Product.QuantityOnHand
+                                        </strong>
+                                    </span>
+                                }
+
+                                <br />
+
+                                <span>
+                                    A same-product exchange has no price
+                                    difference when the quantities match.
+                                </span>
+                            </div>
+
+                            <div id="differentProductFields"
+                                 class="rr-different-product">
+                                <div class="rr-field">
+                                    <label class="rr-label"
+                                           for="exchangeProductId">
+                                        Replacement Product
+                                        <span class="rr-required">*</span>
+                                    </label>
+
+                                    <select class="rr-select"
+                                            id="exchangeProductId"
+                                            name="exchangeProductId">
+                                        <option value=""
+                                                data-name=""
+                                                data-price="0"
+                                                data-stock="0">
+                                            Select a replacement product
+                                        </option>
+
+                                        @foreach (var product
+                                            in exchangeProducts)
+                                        {
+                                            decimal memberAdjustedPrice =
+                                                exchangeNetPrices.ContainsKey(
+                                                    product.ProductId)
+                                                    ? exchangeNetPrices[
+                                                        product.ProductId]
+                                                    : product.DisplayPrice;
+
+                                            string adjustedPriceData =
+                                                memberAdjustedPrice.ToString(
+                                                    "0.00",
+                                                    CultureInfo.InvariantCulture);
+
+                                            <option value="@product.ProductId"
+                                                    data-name="@product.Name"
+                                                    data-price="@adjustedPriceData"
+                                                    data-stock="@product.QuantityOnHand">
+                                                @product.Name —
+                                                R@(memberAdjustedPrice.ToString("F2"))
+
+                                                @if (isPremiumMember &&
+                                                     memberAdjustedPrice <
+                                                     product.DisplayPrice)
+                                                {
+                                                    <text>
+                                                        (Premium price; normal
+                                                        R@(product.DisplayPrice.ToString("F2")))
+                                                    </text>
+                                                }
+
+                                                — @product.QuantityOnHand in stock
+                                            </option>
+                                        }
+                                    </select>
+
+                                    <span id="exchangeStockMessage"
+                                          class="rr-stock-message"></span>
+                                </div>
+                            </div>
+
+                            <div class="rr-field">
+                                <label class="rr-label"
+                                       for="exchangeQuantity">
+                                    Replacement Quantity
+                                    <span class="rr-required">*</span>
+                                </label>
+
+                                <input class="rr-input"
+                                       id="exchangeQuantity"
+                                       type="number"
+                                       name="exchangeQuantity"
+                                       min="1"
+                                       value="1" />
+
+                                <span class="rr-help">
+                                    For a like-for-like exchange, the
+                                    replacement quantity must equal the
+                                    returned quantity.
+                                </span>
+                            </div>
+
+                            <div class="rr-calculation">
+                                <div class="rr-calc-title">
+                                    Estimated Exchange Calculation
+                                </div>
+
+                                <div class="rr-calc-row">
+                                    <span>Return credit</span>
+
+                                    <strong id="returnCreditDisplay">
+                                        R@(estimatedReturnCredit.ToString("F2"))
+                                    </strong>
+                                </div>
+
+                                <div class="rr-calc-row">
+                                    <span>Replacement total</span>
+
+                                    <strong id="exchangeTotalDisplay">
+                                        R0.00
+                                    </strong>
+                                </div>
+
+                                <div class="rr-calc-row rr-calc-total">
+                                    <span id="differenceLabel">
+                                        Estimated difference
+                                    </span>
+
+                                    <strong id="differenceDisplay">
+                                        R0.00
+                                    </strong>
+                                </div>
+                            </div>
+
+                            @if (isPremiumMember)
+                            {
+                                <div class="rr-notice rr-premium-notice">
+                                    <i class="fas fa-crown"></i>
+
+                                    Your return credit includes the discount
+                                    applied to the original order. A different
+                                    replacement product also uses your
+                                    currently applicable premium price.
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            <!-- SUMMARY -->
+            <aside class="rr-summary">
+                <div class="rr-summary-card">
+                    <div class="rr-summary-header">
+                        Request Summary
+                    </div>
+
+                    <div class="rr-summary-body">
+                        <div class="rr-summary-row">
+                            <span>Product</span>
+
+                            <strong>
+                                @(Model.Product != null
+                                    ? Model.Product.Name
+                                    : "Product")
+                            </strong>
+                        </div>
+
+                        <div class="rr-summary-row">
+                            <span>Return quantity</span>
+                            <strong id="summaryQuantity">1</strong>
+                        </div>
+
+                        <div class="rr-summary-row">
+                            <span>Resolution</span>
+                            <strong id="summaryResolution">Refund</strong>
+                        </div>
+
+                        <div id="summaryReplacementRow"
+                             class="rr-summary-row"
+                             style="display:none;">
+                            <span>Replacement</span>
+
+                            <strong id="summaryReplacement">
+                                Same product
+                            </strong>
+                        </div>
+
+                        <hr class="rr-summary-divider" />
+
+                        <div class="rr-summary-row">
+                            <span>Estimated return credit</span>
+
+                            <strong id="summaryCredit">
+                                R@(estimatedReturnCredit.ToString("F2"))
+                            </strong>
+                        </div>
+
+                        @if (isPremiumMember)
+                        {
+                            <div class="rr-notice rr-premium-notice">
+                                <i class="fas fa-crown"></i>
+
+                                Your estimated return credit includes the
+                                discount applied to your original order.
+                            </div>
+                        }
+
+                        <div class="rr-notice">
+                            <i class="fas fa-shield-halved"></i>
+
+                            Submitting this form does not automatically
+                            approve the request. The product must be
+                            presented at GymHub, inspected by Store Staff,
+                            and approved by an Admin.
+                        </div>
+
+                        <label class="rr-declaration">
+                            <input type="checkbox"
+                                   name="confirmDeclaration"
+                                   value="true"
+                                   required />
+
+                            <span>
+                                I confirm that the information provided is
+                                accurate and understand that this request
+                                requires physical inspection and Admin
+                                approval.
+                            </span>
+                        </label>
+
+                        <div class="rr-actions">
+                            <a href="@Url.Action("MyOrders", "Store")"
+                               class="rr-btn rr-btn-cancel">
+                                Cancel
+                            </a>
+
+                            <button type="submit"
+                                    class="rr-btn rr-btn-submit">
+                                <i class="fas fa-paper-plane"></i>
+                                Submit Request
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    }
+</div>
+
+<script>
+    (function () {
+        var returnCreditPerUnit =
+            parseFloat("@returnCreditJs");
+
+        var sameProductName =
+            @Html.Raw(
+                Newtonsoft.Json.JsonConvert.SerializeObject(
+                    Model.Product != null
+                        ? Model.Product.Name
+                        : "Original product"));
+
+        var sameProductStock =
+            @(Model.Product != null
+                ? Model.Product.QuantityOnHand
+                : 0);
+
+        var returnQuantity =
+            document.getElementById("returnQuantity");
+
+        var exchangeSection =
+            document.getElementById("exchangeSection");
+
+        var sameProductInformation =
+            document.getElementById("sameProductInformation");
+
+        var differentProductFields =
+            document.getElementById("differentProductFields");
+
+        var exchangeProductSelect =
+            document.getElementById("exchangeProductId");
+
+        var exchangeQuantity =
+            document.getElementById("exchangeQuantity");
+
+        var exchangeStockMessage =
+            document.getElementById("exchangeStockMessage");
+
+        var summaryReplacementRow =
+            document.getElementById("summaryReplacementRow");
+
+        function formatMoney(value) {
+            var amount = Number(value);
+
+            if (isNaN(amount)) {
+                amount = 0;
+            }
+
+            return "R" + amount.toFixed(2);
+        }
+
+        function getSelectedResolution() {
+            var selected = document.querySelector(
+                'input[name="requestedResolution"]:checked'
+            );
+
+            return selected
+                ? selected.value
+                : "Refund";
+        }
+
+        function getSelectedExchangeType() {
+            var selected = document.querySelector(
+                'input[name="exchangeType"]:checked'
+            );
+
+            return selected
+                ? selected.value
+                : "SameProduct";
+        }
+
+        function getSafeQuantity(element) {
+            var value = parseInt(
+                element.value || "1",
+                10
+            );
+
+            return isNaN(value) || value < 1
+                ? 1
+                : value;
+        }
+
+        function updateStockMessage(
+            productName,
+            availableStock,
+            requestedQuantity) {
+
+            exchangeStockMessage.className =
+                "rr-stock-message";
+
+            if (!productName) {
+                exchangeStockMessage.textContent = "";
+                return;
+            }
+
+            if (requestedQuantity <= availableStock) {
+                exchangeStockMessage.classList.add(
+                    "available"
+                );
+
+                exchangeStockMessage.textContent =
+                    availableStock +
+                    " unit(s) currently available.";
+            } else {
+                exchangeStockMessage.classList.add(
+                    "unavailable"
+                );
+
+                exchangeStockMessage.textContent =
+                    "Only " +
+                    availableStock +
+                    " unit(s) are currently available.";
+            }
+        }
+
+        function updatePage() {
+            var resolution =
+                getSelectedResolution();
+
+            var exchangeType =
+                getSelectedExchangeType();
+
+            var quantity =
+                getSafeQuantity(returnQuantity);
+
+            var returnCredit =
+                returnCreditPerUnit * quantity;
+
+            document.getElementById(
+                "summaryQuantity"
+            ).textContent = quantity;
+
+            document.getElementById(
+                "summaryResolution"
+            ).textContent = resolution;
+
+            document.getElementById(
+                "summaryCredit"
+            ).textContent = formatMoney(returnCredit);
+
+            document.getElementById(
+                "returnCreditDisplay"
+            ).textContent = formatMoney(returnCredit);
+
+            if (resolution !== "Exchange") {
+                exchangeSection.classList.remove(
+                    "visible"
+                );
+
+                differentProductFields.classList.remove(
+                    "visible"
+                );
+
+                summaryReplacementRow.style.display = "none";
+
+                exchangeProductSelect.required = false;
+                exchangeQuantity.required = false;
+                exchangeQuantity.readOnly = false;
+
+                return;
+            }
+
+            exchangeSection.classList.add("visible");
+            summaryReplacementRow.style.display = "flex";
+            exchangeQuantity.required = true;
+
+            var replacementName = "";
+            var replacementTotal = 0;
+            var replacementQuantity = 1;
+
+            if (exchangeType === "SameProduct") {
+                sameProductInformation.style.display = "block";
+
+                differentProductFields.classList.remove(
+                    "visible"
+                );
+
+                exchangeProductSelect.required = false;
+                exchangeProductSelect.value = "";
+
+                // Same product must have the same quantity.
+                exchangeQuantity.value = quantity;
+                exchangeQuantity.readOnly = true;
+
+                replacementQuantity = quantity;
+                replacementName = sameProductName;
+
+                // A like-for-like exchange carries the original
+                // paid value, so its difference is always zero.
+                replacementTotal = returnCredit;
+
+                exchangeStockMessage.className =
+                    "rr-stock-message";
+
+                exchangeStockMessage.textContent = "";
+            } else {
+                sameProductInformation.style.display = "none";
+
+                differentProductFields.classList.add(
+                    "visible"
+                );
+
+                exchangeProductSelect.required = true;
+                exchangeQuantity.readOnly = false;
+
+                replacementQuantity =
+                    getSafeQuantity(exchangeQuantity);
+
+                var selectedOption =
+                    exchangeProductSelect.options[
+                        exchangeProductSelect.selectedIndex
+                    ];
+
+                replacementName =
+                    selectedOption.getAttribute(
+                        "data-name"
+                    ) || "";
+
+                var memberAdjustedUnitPrice =
+                    parseFloat(
+                        selectedOption.getAttribute(
+                            "data-price"
+                        ) || "0"
+                    );
+
+                var availableStock =
+                    parseInt(
+                        selectedOption.getAttribute(
+                            "data-stock"
+                        ) || "0",
+                        10
+                    );
+
+                replacementTotal =
+                    memberAdjustedUnitPrice *
+                    replacementQuantity;
+
+                updateStockMessage(
+                    replacementName,
+                    availableStock,
+                    replacementQuantity
+                );
+            }
+
+            document.getElementById(
+                "summaryReplacement"
+            ).textContent =
+                replacementName || "Select product";
+
+            document.getElementById(
+                "exchangeTotalDisplay"
+            ).textContent =
+                formatMoney(replacementTotal);
+
+            var difference =
+                replacementTotal - returnCredit;
+
+            var differenceLabel =
+                document.getElementById(
+                    "differenceLabel"
+                );
+
+            var differenceDisplay =
+                document.getElementById(
+                    "differenceDisplay"
+                );
+
+            if (exchangeType === "SameProduct") {
+                differenceLabel.textContent =
+                    "Like-for-like exchange";
+
+                differenceDisplay.textContent =
+                    "R0.00";
+
+                differenceDisplay.style.color =
+                    "#16a34a";
+
+                return;
+            }
+
+            if (difference > 0) {
+                differenceLabel.textContent =
+                    "Member may need to pay";
+
+                differenceDisplay.textContent =
+                    formatMoney(difference);
+
+                differenceDisplay.style.color =
+                    "#dc2626";
+            } else if (difference < 0) {
+                differenceLabel.textContent =
+                    "Estimated refund difference";
+
+                differenceDisplay.textContent =
+                    formatMoney(Math.abs(difference));
+
+                differenceDisplay.style.color =
+                    "#16a34a";
+            } else {
+                differenceLabel.textContent =
+                    "Estimated difference";
+
+                differenceDisplay.textContent =
+                    "R0.00";
+
+                differenceDisplay.style.color =
+                    "#16a34a";
+            }
+        }
+
+        document.querySelectorAll(
+            'input[name="requestedResolution"], ' +
+            'input[name="exchangeType"]'
+        ).forEach(function (input) {
+            input.addEventListener(
+                "change",
+                updatePage
+            );
+        });
+
+        returnQuantity.addEventListener(
+            "input",
+            updatePage
+        );
+
+        exchangeQuantity.addEventListener(
+            "input",
+            updatePage
+        );
+
+        exchangeProductSelect.addEventListener(
+            "change",
+            updatePage
+        );
+
+        updatePage();
+    })();
+
+    function hideBrokenProductImage(image) {
+        image.style.display = "none";
+
+        var placeholder =
+            image.nextElementSibling;
+
+        if (placeholder) {
+            placeholder.style.display = "flex";
+        }
+    }
+</script>

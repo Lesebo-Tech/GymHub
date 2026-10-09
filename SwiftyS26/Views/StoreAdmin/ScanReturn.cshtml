@@ -1,0 +1,960 @@
+﻿@{
+    Layout = Session["LoggedInAdmin"] != null
+        ? "~/Views/Shared/_AdminLayout.cshtml"
+        : "~/Views/Shared/_StoreStaffLayout.cshtml";
+
+    ViewBag.Title = "Scan Return";
+    ViewBag.PageTitle = "SCAN RETURN";
+}
+
+<style>
+    @@keyframes sr-fade-up {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .sr-page {
+        max-width: 850px;
+        margin: 0 auto;
+        padding-bottom: 40px;
+    }
+
+    .sr-heading {
+        margin-bottom: 20px;
+    }
+
+        .sr-heading h2 {
+            margin: 0 0 6px;
+            color: #0f172a;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 30px;
+            letter-spacing: 1px;
+        }
+
+        .sr-heading p {
+            margin: 0;
+            color: #64748b;
+            font-size: 13.5px;
+        }
+
+    .sr-card {
+        overflow: hidden;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, .05);
+        animation: sr-fade-up .35s ease both;
+    }
+
+    .sr-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 18px 22px;
+        background: #0f172a;
+        color: #fff;
+        flex-wrap: wrap;
+    }
+
+    .sr-card-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .sr-camera-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 11px;
+        background: #2563eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 19px;
+    }
+
+    .sr-card-title strong {
+        display: block;
+        font-size: 15px;
+    }
+
+    .sr-card-title span {
+        display: block;
+        margin-top: 3px;
+        color: #cbd5e1;
+        font-size: 11.5px;
+    }
+
+    .sr-live-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 6px 11px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .12);
+        font-size: 10.5px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .sr-live-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #22c55e;
+    }
+
+    .sr-body {
+        padding: 24px;
+    }
+
+    .sr-instructions {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 13px 15px;
+        margin-bottom: 18px;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 10px;
+        color: #1d4ed8;
+        font-size: 12.5px;
+        line-height: 1.5;
+    }
+
+    .sr-scanner-shell {
+        position: relative;
+        overflow: hidden;
+        min-height: 390px;
+        background: #020617;
+        border: 1px solid #1e293b;
+        border-radius: 14px;
+    }
+
+    #return-reader {
+        width: 100%;
+        min-height: 390px;
+    }
+
+        #return-reader video {
+            width: 100% !important;
+            min-height: 390px;
+            object-fit: cover;
+        }
+
+    .sr-scan-frame {
+        position: absolute;
+        z-index: 5;
+        top: 50%;
+        left: 50%;
+        width: 230px;
+        height: 230px;
+        border: 3px solid #60a5fa;
+        border-radius: 18px;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        box-shadow: 0 0 0 9999px rgba(2, 6, 23, .42), 0 0 24px rgba(37, 99, 235, .5);
+    }
+
+        .sr-scan-frame::before,
+        .sr-scan-frame::after {
+            content: "";
+            position: absolute;
+            left: 16px;
+            right: 16px;
+        }
+
+        .sr-scan-frame::before {
+            top: 50%;
+            height: 2px;
+            background: #ef4444;
+            box-shadow: 0 0 10px #ef4444;
+        }
+
+        .sr-scan-frame::after {
+            bottom: -34px;
+            content: "Position the return QR inside the frame";
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+    .sr-camera-placeholder {
+        position: absolute;
+        z-index: 3;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 30px;
+        color: #cbd5e1;
+        text-align: center;
+        pointer-events: none;
+    }
+
+        .sr-camera-placeholder i {
+            display: block;
+            margin-bottom: 12px;
+            color: #60a5fa;
+            font-size: 38px;
+        }
+
+        .sr-camera-placeholder strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #fff;
+        }
+
+    .sr-result {
+        display: none;
+        margin-top: 18px;
+        padding: 16px;
+        border-radius: 11px;
+    }
+
+        .sr-result.success {
+            display: block;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+
+        .sr-result.warning {
+            display: block;
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            color: #92400e;
+        }
+
+        .sr-result.error {
+            display: block;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+        }
+
+    .sr-result-top {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .sr-result-title {
+        margin-bottom: 3px;
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .sr-result-message {
+        font-size: 12.5px;
+        line-height: 1.5;
+    }
+
+    .sr-result-details {
+        display: none;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid currentColor;
+    }
+
+    .sr-detail {
+        font-size: 12px;
+    }
+
+        .sr-detail span {
+            display: block;
+            margin-bottom: 2px;
+            opacity: .7;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+    .sr-controls {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 18px;
+        flex-wrap: wrap;
+    }
+
+    .sr-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 10px 17px;
+        border-radius: 9px;
+        font-size: 12.5px;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+        .sr-btn.primary {
+            background: #2563eb;
+            color: #fff;
+            border: 1px solid #2563eb;
+        }
+
+        .sr-btn.secondary {
+            background: #fff;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+        }
+
+        .sr-btn.danger {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .sr-btn:disabled {
+            cursor: not-allowed;
+            opacity: .55;
+        }
+
+    .sr-security {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        margin-top: 18px;
+        color: #64748b;
+        font-size: 11.5px;
+        line-height: 1.5;
+    }
+
+    @@media (max-width: 600px) {
+        .sr-body {
+            padding: 16px;
+        }
+
+        .sr-scanner-shell,
+        #return-reader,
+        #return-reader video {
+            min-height: 320px;
+        }
+
+        .sr-scan-frame {
+            width: 200px;
+            height: 200px;
+        }
+
+        .sr-result-details {
+            grid-template-columns: 1fr;
+        }
+
+        .sr-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="sr-page">
+
+    <div class="sr-heading">
+        <h2>
+            <i class="fas fa-qrcode" style="color:#2563eb;"></i>
+            Scan Return or Exchange
+        </h2>
+
+        <p>
+            Scan the QR code presented by the member to locate and
+            verify the return request.
+        </p>
+    </div>
+
+    <div class="sr-card">
+
+        <div class="sr-card-header">
+            <div class="sr-card-title">
+                <div class="sr-camera-icon">
+                    <i class="fas fa-camera"></i>
+                </div>
+
+                <div>
+                    <strong>Return QR Scanner</strong>
+                    <span>Secure GymHub request verification</span>
+                </div>
+            </div>
+
+            <div class="sr-live-status">
+                <span class="sr-live-dot"></span>
+                <span id="cameraStatus">Starting camera</span>
+            </div>
+        </div>
+
+        <div class="sr-body">
+
+            @using (Html.BeginForm())
+            {
+                @Html.AntiForgeryToken()
+            }
+
+            <div class="sr-instructions">
+                <i class="fas fa-circle-info"></i>
+
+                <div>
+                    Ask the member to open the return QR from
+                    <strong>My Orders</strong>. Position it inside the
+                    frame and hold the device steady.
+                </div>
+            </div>
+
+            <div class="sr-scanner-shell">
+
+                <div id="return-reader"></div>
+
+                <div id="cameraPlaceholder"
+                     class="sr-camera-placeholder">
+                    <div>
+                        <i class="fas fa-camera"></i>
+                        <strong>Waiting for camera permission</strong>
+                        Allow camera access when prompted.
+                    </div>
+                </div>
+
+                <div id="scanFrame"
+                     class="sr-scan-frame"
+                     style="display:none;">
+                </div>
+            </div>
+
+            <div id="scanResult" class="sr-result">
+                <div class="sr-result-top">
+                    <i id="resultIcon"
+                       class="fas fa-circle-info"></i>
+
+                    <div>
+                        <div id="resultTitle"
+                             class="sr-result-title"></div>
+
+                        <div id="resultMessage"
+                             class="sr-result-message"></div>
+                    </div>
+                </div>
+
+                <div id="resultDetails"
+                     class="sr-result-details">
+
+                    <div class="sr-detail">
+                        <span>Return reference</span>
+                        <strong id="resultReference">—</strong>
+                    </div>
+
+                    <div class="sr-detail">
+                        <span>Order reference</span>
+                        <strong id="resultOrder">—</strong>
+                    </div>
+
+                    <div class="sr-detail">
+                        <span>Product</span>
+                        <strong id="resultProduct">—</strong>
+                    </div>
+
+                    <div class="sr-detail">
+                        <span>Member</span>
+                        <strong id="resultMember">—</strong>
+                    </div>
+
+                    <div class="sr-detail">
+                        <span>Quantity</span>
+                        <strong id="resultQuantity">—</strong>
+                    </div>
+
+                    <div class="sr-detail">
+                        <span>Status</span>
+                        <strong id="resultStatus">—</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sr-controls">
+
+                <button type="button"
+                        id="startCameraButton"
+                        class="sr-btn primary"
+                        onclick="startCamera()"
+                        style="display:none;">
+                    <i class="fas fa-camera"></i>
+                    Start Camera
+                </button>
+
+                <button type="button"
+                        id="scanAgainButton"
+                        class="sr-btn secondary"
+                        onclick="scanAgain()"
+                        style="display:none;">
+                    <i class="fas fa-rotate"></i>
+                    Scan Again
+                </button>
+
+                <a href="@Url.Action("Returns", "StoreAdmin")"
+                   class="sr-btn danger">
+                    <i class="fas fa-arrow-left"></i>
+                    Return Requests
+                </a>
+
+            </div>
+
+            <div class="sr-security">
+                <i class="fas fa-shield-halved"></i>
+
+                <div>
+                    The system verifies the request ID, order reference
+                    and secure token before opening any return record.
+                    A copied order reference by itself cannot pass verification.
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<script>
+    var returnQrScanner = null;
+    var cameraRunning = false;
+    var verificationRunning = false;
+    var scanLocked = false;
+
+    var verifyReturnUrl =
+        @Html.Raw(Json.Encode(
+            Url.Action("VerifyReturnQr", "StoreAdmin")));
+
+    document.addEventListener("DOMContentLoaded", function () {
+        if (typeof Html5Qrcode === "undefined") {
+            showResult(
+                "error",
+                "Scanner unavailable",
+                "The QR scanner library could not be loaded. Check your internet connection and reload the page."
+            );
+
+            document.getElementById("cameraStatus").textContent =
+                "Unavailable";
+
+            document.getElementById("startCameraButton").style.display =
+                "inline-flex";
+
+            return;
+        }
+
+        returnQrScanner =
+            new Html5Qrcode("return-reader");
+
+        // Opening this page immediately attempts to open the camera.
+        startCamera();
+    });
+
+    async function startCamera() {
+        if (!returnQrScanner ||
+            cameraRunning ||
+            verificationRunning) {
+            return;
+        }
+
+        hideResult();
+
+        document.getElementById("startCameraButton").style.display =
+            "none";
+
+        document.getElementById("scanAgainButton").style.display =
+            "none";
+
+        document.getElementById("cameraStatus").textContent =
+            "Requesting permission";
+
+        document.getElementById("cameraPlaceholder").style.display =
+            "flex";
+
+        try {
+            // This requests permission and retrieves actual cameras.
+            var cameras =
+                await Html5Qrcode.getCameras();
+
+            if (!cameras || cameras.length === 0) {
+                throw new Error("NoCameraFound");
+            }
+
+            // Prefer a rear/environment camera on phones.
+            var selectedCamera =
+                cameras.find(function (camera) {
+                    var label =
+                        (camera.label || "").toLowerCase();
+
+                    return label.indexOf("back") >= 0 ||
+                        label.indexOf("rear") >= 0 ||
+                        label.indexOf("environment") >= 0;
+                });
+
+            // Desktop usually has only one webcam.
+            if (!selectedCamera) {
+                selectedCamera = cameras[0];
+            }
+
+            await returnQrScanner.start(
+                selectedCamera.id,
+                {
+                    fps: 10,
+
+                    qrbox: function (
+                        viewfinderWidth,
+                        viewfinderHeight) {
+
+                        var minimumDimension =
+                            Math.min(
+                                viewfinderWidth,
+                                viewfinderHeight);
+
+                        var size =
+                            Math.floor(
+                                minimumDimension * 0.68);
+
+                        return {
+                            width: size,
+                            height: size
+                        };
+                    },
+
+                    aspectRatio: 1.333333
+                },
+                onQrDecoded,
+                function () {
+                    // Normal while searching for a QR.
+                }
+            );
+
+            cameraRunning = true;
+            scanLocked = false;
+
+            document.getElementById("cameraPlaceholder").style.display =
+                "none";
+
+            document.getElementById("scanFrame").style.display =
+                "block";
+
+            document.getElementById("cameraStatus").textContent =
+                "Camera active";
+        }
+        catch (error) {
+            cameraRunning = false;
+
+            var errorText =
+                error && error.toString
+                    ? error.toString()
+                    : "";
+
+            console.error(
+                "Return scanner camera error:",
+                error);
+
+            document.getElementById("cameraStatus").textContent =
+                "Camera blocked";
+
+            document.getElementById("scanFrame").style.display =
+                "none";
+
+            document.getElementById("cameraPlaceholder").style.display =
+                "flex";
+
+            document.getElementById("startCameraButton").style.display =
+                "inline-flex";
+
+            showResult(
+                "error",
+                "Camera could not be opened",
+                getCameraErrorMessage(errorText)
+            );
+        }
+    }
+
+    async function onQrDecoded(decodedText) {
+        if (scanLocked || verificationRunning) {
+            return;
+        }
+
+        scanLocked = true;
+        verificationRunning = true;
+
+        document.getElementById("cameraStatus").textContent =
+            "Verifying QR";
+
+        try {
+            await stopCamera();
+
+            await verifyQrWithServer(decodedText);
+        }
+        catch (error) {
+            showResult(
+                "error",
+                "Verification failed",
+                "The QR code could not be verified. Please try again."
+            );
+
+            document.getElementById("scanAgainButton").style.display =
+                "inline-flex";
+        }
+        finally {
+            verificationRunning = false;
+        }
+    }
+
+    async function verifyQrWithServer(qrData) {
+        var antiForgeryToken =
+            document.querySelector(
+                'input[name="__RequestVerificationToken"]'
+            ).value;
+
+        var requestBody =
+            new URLSearchParams();
+
+        requestBody.append(
+            "__RequestVerificationToken",
+            antiForgeryToken);
+
+        requestBody.append(
+            "qrData",
+            qrData);
+
+        var response =
+            await fetch(verifyReturnUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type":
+                        "application/x-www-form-urlencoded; charset=UTF-8"
+                },
+                credentials: "same-origin",
+                body: requestBody.toString()
+            });
+
+        var result;
+
+        try {
+            result = await response.json();
+        }
+        catch (error) {
+            throw new Error(
+                "The server returned an invalid response.");
+        }
+
+        if (response.status === 401) {
+            showResult(
+                "error",
+                "Session expired",
+                result.message ||
+                "Please log in again."
+            );
+
+            document.getElementById("cameraStatus").textContent =
+                "Session expired";
+
+            return;
+        }
+
+        if (!result.success) {
+            showResult(
+                "error",
+                "Invalid return QR",
+                result.message ||
+                "This QR code could not be verified."
+            );
+
+            document.getElementById("cameraStatus").textContent =
+                "Verification failed";
+
+            document.getElementById("scanAgainButton").style.display =
+                "inline-flex";
+
+            return;
+        }
+
+        fillResultDetails(result);
+
+        if (result.canContinue && result.nextUrl) {
+            showResult(
+                "success",
+                result.title || "QR verified",
+                result.message ||
+                "Opening the return record..."
+            );
+
+            document.getElementById("cameraStatus").textContent =
+                "Verified";
+
+            // Automatically open the correct workflow page.
+            window.setTimeout(function () {
+                window.location.href = result.nextUrl;
+            }, 1200);
+
+            return;
+        }
+
+        showResult(
+            "warning",
+            result.title || "Request verified",
+            result.message ||
+            "No further action is currently available."
+        );
+
+        document.getElementById("cameraStatus").textContent =
+            "Request found";
+
+        document.getElementById("scanAgainButton").style.display =
+            "inline-flex";
+    }
+
+    async function stopCamera() {
+        if (!returnQrScanner || !cameraRunning) {
+            return;
+        }
+
+        try {
+            await returnQrScanner.stop();
+        }
+        catch (error) {
+            // The stream may already have stopped.
+        }
+
+        cameraRunning = false;
+
+        document.getElementById("scanFrame").style.display =
+            "none";
+    }
+
+    async function scanAgain() {
+        scanLocked = false;
+        verificationRunning = false;
+
+        clearResultDetails();
+        hideResult();
+
+        await startCamera();
+    }
+
+    function fillResultDetails(result) {
+        document.getElementById("resultReference").textContent =
+            result.referenceNumber || "—";
+
+        document.getElementById("resultOrder").textContent =
+            result.orderReference || "—";
+
+        document.getElementById("resultProduct").textContent =
+            result.productName || "—";
+
+        document.getElementById("resultMember").textContent =
+            result.memberName || "—";
+
+        document.getElementById("resultQuantity").textContent =
+            result.quantity == null
+                ? "—"
+                : result.quantity;
+
+        document.getElementById("resultStatus").textContent =
+            result.status || "—";
+
+        document.getElementById("resultDetails").style.display =
+            "grid";
+    }
+
+    function clearResultDetails() {
+        document.getElementById("resultReference").textContent = "—";
+        document.getElementById("resultOrder").textContent = "—";
+        document.getElementById("resultProduct").textContent = "—";
+        document.getElementById("resultMember").textContent = "—";
+        document.getElementById("resultQuantity").textContent = "—";
+        document.getElementById("resultStatus").textContent = "—";
+
+        document.getElementById("resultDetails").style.display =
+            "none";
+    }
+
+    function showResult(type, title, message) {
+        var resultBox =
+            document.getElementById("scanResult");
+
+        var resultIcon =
+            document.getElementById("resultIcon");
+
+        resultBox.className =
+            "sr-result " + type;
+
+        document.getElementById("resultTitle").textContent =
+            title;
+
+        document.getElementById("resultMessage").textContent =
+            message;
+
+        if (type === "success") {
+            resultIcon.className =
+                "fas fa-circle-check";
+        }
+        else if (type === "warning") {
+            resultIcon.className =
+                "fas fa-triangle-exclamation";
+        }
+        else {
+            resultIcon.className =
+                "fas fa-circle-xmark";
+        }
+    }
+
+    function hideResult() {
+        var resultBox =
+            document.getElementById("scanResult");
+
+        resultBox.className =
+            "sr-result";
+    }
+
+    function getCameraErrorMessage(error) {
+        var errorText =
+            (error || "").toString().toLowerCase();
+
+        if (errorText.indexOf("notallowed") >= 0 ||
+            errorText.indexOf("permission") >= 0 ||
+            errorText.indexOf("denied") >= 0) {
+
+            return "Camera permission is blocked. Open the browser's site permissions, allow Camera, reload the page and press Start Camera.";
+        }
+
+        if (errorText.indexOf("nocamerafound") >= 0 ||
+            errorText.indexOf("notfound") >= 0 ||
+            errorText.indexOf("devicesnotfound") >= 0) {
+
+            return "No camera was detected. Connect a webcam or open this page on a phone with a camera.";
+        }
+
+        if (errorText.indexOf("notreadable") >= 0 ||
+            errorText.indexOf("trackstarterror") >= 0 ||
+            errorText.indexOf("could not start") >= 0) {
+
+            return "The camera may be in use by another application. Close Teams, Zoom or other camera applications and try again.";
+        }
+
+        if (errorText.indexOf("overconstrained") >= 0) {
+            return "The selected camera does not support the requested settings. Reload the page and try again.";
+        }
+
+        return "Camera access failed. Allow camera permission, close other camera applications and press Start Camera again.";
+    }
+
+    window.addEventListener("beforeunload", function () {
+        if (returnQrScanner && cameraRunning) {
+            returnQrScanner.stop().catch(function () {
+                // Page is closing.
+            });
+        }
+    });
+</script>

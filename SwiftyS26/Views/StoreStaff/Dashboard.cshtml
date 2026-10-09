@@ -1,0 +1,1069 @@
+@using System
+@using System.Linq
+@using System.Collections.Generic
+@model dynamic
+
+@{
+    Layout = "~/Views/Shared/_StoreStaffLayout.cshtml";
+
+    ViewBag.Title = "Store Dashboard";
+    ViewBag.PageTitle = "STORE DASHBOARD";
+    ViewBag.ActiveNav = "dashboard";
+
+    var urgentPickups =
+        ViewBag.UrgentPickups as List<SwiftyS26.Models.StoreOrder>
+        ?? new List<SwiftyS26.Models.StoreOrder>();
+
+    string greeting =
+        Convert.ToString(ViewBag.Greeting);
+
+    if (string.IsNullOrWhiteSpace(greeting))
+    {
+        greeting = "Welcome back";
+    }
+
+    string staffName =
+        Convert.ToString(ViewBag.StoreStaffName);
+
+    if (string.IsNullOrWhiteSpace(staffName))
+    {
+        staffName = "Store Staff";
+    }
+
+    int preparingCount =
+        ViewBag.PreparingCount != null
+            ? Convert.ToInt32(ViewBag.PreparingCount)
+            : 0;
+
+    int readyCount =
+        ViewBag.ReadyCount != null
+            ? Convert.ToInt32(ViewBag.ReadyCount)
+            : 0;
+
+    int pendingReturnsCount =
+        ViewBag.PendingReturnsCount != null
+            ? Convert.ToInt32(ViewBag.PendingReturnsCount)
+            : 0;
+
+    int lowStockCount =
+        ViewBag.LowStockCount != null
+            ? Convert.ToInt32(ViewBag.LowStockCount)
+            : 0;
+
+    int outOfStockCount =
+        ViewBag.OutOfStockCount != null
+            ? Convert.ToInt32(ViewBag.OutOfStockCount)
+            : 0;
+
+    int todayOrdersCount =
+        ViewBag.TodayOrdersCount != null
+            ? Convert.ToInt32(ViewBag.TodayOrdersCount)
+            : 0;
+
+    decimal todayRevenue =
+        ViewBag.TodayRevenue != null
+            ? Convert.ToDecimal(ViewBag.TodayRevenue)
+            : 0m;
+
+    int urgentPickupCount = urgentPickups.Count;
+}
+
+<style>
+    @@keyframes sd-fade-up {
+        from {
+            opacity: 0;
+            transform: translateY(9px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes sd-pulse {
+        0%, 100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        50% {
+            opacity: .45;
+            transform: scale(.85);
+        }
+    }
+
+    .sd-page {
+        width: 100%;
+        padding-bottom: 30px;
+        color: #0f172a;
+    }
+
+    .sd-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 18px;
+        margin-bottom: 21px;
+        flex-wrap: wrap;
+    }
+
+    .sd-heading {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .sd-heading-icon {
+        width: 43px;
+        height: 43px;
+        flex: 0 0 43px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 11px;
+        background: #eff6ff;
+        color: #2563eb;
+        font-size: 19px;
+    }
+
+    .sd-heading h2 {
+        margin: 0;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 29px;
+        line-height: 1.1;
+        letter-spacing: 1.2px;
+    }
+
+    .sd-heading p {
+        margin: 5px 0 0;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .sd-date {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #fff;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+        .sd-date i {
+            color: #2563eb;
+        }
+
+    .sd-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        margin-bottom: 15px;
+        padding: 12px 15px;
+        border-radius: 10px;
+        font-size: 12.5px;
+        font-weight: 650;
+        line-height: 1.5;
+    }
+
+        .sd-alert.success {
+            border: 1px solid #bbf7d0;
+            background: #f0fdf4;
+            color: #15803d;
+        }
+
+        .sd-alert.error {
+            border: 1px solid #fecaca;
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
+    .sd-section-heading {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+
+        .sd-section-heading h3 {
+            margin: 0;
+            color: #0f172a;
+            font-size: 15px;
+            font-weight: 850;
+        }
+
+        .sd-section-heading span {
+            color: #64748b;
+            font-size: 11.5px;
+        }
+
+    .sd-stats {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(145px, 1fr));
+        gap: 13px;
+        margin-bottom: 24px;
+    }
+
+    .sd-stat {
+        position: relative;
+        min-width: 0;
+        overflow: hidden;
+        padding: 17px;
+        border: 1px solid #e2e8f0;
+        border-radius: 13px;
+        background: #fff;
+        color: inherit;
+        text-decoration: none;
+        animation: sd-fade-up .35s ease both;
+        transition: transform .16s ease, box-shadow .16s ease;
+    }
+
+        .sd-stat::before {
+            position: absolute;
+            top: 0;
+            right: 0;
+            left: 0;
+            height: 3px;
+            background: var(--stat-color, #2563eb);
+            content: "";
+        }
+
+        .sd-stat.clickable:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 20px rgba(15, 23, 42, .07);
+        }
+
+    .sd-stat-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .sd-stat-icon {
+        width: 35px;
+        height: 35px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 9px;
+        background: var(--stat-background, #eff6ff);
+        color: var(--stat-color, #2563eb);
+        font-size: 14px;
+    }
+
+    .sd-stat-arrow {
+        color: #cbd5e1;
+        font-size: 10px;
+    }
+
+    .sd-stat-number {
+        display: block;
+        margin-top: 13px;
+        font-family: 'Bebas Neue', sans-serif;
+        color: #0f172a;
+        font-size: 29px;
+        line-height: 1;
+        letter-spacing: .4px;
+        overflow-wrap: anywhere;
+    }
+
+    .sd-stat-label {
+        display: block;
+        margin-top: 5px;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 850;
+        letter-spacing: .35px;
+        text-transform: uppercase;
+    }
+
+    .sd-main-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.35fr) minmax(310px, .65fr);
+        gap: 18px;
+        align-items: start;
+    }
+
+    .sd-card {
+        overflow: hidden;
+        margin-bottom: 18px;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        background: #fff;
+        animation: sd-fade-up .4s ease both;
+    }
+
+    .sd-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 13px;
+        padding: 15px 18px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+
+    .sd-card-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .sd-card-title i {
+            color: #2563eb;
+        }
+
+        .sd-card-title h3 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 850;
+        }
+
+    .sd-card-link {
+        color: #2563eb;
+        font-size: 11px;
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .sd-card-body {
+        padding: 17px;
+    }
+
+    .sd-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 11px;
+    }
+
+    .sd-action {
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 11px;
+        background: #fff;
+        color: #0f172a;
+        text-decoration: none;
+        transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+    }
+
+        .sd-action:hover {
+            transform: translateY(-2px);
+            border-color: #bfdbfe;
+            box-shadow: 0 6px 17px rgba(15, 23, 42, .06);
+        }
+
+    .sd-action-icon {
+        width: 38px;
+        height: 38px;
+        flex: 0 0 38px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 10px;
+        background: var(--action-background, #eff6ff);
+        color: var(--action-color, #2563eb);
+        font-size: 15px;
+    }
+
+    .sd-action strong {
+        display: block;
+        font-size: 12.5px;
+        font-weight: 800;
+    }
+
+    .sd-action span {
+        display: block;
+        margin-top: 3px;
+        color: #64748b;
+        font-size: 10.5px;
+        line-height: 1.35;
+    }
+
+    .sd-urgent-card {
+        border-color: #fecaca;
+    }
+
+        .sd-urgent-card .sd-card-header {
+            border-color: #fecaca;
+            background: #fef2f2;
+        }
+
+        .sd-urgent-card .sd-card-title,
+        .sd-urgent-card .sd-card-title i {
+            color: #991b1b;
+        }
+
+    .sd-live-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #dc2626;
+        animation: sd-pulse 1.4s infinite ease-in-out;
+    }
+
+    .sd-urgent-list {
+        display: grid;
+    }
+
+    .sd-urgent-order {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 12px;
+        align-items: center;
+        padding: 13px 17px;
+        border-bottom: 1px solid #fee2e2;
+        color: inherit;
+        text-decoration: none;
+    }
+
+        .sd-urgent-order:last-child {
+            border-bottom: 0;
+        }
+
+        .sd-urgent-order:hover {
+            background: #fffafa;
+        }
+
+    .sd-urgent-reference {
+        color: #0f172a;
+        font-size: 12.5px;
+        font-weight: 850;
+    }
+
+    .sd-urgent-member {
+        margin-top: 3px;
+        color: #64748b;
+        font-size: 10.5px;
+    }
+
+    .sd-urgent-time {
+        padding: 5px 9px;
+        border-radius: 999px;
+        background: #fef2f2;
+        color: #dc2626;
+        font-size: 10px;
+        font-weight: 850;
+        white-space: nowrap;
+    }
+
+    .sd-clear {
+        padding: 28px 18px;
+        color: #64748b;
+        text-align: center;
+    }
+
+        .sd-clear i {
+            display: block;
+            margin-bottom: 9px;
+            color: #16a34a;
+            font-size: 27px;
+        }
+
+        .sd-clear strong {
+            display: block;
+            color: #334155;
+            font-size: 12.5px;
+        }
+
+        .sd-clear span {
+            display: block;
+            margin-top: 4px;
+            font-size: 10.5px;
+        }
+
+    .sd-priority-list {
+        display: grid;
+        gap: 10px;
+    }
+
+    .sd-priority {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 12px;
+        border: 1px solid #edf2f7;
+        border-radius: 10px;
+        color: inherit;
+        text-decoration: none;
+    }
+
+        .sd-priority:hover {
+            background: #f8fafc;
+        }
+
+    .sd-priority-icon {
+        width: 34px;
+        height: 34px;
+        flex: 0 0 34px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 9px;
+    }
+
+    .sd-priority-details {
+        min-width: 0;
+        flex: 1;
+    }
+
+        .sd-priority-details strong {
+            display: block;
+            color: #0f172a;
+            font-size: 11.5px;
+        }
+
+        .sd-priority-details span {
+            display: block;
+            margin-top: 2px;
+            color: #64748b;
+            font-size: 10px;
+        }
+
+    .sd-priority-number {
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 850;
+    }
+
+    .sd-report-button {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 15px;
+        border-radius: 9px;
+        background: #0f172a;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    @@media (max-width: 1250px) {
+        .sd-stats {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @@media (max-width: 900px) {
+        .sd-main-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 700px) {
+        .sd-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .sd-actions {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .sd-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .sd-header {
+            flex-direction: column;
+        }
+
+        .sd-date {
+            width: 100%;
+        }
+
+        .sd-urgent-order {
+            grid-template-columns: 1fr;
+        }
+
+        .sd-urgent-time {
+            justify-self: start;
+        }
+    }
+</style>
+
+<div class="sd-page">
+    <div class="sd-header">
+        <div class="sd-heading">
+            <div class="sd-heading-icon">
+                <i class="fas fa-store"></i>
+            </div>
+
+            <div>
+                <h2>Store Operations Dashboard</h2>
+                <p>@greeting, <strong>@staffName</strong>. Here is today’s operational overview.</p>
+            </div>
+        </div>
+
+        <div class="sd-date">
+            <i class="fas fa-calendar-days"></i>
+            @DateTime.Now.ToString("dddd, dd MMMM yyyy")
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="sd-alert success">
+            <i class="fas fa-circle-check"></i>
+            <span>@TempData["Success"]</span>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="sd-alert error">
+            <i class="fas fa-circle-exclamation"></i>
+            <span>@TempData["Error"]</span>
+        </div>
+    }
+
+    <div class="sd-section-heading">
+        <h3>Today’s Overview</h3>
+        <span>Current store workload and performance</span>
+    </div>
+
+    <section class="sd-stats">
+        <a href="@Url.Action("Orders", "StoreAdmin")"
+           class="sd-stat clickable"
+           style="--stat-color:#2563eb;--stat-background:#eff6ff;">
+            <div class="sd-stat-top">
+                <div class="sd-stat-icon">
+                    <i class="fas fa-boxes-packing"></i>
+                </div>
+
+                <i class="fas fa-arrow-right sd-stat-arrow"></i>
+            </div>
+
+            <strong class="sd-stat-number">@preparingCount</strong>
+            <span class="sd-stat-label">Orders to Prepare</span>
+        </a>
+
+        <a href="@Url.Action("Orders", "StoreAdmin")"
+           class="sd-stat clickable"
+           style="--stat-color:#7c3aed;--stat-background:#f5f3ff;animation-delay:.03s;">
+            <div class="sd-stat-top">
+                <div class="sd-stat-icon">
+                    <i class="fas fa-box-open"></i>
+                </div>
+
+                <i class="fas fa-arrow-right sd-stat-arrow"></i>
+            </div>
+
+            <strong class="sd-stat-number">@readyCount</strong>
+            <span class="sd-stat-label">Ready for Pickup</span>
+        </a>
+
+        <a href="@Url.Action("Returns", "StoreAdmin")"
+           class="sd-stat clickable"
+           style="--stat-color:#d97706;--stat-background:#fffbeb;animation-delay:.06s;">
+            <div class="sd-stat-top">
+                <div class="sd-stat-icon">
+                    <i class="fas fa-rotate-left"></i>
+                </div>
+
+                <i class="fas fa-arrow-right sd-stat-arrow"></i>
+            </div>
+
+            <strong class="sd-stat-number">@pendingReturnsCount</strong>
+            <span class="sd-stat-label">Returns to Review</span>
+        </a>
+
+        <div class="sd-stat"
+             style="--stat-color:#16a34a;--stat-background:#f0fdf4;animation-delay:.09s;">
+            <div class="sd-stat-top">
+                <div class="sd-stat-icon">
+                    <i class="fas fa-sack-dollar"></i>
+                </div>
+            </div>
+
+            <strong class="sd-stat-number">
+                @("R" + todayRevenue.ToString("N2"))
+            </strong>
+
+            <span class="sd-stat-label">
+                Today’s Revenue
+            </span>
+
+            <div style="margin-top:5px;color:#94a3b8;font-size:10px;">
+                @todayOrdersCount
+                @(todayOrdersCount == 1 ? "order" : "orders") today
+            </div>
+        </div>
+
+        <a href="@Url.Action("Index", "StoreAdmin")"
+           class="sd-stat clickable"
+           style="--stat-color:#d97706;--stat-background:#fffbeb;animation-delay:.12s;">
+            <div class="sd-stat-top">
+                <div class="sd-stat-icon">
+                    <i class="fas fa-triangle-exclamation"></i>
+                </div>
+
+                <i class="fas fa-arrow-right sd-stat-arrow"></i>
+            </div>
+
+            <strong class="sd-stat-number">@lowStockCount</strong>
+            <span class="sd-stat-label">Low Stock Products</span>
+        </a>
+
+        <a href="@Url.Action("Index", "StoreAdmin")"
+           class="sd-stat clickable"
+           style="--stat-color:#dc2626;--stat-background:#fef2f2;animation-delay:.15s;">
+            <div class="sd-stat-top">
+                <div class="sd-stat-icon">
+                    <i class="fas fa-ban"></i>
+                </div>
+
+                <i class="fas fa-arrow-right sd-stat-arrow"></i>
+            </div>
+
+            <strong class="sd-stat-number">@outOfStockCount</strong>
+            <span class="sd-stat-label">Out of Stock Products</span>
+        </a>
+    </section>
+
+    <div class="sd-main-grid">
+        <main>
+            <section class="sd-card">
+                <div class="sd-card-header">
+                    <div class="sd-card-title">
+                        <i class="fas fa-bolt"></i>
+                        <h3>Quick Operations</h3>
+                    </div>
+                </div>
+
+                <div class="sd-card-body">
+                    <div class="sd-actions">
+                        <a href="@Url.Action("ScanReadyOrder", "StoreAdmin")"
+                           class="sd-action"
+                           style="--action-color:#16a34a;--action-background:#f0fdf4;">
+                            <div class="sd-action-icon">
+                                <i class="fas fa-camera"></i>
+                            </div>
+
+                            <div>
+                                <strong>Scan to Mark Ready</strong>
+                                <span>Verify a prepared order using its internal QR.</span>
+                            </div>
+                        </a>
+
+                        <a href="@Url.Action("ScanPickup", "StoreAdmin")"
+                           class="sd-action"
+                           style="--action-color:#7c3aed;--action-background:#f5f3ff;">
+                            <div class="sd-action-icon">
+                                <i class="fas fa-qrcode"></i>
+                            </div>
+
+                            <div>
+                                <strong>Scan for Pickup</strong>
+                                <span>Verify a member’s collection QR.</span>
+                            </div>
+                        </a>
+
+                        <a href="@Url.Action("Orders", "StoreAdmin")"
+                           class="sd-action">
+                            <div class="sd-action-icon">
+                                <i class="fas fa-truck-fast"></i>
+                            </div>
+
+                            <div>
+                                <strong>Fulfil Orders</strong>
+                                <span>Review paid, preparing and ready orders.</span>
+                            </div>
+                        </a>
+
+                        <a href="@Url.Action("Returns", "StoreAdmin")"
+                           class="sd-action"
+                           style="--action-color:#dc2626;--action-background:#fef2f2;">
+                            <div class="sd-action-icon">
+                                <i class="fas fa-rotate-left"></i>
+                            </div>
+
+                            <div>
+                                <strong>Return Requests</strong>
+                                <span>Inspect submitted returns and exchanges.</span>
+                            </div>
+                        </a>
+
+                        <a href="@Url.Action("Index", "StoreAdmin")"
+                           class="sd-action"
+                           style="--action-color:#16a34a;--action-background:#f0fdf4;">
+                            <div class="sd-action-icon">
+                                <i class="fas fa-boxes-stacked"></i>
+                            </div>
+
+                            <div>
+                                <strong>Manage Products</strong>
+                                <span>Review products, prices and stock levels.</span>
+                            </div>
+                        </a>
+
+                        <a href="@Url.Action("PurchaseOrders", "StoreAdmin")"
+                           class="sd-action"
+                           style="--action-color:#d97706;--action-background:#fffbeb;">
+                            <div class="sd-action-icon">
+                                <i class="fas fa-cart-flatbed"></i>
+                            </div>
+
+                            <div>
+                                <strong>Purchase Orders</strong>
+                                <span>Manage supplier restocking orders.</span>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <section class="sd-card sd-urgent-card">
+                <div class="sd-card-header">
+                    <div class="sd-card-title">
+                        @if (urgentPickupCount > 0)
+                        {
+                            <span class="sd-live-dot"></span>
+                        }
+                        else
+                        {
+                            <i class="fas fa-clock"></i>
+                        }
+
+                        <h3>Collection Deadline Monitor</h3>
+                    </div>
+
+                    <a class="sd-card-link"
+                       href="@Url.Action("UncollectedOrders", "StoreAdmin")">
+                        View all
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+
+                @if (urgentPickupCount == 0)
+                {
+                    <div class="sd-clear">
+                        <i class="fas fa-circle-check"></i>
+                        <strong>No orders are currently at risk.</strong>
+                        <span>There are no pickup deadlines within the next 24 hours.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="sd-urgent-list">
+                        @foreach (var order in urgentPickups
+                            .Where(o => o.PickupDeadline.HasValue)
+                            .OrderBy(o => o.PickupDeadline))
+                        {
+                            double hoursRemaining =
+                                (order.PickupDeadline.Value - DateTime.Now)
+                                .TotalHours;
+
+                            string timeText;
+
+                            if (hoursRemaining <= 0)
+                            {
+                                timeText = "Overdue";
+                            }
+                            else if (hoursRemaining < 1)
+                            {
+                                timeText =
+                                    Math.Max(
+                                        1,
+                                        (int)Math.Ceiling(hoursRemaining * 60))
+                                    + " min left";
+                            }
+                            else
+                            {
+                                timeText =
+                                    (int)Math.Ceiling(hoursRemaining)
+                                    + "h left";
+                            }
+
+                            <a href="@Url.Action("Orders", "StoreAdmin")"
+                               class="sd-urgent-order">
+                                <div>
+                                    <div class="sd-urgent-reference">
+                                        @order.ReferenceNumber
+                                    </div>
+
+                                    <div class="sd-urgent-member">
+                                        @(order.Member != null
+                                            ? order.Member.FullName
+                                            : "Unknown member")
+                                        · Deadline
+                                        @order.PickupDeadline.Value.ToString(
+                                                 "dd MMM HH:mm")
+                                    </div>
+                                </div>
+
+                                <span class="sd-urgent-time">
+                                    <i class="fas fa-clock"></i>
+                                    @timeText
+                                </span>
+                            </a>
+                        }
+                    </div>
+                }
+            </section>
+        </main>
+
+        <aside>
+            <section class="sd-card">
+                <div class="sd-card-header">
+                    <div class="sd-card-title">
+                        <i class="fas fa-list-check"></i>
+                        <h3>Operational Priorities</h3>
+                    </div>
+                </div>
+
+                <div class="sd-card-body">
+                    <div class="sd-priority-list">
+                        <a href="@Url.Action("Orders", "StoreAdmin")"
+                           class="sd-priority">
+                            <div class="sd-priority-icon"
+                                 style="background:#eff6ff;color:#2563eb;">
+                                <i class="fas fa-boxes-packing"></i>
+                            </div>
+
+                            <div class="sd-priority-details">
+                                <strong>Orders awaiting preparation</strong>
+                                <span>Prepare and verify paid orders.</span>
+                            </div>
+
+                            <span class="sd-priority-number">
+                                @preparingCount
+                            </span>
+                        </a>
+
+                        <a href="@Url.Action("Returns", "StoreAdmin")"
+                           class="sd-priority">
+                            <div class="sd-priority-icon"
+                                 style="background:#fffbeb;color:#d97706;">
+                                <i class="fas fa-clipboard-check"></i>
+                            </div>
+
+                            <div class="sd-priority-details">
+                                <strong>Returns awaiting inspection</strong>
+                                <span>Record physical inspection results.</span>
+                            </div>
+
+                            <span class="sd-priority-number">
+                                @pendingReturnsCount
+                            </span>
+                        </a>
+
+                        <a href="@Url.Action("Index", "StoreAdmin")"
+                           class="sd-priority">
+                            <div class="sd-priority-icon"
+                                 style="background:#fef2f2;color:#dc2626;">
+                                <i class="fas fa-box-open"></i>
+                            </div>
+
+                            <div class="sd-priority-details">
+                                <strong>Products requiring stock</strong>
+                                <span>Low and unavailable products.</span>
+                            </div>
+
+                            <span class="sd-priority-number">
+                                @(lowStockCount + outOfStockCount)
+                            </span>
+                        </a>
+
+                        <a href="@Url.Action("UncollectedOrders", "StoreAdmin")"
+                           class="sd-priority">
+                            <div class="sd-priority-icon"
+                                 style="background:#f5f3ff;color:#7c3aed;">
+                                <i class="fas fa-clock-rotate-left"></i>
+                            </div>
+
+                            <div class="sd-priority-details">
+                                <strong>Collection deadlines at risk</strong>
+                                <span>Monitor reminders and overdue cases.</span>
+                            </div>
+
+                            <span class="sd-priority-number">
+                                @urgentPickupCount
+                            </span>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <section class="sd-card">
+                <div class="sd-card-header">
+                    <div class="sd-card-title">
+                        <i class="fas fa-chart-column"></i>
+                        <h3>Store Records</h3>
+                    </div>
+                </div>
+
+                <div class="sd-card-body">
+                    <p style="margin:0 0 14px;color:#64748b;font-size:11.5px;line-height:1.5;">
+                        Review order, collection, return and inventory records
+                        or export them for reporting.
+                    </p>
+
+                    <a href="@Url.Action("StoreReports", "StoreAdmin")"
+                       class="sd-report-button">
+                        <i class="fas fa-file-export"></i>
+                        Open Store Reports
+                    </a>
+                </div>
+            </section>
+
+            <section class="sd-card">
+                <div class="sd-card-header">
+                    <div class="sd-card-title">
+                        <i class="fas fa-link"></i>
+                        <h3>More Store Tools</h3>
+                    </div>
+                </div>
+
+                <div class="sd-card-body">
+                    <div class="sd-priority-list">
+                        <a href="@Url.Action("Suppliers", "StoreAdmin")"
+                           class="sd-priority">
+                            <div class="sd-priority-icon"
+                                 style="background:#eff6ff;color:#2563eb;">
+                                <i class="fas fa-truck"></i>
+                            </div>
+
+                            <div class="sd-priority-details">
+                                <strong>Suppliers</strong>
+                                <span>Supplier profiles and catalogues.</span>
+                            </div>
+
+                            <i class="fas fa-chevron-right"
+                               style="color:#cbd5e1;font-size:10px;"></i>
+                        </a>
+
+                        <a href="@Url.Action("Analytics", "StoreAdmin")"
+                           class="sd-priority">
+                            <div class="sd-priority-icon"
+                                 style="background:#f0fdf4;color:#16a34a;">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+
+                            <div class="sd-priority-details">
+                                <strong>Store Analytics</strong>
+                                <span>Sales and inventory performance.</span>
+                            </div>
+
+                            <i class="fas fa-chevron-right"
+                               style="color:#cbd5e1;font-size:10px;"></i>
+                        </a>
+                    </div>
+                </div>
+            </section>
+        </aside>
+    </div>
+</div>

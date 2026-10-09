@@ -1,0 +1,993 @@
+﻿@{
+    // ── Member session ────────────────────────────────────────────────
+    string memberName = Session["LoggedInName"] as string ?? "User";
+    string memberPlan = Session["LoggedInPlan"] as string ?? "";
+    string memberStatus = Session["LoggedInStatus"] as string ?? "";
+
+    var nameParts = memberName.Trim().Split(' ');
+    string initials = nameParts.Length >= 2
+        ? (nameParts[0].Substring(0, 1) + nameParts[nameParts.Length - 1].Substring(0, 1)).ToUpper()
+        : memberName.Substring(0, Math.Min(2, memberName.Length)).ToUpper();
+
+    string currentPage = ViewBag.ActivePage as string ?? "";
+    string pageTitle = ViewBag.PageTitle as string ?? "Dashboard";
+
+    Func<string, string> nav = slug =>
+        currentPage.Equals(slug, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GymHub – @pageTitle</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link href="~/Content/dashboard.css" rel="stylesheet" />
+    @RenderSection("head", required: false)
+
+    <style>
+        /* ═══════════════════════════════════════════
+                   CSS VARIABLES
+                ═══════════════════════════════════════════ */
+        :root {
+            --sidebar-width: 240px;
+            --sidebar-collapsed: 64px;
+            --topbar-height: 64px;
+            --sb-bg: #FFFFFF;
+            --sb-surface: #F1F5F9;
+            --sb-border: rgba(0,0,0,0.07);
+            --sb-accent: #2563EB;
+            --sb-accent-glow: rgba(37,99,235,0.08);
+            --sb-text-primary: #0F172A;
+            --sb-text-secondary: #64748B;
+            --sb-text-muted: #CBD5E1;
+            --sb-active-from: #2563EB;
+            --sb-active-to: #3B82F6;
+            --page-bg: #F8FAFC;
+            --topbar-bg: rgba(255,255,255,0.97);
+            --topbar-border: rgba(226,232,240,0.7);
+        }
+
+        /* ═══════════════════════════════════════════
+                   SIDEBAR SHELL
+                ═══════════════════════════════════════════ */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            background: var(--sb-bg);
+            display: flex;
+            flex-direction: column;
+            z-index: 200;
+            transition: width 0.26s cubic-bezier(.4,0,.2,1), transform 0.26s cubic-bezier(.4,0,.2,1);
+            overflow: hidden;
+        }
+
+            .sidebar::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                right: 0;
+                bottom: 0;
+                width: 1px;
+                background: var(--sb-border);
+            }
+
+            .sidebar.collapsed {
+                width: var(--sidebar-collapsed) !important;
+            }
+
+                .sidebar.collapsed .nav-label,
+                .sidebar.collapsed .logo-text,
+                .sidebar.collapsed .member-name,
+                .sidebar.collapsed .member-plan,
+                .sidebar.collapsed .role-badge,
+                .sidebar.collapsed .section-label,
+                .sidebar.collapsed .logout-label {
+                    opacity: 0;
+                    max-width: 0;
+                    overflow: hidden;
+                    white-space: nowrap;
+                    pointer-events: none;
+                }
+
+                .sidebar.collapsed .sidebar-logo {
+                    justify-content: center;
+                    padding: 20px 0;
+                }
+
+                .sidebar.collapsed .member-card {
+                    justify-content: center;
+                    padding: 10px 0;
+                    border: none;
+                    background: none;
+                }
+
+                    .sidebar.collapsed .member-card > div {
+                        display: none;
+                    }
+
+                .sidebar.collapsed .nav-item {
+                    justify-content: center;
+                    padding: 13px 0;
+                    margin: 2px 8px;
+                }
+
+                .sidebar.collapsed .nav-icon {
+                    margin: 0;
+                }
+
+                .sidebar.collapsed .logout-btn {
+                    justify-content: center;
+                    padding: 11px 0;
+                }
+
+                .sidebar.collapsed ~ .topbar,
+                .sidebar.collapsed ~ .main-content {
+                    margin-left: var(--sidebar-collapsed) !important;
+                }
+
+        /* ═══════════════════════════════════════════
+                   LOGO
+                ═══════════════════════════════════════════ */
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 22px 20px;
+            border-bottom: 1px solid var(--sb-border);
+            flex-shrink: 0;
+        }
+
+        .logo-mark {
+            width: 34px;
+            height: 34px;
+            background: linear-gradient(135deg, #3B82F6, #1D4ED8);
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 15px;
+            color: #fff;
+            letter-spacing: 1px;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(37,99,235,0.4);
+        }
+
+        .logo-text {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 20px;
+            letter-spacing: 2.5px;
+            color: var(--sb-text-primary);
+            transition: opacity 0.2s, max-width 0.26s;
+        }
+
+            .logo-text span {
+                color: var(--sb-accent);
+            }
+
+        /* ═══════════════════════════════════════════
+                   NAV
+                ═══════════════════════════════════════════ */
+        .sidebar-nav {
+            flex: 1;
+            padding: 12px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: none;
+        }
+
+            .sidebar-nav::-webkit-scrollbar {
+                display: none;
+            }
+
+        .section-label {
+            font-size: 9.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.8px;
+            color: var(--sb-text-muted);
+            padding: 16px 22px 6px;
+            white-space: nowrap;
+            transition: opacity 0.2s, max-width 0.26s;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 10px 14px;
+            margin: 1px 10px;
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13.5px;
+            font-weight: 500;
+            color: var(--sb-text-secondary);
+            text-decoration: none;
+            transition: background 0.18s, color 0.18s, transform 0.15s;
+            white-space: nowrap;
+            position: relative;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: calc(100% - 20px);
+            text-align: left;
+        }
+
+            .nav-item:hover {
+                background: rgba(0,0,0,0.03);
+                color: var(--sb-text-primary);
+                transform: translateX(2px);
+            }
+
+            .nav-item.active {
+                background: var(--sb-accent-glow);
+                color: #1D4ED8;
+                font-weight: 600;
+            }
+
+                .nav-item.active::before {
+                    content: '';
+                    position: absolute;
+                    left: -10px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    width: 3px;
+                    height: 18px;
+                    border-radius: 0 3px 3px 0;
+                    background: var(--sb-accent);
+                }
+
+        .nav-icon {
+            font-size: 15px;
+            width: 20px;
+            text-align: center;
+            flex-shrink: 0;
+            color: var(--sb-text-secondary);
+            transition: color 0.18s;
+        }
+
+        .nav-item:hover .nav-icon,
+        .nav-item.active .nav-icon {
+            color: #1D4ED8;
+        }
+
+        .nav-label {
+            flex: 1;
+            transition: opacity 0.2s, max-width 0.26s;
+        }
+
+        /* ═══════════════════════════════════════════
+                   SIDEBAR FOOTER
+                ═══════════════════════════════════════════ */
+        .sidebar-footer {
+            flex-shrink: 0;
+            padding: 12px 10px;
+            border-top: 1px solid var(--sb-border);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .member-card {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: var(--sb-surface);
+            border: 1px solid var(--sb-border);
+            transition: background 0.18s;
+        }
+
+            .member-card:hover {
+                background: #E8EEF8;
+            }
+
+        .member-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3B82F6, #1D4ED8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 13px;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .member-name {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--sb-text-primary);
+            white-space: nowrap;
+            transition: opacity 0.2s, max-width 0.26s;
+        }
+
+        .member-plan {
+            font-size: 10.5px;
+            color: #2563EB;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: opacity 0.2s, max-width 0.26s;
+        }
+
+        .role-badge {
+            display: inline-block;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            padding: 1px 7px;
+            border-radius: 50px;
+            margin-top: 2px;
+            background: rgba(59,130,246,0.12);
+            color: #2563EB;
+            border: 1px solid rgba(59,130,246,0.2);
+            transition: opacity 0.2s, max-width 0.26s;
+        }
+
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 9px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(0,0,0,0.07);
+            background: rgba(0,0,0,0.02);
+            cursor: pointer;
+            color: var(--sb-text-secondary);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.18s, color 0.18s, border-color 0.18s;
+            white-space: nowrap;
+        }
+
+            .logout-btn:hover {
+                background: rgba(239,68,68,0.08);
+                border-color: rgba(239,68,68,0.25);
+                color: #DC2626;
+            }
+
+            .logout-btn i {
+                font-size: 13px;
+            }
+
+        .logout-label {
+            transition: opacity 0.2s, max-width 0.26s;
+        }
+
+        /* ═══════════════════════════════════════════
+                   COLLAPSE BUTTON
+                ═══════════════════════════════════════════ */
+        .collapse-btn {
+            position: absolute;
+            top: 22px;
+            right: -11px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--sb-surface);
+            border: 1px solid var(--sb-border);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            color: var(--sb-text-secondary);
+            cursor: pointer;
+            z-index: 300;
+            transition: background 0.18s, color 0.18s, border-color 0.18s;
+        }
+
+            .collapse-btn:hover {
+                background: var(--sb-accent);
+                border-color: var(--sb-accent);
+                color: #fff;
+            }
+
+        /* ═══════════════════════════════════════════
+                   TOPBAR
+                ═══════════════════════════════════════════ */
+        .topbar {
+            position: fixed;
+            top: 0;
+            left: var(--sidebar-width);
+            right: 0;
+            height: var(--topbar-height);
+            background: var(--topbar-bg);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--topbar-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 28px;
+            z-index: 100;
+            transition: left 0.26s cubic-bezier(.4,0,.2,1);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .topbar-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 21px;
+            letter-spacing: 1.5px;
+            color: #0F172A;
+        }
+
+        .hamburger-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: #0F172A;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .topbar-greeting {
+            font-size: 13.5px;
+            color: #475569;
+            font-weight: 400;
+        }
+
+            .topbar-greeting strong {
+                color: #0F172A;
+                font-weight: 700;
+            }
+
+        .topbar-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #16A34A;
+            background: rgba(22,163,74,0.08);
+            border: 1px solid rgba(22,163,74,0.18);
+            padding: 5px 13px;
+            border-radius: 50px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #22C55E;
+            animation: pulse 2.2s infinite;
+        }
+
+            .status-dot.suspended {
+                background: #EF4444 !important;
+                animation: none !important;
+            }
+
+        @@keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.4;
+                transform: scale(0.85);
+            }
+        }
+
+        /* ═══════════════════════════════════════════
+                   MAIN CONTENT
+                ═══════════════════════════════════════════ */
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--topbar-height);
+            flex: 1;
+            padding: 28px 32px;
+            transition: margin-left 0.26s cubic-bezier(.4,0,.2,1);
+            background: var(--page-bg);
+            min-height: calc(100vh - var(--topbar-height));
+        }
+
+        /* ═══════════════════════════════════════════
+                   MOBILE OVERLAY
+                ═══════════════════════════════════════════ */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            backdrop-filter: blur(3px);
+            z-index: 199;
+        }
+
+            .sidebar-overlay.visible {
+                display: block;
+            }
+
+        /* ═══════════════════════════════════════════
+                   RESPONSIVE
+                ═══════════════════════════════════════════ */
+        @@media (max-width: 900px) {
+            .sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+            }
+
+                .sidebar.open {
+                    transform: translateX(0);
+                }
+
+            .topbar {
+                left: 0;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .hamburger-btn {
+                display: block;
+            }
+
+            .collapse-btn {
+                display: none;
+            }
+        }
+
+        @@media (max-width: 600px) {
+            .main-content {
+                padding: 16px;
+            }
+
+            .topbar {
+                padding: 0 16px;
+            }
+
+            .topbar-title {
+                font-size: 18px;
+            }
+
+            .topbar-greeting {
+                display: none;
+            }
+        }
+        /* ═══════════════════════════════════════════
+           NOTIFICATIONS
+        ═══════════════════════════════════════════ */
+        .notif-wrapper {
+            position: relative;
+        }
+
+        .notif-bell {
+            position: relative;
+            background: none;
+            border: none;
+            font-size: 17px;
+            color: #475569;
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 8px;
+            transition: background 0.15s, color 0.15s;
+        }
+
+            .notif-bell:hover {
+                background: rgba(0,0,0,0.04);
+                color: var(--sb-accent);
+            }
+
+        .notif-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #EF4444;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            min-width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 3px;
+        }
+
+        .notif-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            width: 340px;
+            max-height: 420px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            border: 1px solid rgba(0,0,0,0.06);
+            z-index: 500;
+            overflow: hidden;
+        }
+
+            .notif-dropdown.open {
+                display: flex;
+                flex-direction: column;
+            }
+
+        .notif-dropdown-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            font-weight: 700;
+            font-size: 13.5px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+            .notif-dropdown-header button {
+                background: none;
+                border: none;
+                color: var(--sb-accent);
+                font-size: 12px;
+                font-weight: 600;
+                cursor: pointer;
+            }
+
+        .notif-list {
+            overflow-y: auto;
+            max-height: 340px;
+        }
+
+        .notif-item {
+            display: flex;
+            gap: 10px;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(0,0,0,0.04);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+            .notif-item:hover {
+                background: rgba(0,0,0,0.02);
+            }
+
+            .notif-item.unread {
+                background: var(--sb-accent-glow);
+            }
+
+        .notif-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 5px;
+            flex-shrink: 0;
+        }
+
+            .notif-dot.Info {
+                background: #64748B;
+            }
+
+            .notif-dot.Success {
+                background: #16A34A;
+            }
+
+            .notif-dot.Warning {
+                background: #D97706;
+            }
+
+            .notif-dot.Alert {
+                background: #DC2626;
+            }
+
+        .notif-item-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #0F172A;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .notif-item-msg {
+            font-size: 12.5px;
+            color: #64748B;
+            margin-top: 2px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .notif-item-time {
+            font-size: 11px;
+            color: #94A3B8;
+            margin-top: 4px;
+        }
+
+        .notif-empty {
+            padding: 32px 16px;
+            text-align: center;
+            color: #94A3B8;
+            font-size: 13px;
+            font-family: 'DM Sans', sans-serif;
+        }
+    </style>
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#2563EB" />
+    <link rel="apple-touch-icon" href="/Content/icons/icon-192.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="GymHub" />
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('/sw.js').catch(function (err) {
+                    console.warn('Service worker registration failed:', err);
+                });
+            });
+        }
+    </script>
+</head>
+<body data-page="@currentPage">
+
+    @Html.AntiForgeryToken()
+
+    <!-- Mobile overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+
+    <!-- ═══════════════════════════════════════════
+         SIDEBAR
+    ═══════════════════════════════════════════ -->
+    <aside class="sidebar" id="sidebar">
+
+        <button class="collapse-btn" id="collapse-btn"
+                onclick="toggleSidebarCollapse()" title="Toggle sidebar">
+            <span id="collapse-icon">◀</span>
+        </button>
+
+        <div class="sidebar-logo">
+            <div class="logo-mark">GH</div>
+            <div class="logo-text">Gym<span>Hub</span></div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="section-label">Member</div>
+
+            <a class="nav-item @nav("overview")" href="/Dashboard/Index">
+                <i class="nav-icon fas fa-home"></i>
+                <span class="nav-label">Overview</span>
+            </a>
+            <a class="nav-item @nav("membership")" href="/Dashboard/Membership">
+                <i class="nav-icon fas fa-crown"></i>
+                <span class="nav-label">Membership</span>
+            </a>
+            <a class="nav-item @nav("freeze")" href="/Dashboard/Freeze">
+                <i class="nav-icon fas fa-pause-circle"></i>
+                <span class="nav-label">Freeze</span>
+            </a>
+            <a class="nav-item @nav("payments")" href="/Dashboard/Payments">
+                <i class="nav-icon fas fa-history"></i>
+                <span class="nav-label">Payment History</span>
+            </a>
+            <a class="nav-item @nav("wallet")" href="/Dashboard/Wallet">
+                <i class="nav-icon fas fa-wallet"></i>
+                <span class="nav-label">Wallet</span>
+            </a>
+            <a class="nav-item @nav("profile")" href="/Dashboard/Profile">
+                <i class="nav-icon fas fa-user-circle"></i>
+                <span class="nav-label">My Profile</span>
+            </a>
+
+            <div class="section-label">Fitness</div>
+
+            <div class="section-label">Fitness</div>
+
+            <a class="nav-item @nav("workout")" href="/Workout/Index">
+                <i class="nav-icon fas fa-dumbbell"></i>
+                <span class="nav-label">Workout Hub</span>
+            </a>
+            <a class="nav-item @nav("trainer")" href="/Dashboard/TrainerHub">
+                <i class="nav-icon fas fa-person-walking"></i>
+                <span class="nav-label">Trainer Hub</span>
+            </a>
+            <a class="nav-item @nav("fitness")" href="/Dashboard/FitnessGoals">
+                <i class="nav-icon fas fa-heartbeat"></i>
+                <span class="nav-label">Fitness Goals</span>
+            </a>
+            <a class="nav-item @nav("meals")" href="/Meal/Index">
+                <i class="nav-icon fas fa-utensils"></i>
+                <span class="nav-label">Meals</span>
+            </a>
+
+            <div class="section-label">Facilities</div>
+
+            <a class="nav-item @nav("store")" href="/Store/Index">
+                <i class="nav-icon fas fa-store"></i>
+                <span class="nav-label">Gym Store</span>
+            </a>
+            <a class="nav-item @nav("equipment")" href="/Dashboard/Equipment">
+                <i class="nav-icon fas fa-dumbbell"></i>
+                <span class="nav-label">Report Equipment Issue</span>
+            </a>
+            <a class="nav-item @nav("lockers")" href="/Locker/Index">
+                <i class="nav-icon fas fa-lock"></i>
+                <span class="nav-label">Locker Reservation</span>
+            </a>
+
+            <div class="section-label">Support</div>
+
+            <a class="nav-item @nav("feedback")" href="/Dashboard/SubmitFeedbackForm">
+                <i class="nav-icon fas fa-comment-dots"></i>
+                <span class="nav-label">Submit Feedback</span>
+            </a>
+            <a class="nav-item @nav("mycomplaints")" href="/Dashboard/MyComplaints">
+                <i class="nav-icon fas fa-list-check"></i>
+                <span class="nav-label">My Complaints</span>
+            </a>
+            <a class="nav-item @nav("complaint")" href="/Dashboard/SubmitComplaintForm">
+                <i class="nav-icon fas fa-triangle-exclamation"></i>
+                <span class="nav-label">Submit Complaint</span>
+            </a>
+            <a class="nav-item @nav("referral")" href="/Dashboard/ReferAFriend">
+                <i class="nav-icon fas fa-user-plus"></i>
+                <span class="nav-label">Refer a Friend</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="member-card">
+                <div class="member-avatar">@initials</div>
+                <div style="overflow:hidden;">
+                    <div class="member-name">@memberName</div>
+                    @if (!string.IsNullOrEmpty(memberPlan))
+                    {
+                        <div class="member-plan">@memberPlan.ToUpper()</div>
+                    }
+                    @if (!string.IsNullOrEmpty(memberStatus))
+                    {
+                        <span class="role-badge">@memberStatus</span>
+                    }
+                </div>
+            </div>
+
+            <a href="/Dashboard/Logout" class="logout-btn"
+               onclick="return confirm('Log out of GymHub?')">
+                <i class="fas fa-sign-out-alt"></i>
+                <span class="logout-label">Log Out</span>
+            </a>
+        </div>
+
+    </aside>
+
+    <!-- ═══════════════════════════════════════════
+         TOPBAR
+    ═══════════════════════════════════════════ -->
+    <div class="topbar" id="topbar">
+        <div class="topbar-left">
+            <button class="hamburger-btn" onclick="toggleMobileSidebar()">☰</button>
+            <div class="topbar-title">@pageTitle</div>
+        </div>
+        <<div class="topbar-right">
+            <div class="notif-wrapper" id="notif-wrapper">
+                <button class="notif-bell" id="notif-bell" onclick="toggleNotifDropdown()" title="Notifications">
+                    <i class="fas fa-bell"></i>
+                    <span class="notif-badge" id="notif-badge" style="display:none;">0</span>
+                </button>
+                <div class="notif-dropdown" id="notif-dropdown">
+                    <div class="notif-dropdown-header">
+                        <span>Notifications</span>
+                        <button type="button" onclick="markAllNotifsRead()">Mark all read</button>
+                    </div>
+                    <div class="notif-list" id="notif-list">
+                        <div class="notif-empty">No notifications yet</div>
+                    </div>
+                </div>
+            </div>
+            <div class="topbar-greeting">
+                Good <span id="greeting-time">morning</span>,
+                <strong>@(memberName.Split(' ')[0])</strong>
+            </div>
+            @if (!string.IsNullOrEmpty(memberStatus))
+            {
+                <div class="topbar-status">
+                    <span class="status-dot @(memberStatus != "Active" ? "suspended" : "")"></span>
+                    @memberStatus Member
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════
+         PAGE BODY
+    ═══════════════════════════════════════════ -->
+    <main class="main-content" id="main-content">
+        @RenderBody()
+    </main>
+
+
+    <script src="~/Scripts/jquery-3.7.1.min.js"></script>
+    <script src="~/Scripts/dashboard.js"></script>
+    <script src="~/Scripts/notifications.js"></script>
+
+    <script>
+        (function () {
+            /* Greeting */
+            var h = new Date().getHours();
+            var greetEl = document.getElementById('greeting-time');
+            if (greetEl) greetEl.textContent = h < 12 ? 'morning' : h < 17 ? 'afternoon' : 'evening';
+
+            /* Sidebar collapse — persisted in localStorage */
+            var _collapsed = localStorage.getItem('gh_member_sidebar') === 'collapsed';
+
+            function applySidebarState() {
+                var sidebar = document.getElementById('sidebar');
+                var topbar = document.getElementById('topbar');
+                var main = document.getElementById('main-content');
+                var icon = document.getElementById('collapse-icon');
+                if (!sidebar) return;
+                if (_collapsed) {
+                    sidebar.classList.add('collapsed');
+                    if (icon) icon.textContent = '▶';
+                    if (topbar) topbar.style.left = 'var(--sidebar-collapsed, 64px)';
+                    if (main) main.style.marginLeft = 'var(--sidebar-collapsed, 64px)';
+                } else {
+                    sidebar.classList.remove('collapsed');
+                    if (icon) icon.textContent = '◀';
+                    if (topbar) topbar.style.left = '';
+                    if (main) main.style.marginLeft = '';
+                }
+            }
+
+            window.toggleSidebarCollapse = function () {
+                _collapsed = !_collapsed;
+                localStorage.setItem('gh_member_sidebar', _collapsed ? 'collapsed' : 'expanded');
+                applySidebarState();
+            };
+
+            window.toggleMobileSidebar = function () {
+                var sidebar = document.getElementById('sidebar');
+                var overlay = document.getElementById('sidebar-overlay');
+                var isOpen = sidebar.classList.toggle('open');
+                if (overlay) overlay.classList.toggle('visible', isOpen);
+            };
+
+            window.closeMobileSidebar = function () {
+                var sidebar = document.getElementById('sidebar');
+                var overlay = document.getElementById('sidebar-overlay');
+                if (sidebar) sidebar.classList.remove('open');
+                if (overlay) overlay.classList.remove('visible');
+            };
+
+            applySidebarState();
+        })();
+    </script>
+
+    @* FIX: @RenderSection is LAST — no <script> tags after this line.
+        MVC5 throws "RenderSection already called" if anything follows it
+        that tries to use the same section slot. *@
+    @RenderSection("scripts", required: false)
+
+</body>
+</html>

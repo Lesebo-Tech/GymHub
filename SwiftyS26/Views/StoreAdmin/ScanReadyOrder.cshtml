@@ -1,0 +1,735 @@
+﻿@{
+    Layout = Session["LoggedInAdmin"] != null
+        ? "~/Views/Shared/_AdminLayout.cshtml"
+        : "~/Views/Shared/_StoreStaffLayout.cshtml";
+
+    ViewBag.Title = "Scan Preparation QR";
+    ViewBag.PageTitle = "SCAN PREPARATION QR";
+    ViewBag.ActiveNav = "storeorders";
+}
+
+<style>
+    .sr-page {
+        max-width: 920px;
+        margin: 0 auto;
+    }
+
+    .sr-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+    }
+
+    .sr-title {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .sr-title-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 11px;
+        background: #eff6ff;
+        color: #2563eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 19px;
+    }
+
+    .sr-header h2 {
+        margin: 0;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 28px;
+        letter-spacing: 1px;
+        color: #0f172a;
+    }
+
+    .sr-header p {
+        margin: 4px 0 0;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .sr-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 10px 15px;
+        border: 1px solid #dbe3ef;
+        border-radius: 9px;
+        background: #fff;
+        color: #334155;
+        font-weight: 750;
+        font-size: 12px;
+        text-decoration: none;
+    }
+
+    .sr-card {
+        overflow: hidden;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 15px;
+    }
+
+    .sr-card-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        padding: 16px 20px;
+        background: #0f172a;
+        color: #fff;
+    }
+
+        .sr-card-head strong {
+            display: block;
+            font-size: 14px;
+        }
+
+        .sr-card-head span {
+            display: block;
+            margin-top: 3px;
+            color: #cbd5e1;
+            font-size: 11px;
+        }
+
+    .sr-state {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.1);
+        color: #fff;
+        font-size: 10px;
+        font-weight: 850;
+        text-transform: uppercase;
+    }
+
+    .sr-state-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #f59e0b;
+    }
+
+    .sr-state.active .sr-state-dot {
+        background: #22c55e;
+    }
+
+    .sr-state.error .sr-state-dot {
+        background: #ef4444;
+    }
+
+    .sr-body {
+        padding: 22px;
+    }
+
+    .sr-instruction {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        margin-bottom: 18px;
+        padding: 12px 14px;
+        border: 1px solid #bfdbfe;
+        border-radius: 10px;
+        background: #eff6ff;
+        color: #1d4ed8;
+        font-size: 12.5px;
+        line-height: 1.5;
+    }
+
+    .sr-reader-wrap {
+        position: relative;
+        min-height: 430px;
+        overflow: hidden;
+        border-radius: 13px;
+        background: #020617;
+    }
+
+    #readyQrReader {
+        width: 100%;
+        min-height: 430px;
+        background: #020617;
+    }
+
+        #readyQrReader video {
+            width: 100% !important;
+            min-height: 430px;
+            object-fit: cover;
+        }
+
+        #readyQrReader img {
+            display: none;
+        }
+
+    #readyQrReader__scan_region {
+        min-height: 390px;
+        background: #020617;
+    }
+
+    #readyQrReader__dashboard {
+        background: #fff;
+        padding: 12px;
+    }
+
+    .sr-placeholder {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #e2e8f0;
+        text-align: center;
+        pointer-events: none;
+    }
+
+        .sr-placeholder i {
+            margin-bottom: 14px;
+            color: #60a5fa;
+            font-size: 42px;
+        }
+
+        .sr-placeholder strong {
+            font-size: 17px;
+        }
+
+        .sr-placeholder span {
+            margin-top: 6px;
+            color: #94a3b8;
+            font-size: 12.5px;
+        }
+
+    .sr-frame {
+        position: absolute;
+        z-index: 3;
+        top: 50%;
+        left: 50%;
+        width: 245px;
+        height: 245px;
+        transform: translate(-50%, -50%);
+        border: 2px solid rgba(255,255,255,.85);
+        border-radius: 17px;
+        box-shadow: 0 0 0 9999px rgba(2,6,23,.25);
+        pointer-events: none;
+        display: none;
+    }
+
+        .sr-frame::before,
+        .sr-frame::after {
+            position: absolute;
+            content: "";
+            left: 16px;
+            right: 16px;
+            height: 2px;
+            background: #3b82f6;
+            box-shadow: 0 0 8px #3b82f6;
+        }
+
+        .sr-frame::before {
+            top: 50%;
+        }
+
+        .sr-frame::after {
+            display: none;
+        }
+
+    .sr-message {
+        display: none;
+        gap: 10px;
+        align-items: flex-start;
+        margin-top: 17px;
+        padding: 13px 15px;
+        border-radius: 10px;
+        font-size: 12.5px;
+        font-weight: 650;
+        line-height: 1.5;
+    }
+
+        .sr-message.show {
+            display: flex;
+        }
+
+        .sr-message.error {
+            border: 1px solid #fecaca;
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
+        .sr-message.success {
+            border: 1px solid #bbf7d0;
+            background: #f0fdf4;
+            color: #15803d;
+        }
+
+        .sr-message.info {
+            border: 1px solid #bfdbfe;
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+    .sr-actions {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 18px;
+        flex-wrap: wrap;
+    }
+
+    .sr-button {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        gap: 7px;
+        min-width: 150px;
+        padding: 11px 17px;
+        border: 0;
+        border-radius: 9px;
+        background: #2563eb;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+        .sr-button.secondary {
+            border: 1px solid #dbe3ef;
+            background: #fff;
+            color: #334155;
+        }
+
+        .sr-button:disabled {
+            cursor: not-allowed;
+            opacity: .65;
+        }
+
+    .sr-security {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-top: 18px;
+        color: #64748b;
+        font-size: 11px;
+        line-height: 1.5;
+    }
+
+    @@media (max-width: 600px) {
+        .sr-body {
+            padding: 14px;
+        }
+
+        .sr-reader-wrap,
+        #readyQrReader,
+        #readyQrReader video {
+            min-height: 350px;
+        }
+
+        .sr-frame {
+            width: 210px;
+            height: 210px;
+        }
+
+        .sr-actions {
+            flex-direction: column;
+        }
+
+        .sr-button {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="sr-page">
+    <div class="sr-header">
+        <div class="sr-title">
+            <div class="sr-title-icon">
+                <i class="fas fa-qrcode"></i>
+            </div>
+
+            <div>
+                <h2>Scan Order Preparation QR</h2>
+                <p>
+                    Verify a paid order before marking it ready for pickup.
+                </p>
+            </div>
+        </div>
+
+        <a href="@Url.Action("Orders", "StoreAdmin")"
+           class="sr-back">
+            <i class="fas fa-arrow-left"></i>
+            Fulfil Orders
+        </a>
+    </div>
+
+    <div class="sr-card">
+        <div class="sr-card-head">
+            <div>
+                <strong>GymHub Preparation Scanner</strong>
+                <span>Internal order readiness verification</span>
+            </div>
+
+            <div id="cameraState" class="sr-state">
+                <span class="sr-state-dot"></span>
+                <span id="cameraStateText">Starting</span>
+            </div>
+        </div>
+
+        <div class="sr-body">
+            @Html.AntiForgeryToken()
+
+            <div class="sr-instruction">
+                <i class="fas fa-circle-info"></i>
+                <div>
+                    Position the internal preparation QR code inside the frame.
+                    Scanning verifies the order first—it does not immediately
+                    change the order status.
+                </div>
+            </div>
+
+            <div class="sr-reader-wrap">
+                <div id="readyQrReader"></div>
+
+                <div id="scannerPlaceholder" class="sr-placeholder">
+                    <i class="fas fa-camera"></i>
+                    <strong>Waiting for camera permission</strong>
+                    <span>Allow camera access when prompted.</span>
+                </div>
+
+                <div id="scannerFrame" class="sr-frame"></div>
+            </div>
+
+            <div id="scannerMessage"
+                 class="sr-message"
+                 role="alert">
+                <i id="scannerMessageIcon"
+                   class="fas fa-circle-info"></i>
+                <span id="scannerMessageText"></span>
+            </div>
+
+            <div class="sr-actions">
+                <button id="startCameraButton"
+                        type="button"
+                        class="sr-button">
+                    <i class="fas fa-camera"></i>
+                    Start Camera
+                </button>
+
+                <button id="stopCameraButton"
+                        type="button"
+                        class="sr-button secondary"
+                        disabled>
+                    <i class="fas fa-stop"></i>
+                    Stop Camera
+                </button>
+            </div>
+
+            <div class="sr-security">
+                <i class="fas fa-shield-halved"></i>
+                <span>
+                    The server verifies the order reference, secure token,
+                    order status and stock reservation. A copied order reference
+                    by itself cannot mark an order ready.
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+<script>
+    (function () {
+        "use strict";
+
+        var scanner = null;
+        var scannerRunning = false;
+        var requestInProgress = false;
+        var scanLocked = false;
+
+        var startButton =
+            document.getElementById("startCameraButton");
+
+        var stopButton =
+            document.getElementById("stopCameraButton");
+
+        var placeholder =
+            document.getElementById("scannerPlaceholder");
+
+        var frame =
+            document.getElementById("scannerFrame");
+
+        var state =
+            document.getElementById("cameraState");
+
+        var stateText =
+            document.getElementById("cameraStateText");
+
+        var message =
+            document.getElementById("scannerMessage");
+
+        var messageText =
+            document.getElementById("scannerMessageText");
+
+        var messageIcon =
+            document.getElementById("scannerMessageIcon");
+
+        var verifyUrl =
+            '@Url.Action("VerifyReadyQr", "StoreAdmin")';
+
+        var loginUrl =
+            '@Url.Action("Login", "Admin")';
+
+        function getVerificationToken() {
+            var tokenInput = document.querySelector(
+                'input[name="__RequestVerificationToken"]');
+
+            return tokenInput ? tokenInput.value : "";
+        }
+
+        function setState(text, type) {
+            stateText.textContent = text;
+
+            state.classList.remove("active", "error");
+
+            if (type) {
+                state.classList.add(type);
+            }
+        }
+
+        function showMessage(text, type) {
+            message.className = "sr-message show " + type;
+            messageText.textContent = text;
+
+            messageIcon.className = "fas";
+
+            if (type === "success") {
+                messageIcon.classList.add("fa-circle-check");
+            } else if (type === "error") {
+                messageIcon.classList.add("fa-circle-xmark");
+            } else {
+                messageIcon.classList.add("fa-circle-info");
+            }
+        }
+
+        function hideMessage() {
+            message.className = "sr-message";
+            messageText.textContent = "";
+        }
+
+        function normaliseError(error) {
+            if (!error) {
+                return "The camera could not be opened.";
+            }
+
+            if (typeof error === "string") {
+                return error;
+            }
+
+            if (error.message) {
+                return error.message;
+            }
+
+            return "The camera could not be opened.";
+        }
+
+        function stopCamera() {
+            if (!scanner || !scannerRunning) {
+                return Promise.resolve();
+            }
+
+            return scanner.stop()
+                .then(function () {
+                    scannerRunning = false;
+                    frame.style.display = "none";
+                    placeholder.style.display = "flex";
+
+                    startButton.disabled = false;
+                    stopButton.disabled = true;
+
+                    setState("Stopped", "");
+                })
+                .catch(function (error) {
+                    console.error(error);
+                });
+        }
+
+        function verifyQr(decodedText) {
+            if (requestInProgress || scanLocked) {
+                return;
+            }
+
+            requestInProgress = true;
+            scanLocked = true;
+
+            setState("Verifying", "active");
+
+            showMessage(
+                "QR code detected. Verifying the order...",
+                "info");
+
+            var body =
+                "__RequestVerificationToken=" +
+                encodeURIComponent(getVerificationToken()) +
+                "&qrData=" +
+                encodeURIComponent(decodedText);
+
+            fetch(verifyUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type":
+                        "application/x-www-form-urlencoded; charset=UTF-8",
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                credentials: "same-origin",
+                body: body
+            })
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error(
+                        "The server could not verify the QR code.");
+                }
+
+                return response.json();
+            })
+            .then(function (result) {
+                requestInProgress = false;
+
+                if (result.sessionExpired) {
+                    window.location.href = loginUrl;
+                    return;
+                }
+
+                if (!result.success) {
+                    scanLocked = false;
+                    setState("Camera active", "active");
+
+                    showMessage(
+                        result.message ||
+                        "The QR code could not be verified.",
+                        "error");
+
+                    return;
+                }
+
+                setState("Verified", "active");
+
+                showMessage(
+                    result.message ||
+                    "Order verified successfully.",
+                    "success");
+
+                stopCamera().finally(function () {
+                    window.setTimeout(function () {
+                        window.location.href = result.redirectUrl;
+                    }, 650);
+                });
+            })
+            .catch(function (error) {
+                requestInProgress = false;
+                scanLocked = false;
+
+                setState("Camera active", "active");
+
+                showMessage(
+                    normaliseError(error),
+                    "error");
+            });
+        }
+
+        function startCamera() {
+            hideMessage();
+            scanLocked = false;
+            requestInProgress = false;
+
+            if (typeof Html5Qrcode === "undefined") {
+                setState("Scanner unavailable", "error");
+
+                showMessage(
+                    "The QR scanner library could not be loaded. Check your internet connection and reload the page.",
+                    "error");
+
+                return;
+            }
+
+            startButton.disabled = true;
+            setState("Requesting camera", "");
+
+            if (!scanner) {
+                scanner = new Html5Qrcode("readyQrReader");
+            }
+
+            var configuration = {
+                fps: 10,
+                qrbox: function (viewfinderWidth, viewfinderHeight) {
+                    var smallest =
+                        Math.min(viewfinderWidth, viewfinderHeight);
+
+                    var size = Math.floor(smallest * 0.68);
+
+                    return {
+                        width: size,
+                        height: size
+                    };
+                },
+                aspectRatio: 1.333334,
+                disableFlip: false
+            };
+
+            scanner.start(
+                { facingMode: "environment" },
+                configuration,
+                verifyQr,
+                function () {
+                    // Ordinary frames without a QR code are ignored.
+                })
+                .then(function () {
+                    scannerRunning = true;
+
+                    placeholder.style.display = "none";
+                    frame.style.display = "block";
+
+                    startButton.disabled = true;
+                    stopButton.disabled = false;
+
+                    setState("Camera active", "active");
+                })
+                .catch(function (error) {
+                    scannerRunning = false;
+
+                    placeholder.style.display = "flex";
+                    frame.style.display = "none";
+
+                    startButton.disabled = false;
+                    stopButton.disabled = true;
+
+                    setState("Camera blocked", "error");
+
+                    showMessage(
+                        "The camera could not be opened. Allow camera access and make sure the page is running through HTTPS or localhost. Details: " +
+                        normaliseError(error),
+                        "error");
+                });
+        }
+
+        startButton.addEventListener("click", startCamera);
+        stopButton.addEventListener("click", stopCamera);
+
+        window.addEventListener("beforeunload", function () {
+            if (scanner && scannerRunning) {
+                scanner.stop().catch(function () { });
+            }
+        });
+
+        // Open the camera automatically when the page loads.
+        window.addEventListener("load", function () {
+            window.setTimeout(startCamera, 350);
+        });
+    })();
+</script>

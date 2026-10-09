@@ -1,0 +1,327 @@
+﻿@model SwiftyS26.Models.Locker
+
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.PageTitle = "Reserve Locker";
+    ViewBag.ActivePage = "lockers";
+}
+
+<style>
+    .lk-card {
+        max-width: 480px;
+        margin: 0 auto;
+        background: #fff;
+        border: 1px solid rgba(0,0,0,.07);
+        border-radius: 14px;
+        padding: 32px;
+        box-shadow: 0 4px 16px rgba(0,0,0,.06);
+    }
+
+        .lk-card h2 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 26px;
+            letter-spacing: 1px;
+            color: var(--sb-text-primary, #0F172A);
+            margin-bottom: 4px;
+            text-align: center;
+        }
+
+        .lk-card .lk-location {
+            font-size: 13px;
+            color: var(--sb-text-secondary, #64748B);
+            margin-bottom: 26px;
+            text-align: center;
+        }
+
+    .lk-alert {
+        padding: 12px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 20px;
+    }
+
+    .lk-alert-error {
+        background: rgba(239,68,68,.08);
+        color: #DC2626;
+        border: 1px solid rgba(239,68,68,.2);
+    }
+
+    .lk-field {
+        margin-bottom: 22px;
+    }
+
+    .lk-label {
+        display: block;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--sb-text-primary, #0F172A);
+        margin-bottom: 10px;
+        text-align: center;
+    }
+
+    /* ===== SEGMENTED PIN ===== */
+    .lk-pin-row {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+    }
+
+    .lk-pin-box {
+        width: 48px;
+        height: 58px;
+        text-align: center;
+        font-size: 24px;
+        font-weight: 700;
+        font-family: 'DM Sans', sans-serif;
+        color: var(--sb-text-primary, #0F172A);
+        border: 1.5px solid rgba(0,0,0,.12);
+        border-radius: 12px;
+        background: #fff;
+        outline: none;
+        transition: border-color .15s, box-shadow .15s, transform .12s;
+        -moz-appearance: textfield;
+    }
+
+        .lk-pin-box::-webkit-outer-spin-button,
+        .lk-pin-box::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .lk-pin-box:focus {
+            border-color: #2563EB;
+            box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+            transform: translateY(-1px);
+        }
+
+        .lk-pin-box.filled {
+            border-color: #2563EB;
+            background: rgba(37,99,235,.04);
+        }
+
+    .lk-pin-row.err .lk-pin-box {
+        border-color: #DC2626;
+        background: rgba(239,68,68,.04);
+    }
+
+    .lk-pin-row.ok .lk-pin-box {
+        border-color: #16A34A;
+        background: rgba(22,163,74,.04);
+    }
+
+    .lk-match-hint {
+        text-align: center;
+        font-size: 11.5px;
+        font-weight: 600;
+        min-height: 16px;
+        margin-top: 8px;
+    }
+
+        .lk-match-hint.ok {
+            color: #16A34A;
+        }
+
+        .lk-match-hint.err {
+            color: #DC2626;
+        }
+
+    .lk-btn-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 8px;
+    }
+
+    .lk-btn-primary {
+        flex: 1;
+        padding: 12px 20px;
+        background: linear-gradient(135deg,#3B82F6,#1D4ED8);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13.5px;
+        font-weight: 700;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(37,99,235,.3);
+        transition: transform .15s;
+    }
+
+        .lk-btn-primary:hover:not(:disabled) {
+            transform: translateY(-1px);
+        }
+
+        .lk-btn-primary:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+    .lk-btn-secondary {
+        padding: 12px 20px;
+        background: var(--sb-surface,#F1F5F9);
+        color: var(--sb-text-secondary,#64748B);
+        border: 1px solid rgba(0,0,0,.07);
+        border-radius: 10px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13.5px;
+        font-weight: 600;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .lk-note {
+        background: rgba(37,99,235,.05);
+        border: 1px solid rgba(37,99,235,.15);
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin-bottom: 24px;
+        font-size: 12px;
+        color: #1D4ED8;
+        line-height: 1.5;
+    }
+</style>
+
+<div class="lk-card">
+    <h2><i class="fas fa-lock" style="color:#2563EB; margin-right:8px;"></i>Reserve Locker @Model.LockerNumber</h2>
+    <div class="lk-location">@Model.Location</div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="lk-alert lk-alert-error">@TempData["Error"]</div>
+    }
+
+    <div class="lk-note">
+        <i class="fas fa-circle-info"></i>
+        Choose a 5-digit PIN you'll remember — you'll need it every time you open this locker.
+        We store it securely and can never show it back to you.
+    </div>
+
+    @using (Html.BeginForm("Reserve", "Locker", new { id = Model.LockerId }, FormMethod.Post, new { id = "lkReserveForm" }))
+    {
+        @Html.AntiForgeryToken()
+
+        <input type="hidden" name="pin" id="lkPinHidden" />
+        <input type="hidden" name="confirmPin" id="lkConfirmHidden" />
+
+        <div class="lk-field">
+            <label class="lk-label">Create a 5-digit PIN</label>
+            <div class="lk-pin-row" id="lkPinRow">
+                <input type="password" inputmode="numeric" maxlength="1" class="lk-pin-box" autocomplete="off" />
+                <input type="password" inputmode="numeric" maxlength="1" class="lk-pin-box" autocomplete="off" />
+                <input type="password" inputmode="numeric" maxlength="1" class="lk-pin-box" autocomplete="off" />
+                <input type="password" inputmode="numeric" maxlength="1" class="lk-pin-box" autocomplete="off" />
+                <input type="password" inputmode="numeric" maxlength="1" class="lk-pin-box" autocomplete="off" />
+            </div>
+        </div>
+
+        <div class="lk-field">
+            <label class="lk-label">Confirm PIN</label>
+            <div class="lk-pin-row" id="lkConfirmRow">
+                <input type="password" inputmode="numeric" maxlength="1" class="lk-pin-box" autocomplete="off" />
+                <input type="password" inputmode="numeric" maxlength="1" class="lk-pin-box" autocomplete="off" />
+                <input type="password" inputmode="numeric" maxlength="1" class="lk-pin-box" autocomplete="off" />
+                <input type="password" inputmode="numeric" maxlength="1" class="lk-pin-box" autocomplete="off" />
+                <input type="password" inputmode="numeric" maxlength="1" class="lk-pin-box" autocomplete="off" />
+            </div>
+            <div class="lk-match-hint" id="lkMatchHint"></div>
+        </div>
+
+        <div class="lk-btn-row">
+            <button type="submit" class="lk-btn-primary" id="lkSubmitBtn" disabled>
+                <i class="fas fa-lock"></i> Reserve Locker
+            </button>
+            @Html.ActionLink("Cancel", "Index", null, new { @class = "lk-btn-secondary" })
+        </div>
+    }
+</div>
+
+<script>
+(function () {
+    var pinRow     = document.getElementById('lkPinRow');
+    var confirmRow = document.getElementById('lkConfirmRow');
+    var hint       = document.getElementById('lkMatchHint');
+    var submitBtn  = document.getElementById('lkSubmitBtn');
+    var pinHidden     = document.getElementById('lkPinHidden');
+    var confirmHidden = document.getElementById('lkConfirmHidden');
+
+    function wire(row, onComplete) {
+        var boxes = Array.prototype.slice.call(row.querySelectorAll('.lk-pin-box'));
+
+        boxes.forEach(function (box, i) {
+            box.addEventListener('input', function () {
+                this.value = this.value.replace(/\D/g, '').slice(0, 1);
+                this.classList.toggle('filled', this.value !== '');
+                if (this.value && i < boxes.length - 1) boxes[i + 1].focus();
+                onComplete();
+            });
+
+            box.addEventListener('keydown', function (e) {
+                if (e.key === 'Backspace' && !this.value && i > 0) {
+                    e.preventDefault();
+                    boxes[i - 1].value = '';
+                    boxes[i - 1].classList.remove('filled');
+                    boxes[i - 1].focus();
+                    onComplete();
+                }
+                if (e.key === 'ArrowLeft' && i > 0) { e.preventDefault(); boxes[i - 1].focus(); }
+                if (e.key === 'ArrowRight' && i < boxes.length - 1) { e.preventDefault(); boxes[i + 1].focus(); }
+            });
+
+            box.addEventListener('paste', function (e) {
+                e.preventDefault();
+                var digits = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 5);
+                digits.split('').forEach(function (d, k) {
+                    if (boxes[k]) { boxes[k].value = d; boxes[k].classList.add('filled'); }
+                });
+                boxes[Math.min(digits.length, boxes.length - 1)].focus();
+                onComplete();
+            });
+
+            box.addEventListener('focus', function () { this.select(); });
+        });
+
+        return function () {
+            return boxes.map(function (b) { return b.value; }).join('');
+        };
+    }
+
+    var readPin, readConfirm;
+
+    function validate() {
+        var pin = readPin ? readPin() : '';
+        var confirm = readConfirm ? readConfirm() : '';
+
+        pinHidden.value = pin;
+        confirmHidden.value = confirm;
+
+        confirmRow.classList.remove('err', 'ok');
+        hint.className = 'lk-match-hint';
+        hint.textContent = '';
+
+        var ready = false;
+
+        if (pin.length === 5 && confirm.length === 5) {
+            if (pin === confirm) {
+                confirmRow.classList.add('ok');
+                hint.className = 'lk-match-hint ok';
+                hint.textContent = 'PINs match';
+                ready = true;
+            } else {
+                confirmRow.classList.add('err');
+                hint.className = 'lk-match-hint err';
+                hint.textContent = 'PINs do not match';
+            }
+        }
+
+        submitBtn.disabled = !ready;
+    }
+
+    readPin     = wire(pinRow, validate);
+    readConfirm = wire(confirmRow, validate);
+
+    pinRow.querySelector('.lk-pin-box').focus();
+})();
+</script>

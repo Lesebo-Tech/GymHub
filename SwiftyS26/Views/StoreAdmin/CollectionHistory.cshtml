@@ -1,0 +1,946 @@
+﻿@model SwiftyS26.ViewModels.CollectionHistoryPageViewModel
+@using System
+@using System.Linq
+
+@{
+    Layout = Session["LoggedInAdmin"] != null
+        ? "~/Views/Shared/_AdminLayout.cshtml"
+        : "~/Views/Shared/_StoreStaffLayout.cshtml";
+
+    ViewBag.Title = "Collection History";
+    ViewBag.PageTitle = "COLLECTION HISTORY";
+
+    var orders = Model != null && Model.Orders != null
+        ? Model.Orders
+        : new List<SwiftyS26.Models.StoreOrder>();
+
+    string fromDateValue =
+        Model != null && Model.FromDate.HasValue
+            ? Model.FromDate.Value.ToString("yyyy-MM-dd")
+            : "";
+
+    string toDateValue =
+        Model != null && Model.ToDate.HasValue
+            ? Model.ToDate.Value.ToString("yyyy-MM-dd")
+            : "";
+}
+
+<style>
+    @@keyframes ch-fade-up {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .ch-page {
+        max-width: 1600px;
+        margin: 0 auto;
+    }
+
+    .ch-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .ch-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .ch-title-icon {
+        color: #2563eb;
+        font-size: 28px;
+    }
+
+    .ch-title h2 {
+        margin: 0;
+        color: #0f172a;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 30px;
+        letter-spacing: 1px;
+    }
+
+    .ch-subtitle {
+        margin: 4px 0 0;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .ch-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .ch-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 10px 15px;
+        border-radius: 9px;
+        font-size: 12px;
+        font-weight: 850;
+        text-decoration: none;
+        cursor: pointer;
+        transition: .2s ease;
+    }
+
+        .ch-button:hover {
+            text-decoration: none;
+            transform: translateY(-1px);
+        }
+
+    .ch-button-primary {
+        border: 1px solid #2563eb;
+        color: #fff;
+        background: #2563eb;
+    }
+
+        .ch-button-primary:hover {
+            color: #fff;
+            background: #1d4ed8;
+        }
+
+    .ch-button-light {
+        border: 1px solid #dbe3ef;
+        color: #334155;
+        background: #fff;
+    }
+
+        .ch-button-light:hover {
+            color: #0f172a;
+            background: #f8fafc;
+        }
+
+    .ch-button-pdf {
+        border: 1px solid #fecaca;
+        color: #dc2626;
+        background: #fff;
+    }
+
+        .ch-button-pdf:hover {
+            color: #b91c1c;
+            background: #fef2f2;
+        }
+
+    .ch-button-excel {
+        border: 1px solid #bbf7d0;
+        color: #15803d;
+        background: #fff;
+    }
+
+        .ch-button-excel:hover {
+            color: #166534;
+            background: #f0fdf4;
+        }
+
+    .ch-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        padding: 12px 15px;
+        margin-bottom: 15px;
+        border: 1px solid;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .ch-alert-success {
+        color: #15803d;
+        background: #f0fdf4;
+        border-color: #bbf7d0;
+    }
+
+    .ch-alert-error {
+        color: #b91c1c;
+        background: #fef2f2;
+        border-color: #fecaca;
+    }
+
+    .ch-stats {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(135px, 1fr));
+        gap: 11px;
+        margin-bottom: 17px;
+    }
+
+    .ch-stat {
+        padding: 15px;
+        border: 1px solid #e2e8f0;
+        border-radius: 13px;
+        background: #fff;
+        animation: ch-fade-up .3s ease both;
+    }
+
+    .ch-stat-label {
+        color: #64748b;
+        font-size: 9.5px;
+        font-weight: 850;
+        letter-spacing: .35px;
+        text-transform: uppercase;
+    }
+
+    .ch-stat-value {
+        margin-top: 6px;
+        color: #0f172a;
+        font-size: 23px;
+        font-weight: 900;
+    }
+
+    .ch-performance {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(180px, 1fr));
+        gap: 12px;
+        margin-bottom: 17px;
+    }
+
+    .ch-performance-card {
+        padding: 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 13px;
+        background: #fff;
+    }
+
+    .ch-performance-label {
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 850;
+        text-transform: uppercase;
+    }
+
+    .ch-performance-value {
+        margin-top: 5px;
+        color: #0f172a;
+        font-size: 22px;
+        font-weight: 900;
+    }
+
+    .ch-performance-success {
+        color: #16a34a;
+    }
+
+    .ch-performance-danger {
+        color: #dc2626;
+    }
+
+    .ch-filter-card {
+        padding: 16px;
+        margin-bottom: 18px;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        background: #fff;
+    }
+
+    .ch-filter-title {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        margin-bottom: 13px;
+        color: #0f172a;
+        font-size: 13px;
+        font-weight: 900;
+    }
+
+        .ch-filter-title i {
+            color: #2563eb;
+        }
+
+    .ch-filter-grid {
+        display: grid;
+        grid-template-columns: minmax(240px, 1.7fr) minmax(180px, 1fr) minmax(145px, .8fr) minmax(145px, .8fr) auto;
+        gap: 10px;
+        align-items: end;
+    }
+
+    .ch-field label {
+        display: block;
+        margin-bottom: 5px;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 850;
+        text-transform: uppercase;
+    }
+
+    .ch-input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px 11px;
+        border: 1px solid #dbe3ef;
+        border-radius: 8px;
+        outline: none;
+        color: #0f172a;
+        background: #fff;
+        font-size: 12.5px;
+    }
+
+        .ch-input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .1);
+        }
+
+    .ch-filter-buttons {
+        display: flex;
+        gap: 8px;
+    }
+
+    .ch-table-wrap {
+        overflow-x: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        background: #fff;
+        animation: ch-fade-up .35s ease both;
+    }
+
+    .ch-table {
+        width: 100%;
+        min-width: 1250px;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+        .ch-table th {
+            padding: 11px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #64748b;
+            background: #f8fafc;
+            font-size: 9.5px;
+            font-weight: 850;
+            text-align: left;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .ch-table td {
+            padding: 13px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+            vertical-align: middle;
+        }
+
+        .ch-table tbody tr:hover {
+            background: #fafcff;
+        }
+
+        .ch-table tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+    .ch-row-overdue {
+        background: #fffafa;
+    }
+
+    .ch-reference {
+        color: #0f172a;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .ch-member {
+        color: #0f172a;
+        font-weight: 800;
+    }
+
+    .ch-muted {
+        margin-top: 3px;
+        color: #64748b;
+        font-size: 10.5px;
+    }
+
+    .ch-date {
+        white-space: nowrap;
+    }
+
+    .ch-overdue {
+        color: #dc2626;
+        font-weight: 850;
+    }
+
+    .ch-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 9px;
+        border-radius: 999px;
+        font-size: 9.5px;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .ch-badge-ready {
+        color: #2563eb;
+        background: #eff6ff;
+    }
+
+    .ch-badge-warning {
+        color: #b45309;
+        background: #fffbeb;
+    }
+
+    .ch-badge-danger {
+        color: #dc2626;
+        background: #fef2f2;
+    }
+
+    .ch-badge-success {
+        color: #16a34a;
+        background: #f0fdf4;
+    }
+
+    .ch-badge-neutral {
+        color: #64748b;
+        background: #f1f5f9;
+    }
+
+    .ch-signature {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 10.5px;
+        font-weight: 800;
+    }
+
+    .ch-signature-yes {
+        color: #16a34a;
+    }
+
+    .ch-signature-no {
+        color: #94a3b8;
+    }
+
+    .ch-empty {
+        padding: 60px 20px;
+        color: #64748b;
+        text-align: center;
+    }
+
+        .ch-empty i {
+            display: block;
+            margin-bottom: 10px;
+            color: #94a3b8;
+            font-size: 32px;
+        }
+
+        .ch-empty strong {
+            display: block;
+            margin-bottom: 4px;
+            color: #0f172a;
+        }
+
+    @@media (max-width: 1200px) {
+        .ch-stats {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .ch-filter-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @@media (max-width: 750px) {
+        .ch-performance {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 540px) {
+        .ch-header {
+            flex-direction: column;
+        }
+
+        .ch-actions,
+        .ch-actions .ch-button {
+            width: 100%;
+        }
+
+        .ch-stats,
+        .ch-filter-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .ch-filter-buttons,
+        .ch-filter-buttons .ch-button {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="ch-page">
+    <div class="ch-header">
+        <div>
+            <div class="ch-title">
+                <i class="fas fa-box-open ch-title-icon"></i>
+                <h2>Collection History</h2>
+            </div>
+
+            <p class="ch-subtitle">
+                Audit collection deadlines, completed pickups, signatures,
+                reminders and uncollected outcomes.
+            </p>
+        </div>
+
+        <div class="ch-actions">
+            <a class="ch-button ch-button-light"
+               href="@Url.Action("StoreReports", "StoreAdmin")">
+                <i class="fas fa-arrow-left"></i>
+                Reports
+            </a>
+
+            <a class="ch-button ch-button-pdf"
+               href="@Url.Action(
+                   "ExportCollectionHistoryPdf",
+                   "StoreAdmin",
+                   new
+                   {
+                       search = Model.Search,
+                       outcome = Model.Outcome,
+                       fromDate = fromDateValue,
+                       toDate = toDateValue
+                   })">
+                <i class="fas fa-file-pdf"></i>
+                Export PDF
+            </a>
+
+            <a class="ch-button ch-button-excel"
+               href="@Url.Action(
+                   "ExportCollectionHistoryExcel",
+                   "StoreAdmin",
+                   new
+                   {
+                       search = Model.Search,
+                       outcome = Model.Outcome,
+                       fromDate = fromDateValue,
+                       toDate = toDateValue
+                   })">
+                <i class="fas fa-file-excel"></i>
+                Export Excel
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="ch-alert ch-alert-success">
+            <i class="fas fa-circle-check"></i>
+            <span>@TempData["Success"]</span>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="ch-alert ch-alert-error">
+            <i class="fas fa-circle-exclamation"></i>
+            <span>@TempData["Error"]</span>
+        </div>
+    }
+
+    <div class="ch-stats">
+        <div class="ch-stat">
+            <div class="ch-stat-label">Matching records</div>
+            <div class="ch-stat-value">@Model.TotalRecords</div>
+        </div>
+
+        <div class="ch-stat">
+            <div class="ch-stat-label">Collected</div>
+            <div class="ch-stat-value">@Model.CollectedCount</div>
+        </div>
+
+        <div class="ch-stat">
+            <div class="ch-stat-label">Awaiting collection</div>
+            <div class="ch-stat-value">@Model.ReadyCount</div>
+        </div>
+
+        <div class="ch-stat">
+            <div class="ch-stat-label">Approaching deadline</div>
+            <div class="ch-stat-value">
+                @Model.ApproachingDeadlineCount
+            </div>
+        </div>
+
+        <div class="ch-stat">
+            <div class="ch-stat-label">Overdue</div>
+            <div class="ch-stat-value">@Model.OverdueCount</div>
+        </div>
+
+        <div class="ch-stat">
+            <div class="ch-stat-label">Uncollected</div>
+            <div class="ch-stat-value">@Model.UncollectedCount</div>
+        </div>
+    </div>
+
+    <div class="ch-performance">
+        <div class="ch-performance-card">
+            <div class="ch-performance-label">
+                Collection success rate
+            </div>
+
+            <div class="ch-performance-value ch-performance-success">
+                @Model.CollectionSuccessRate.ToString("N2")%
+            </div>
+        </div>
+
+        <div class="ch-performance-card">
+            <div class="ch-performance-label">
+                Uncollected rate
+            </div>
+
+            <div class="ch-performance-value ch-performance-danger">
+                @Model.UncollectedRate.ToString("N2")%
+            </div>
+        </div>
+
+        <div class="ch-performance-card">
+            <div class="ch-performance-label">
+                Average collection time
+            </div>
+
+            <div class="ch-performance-value">
+                @Model.AverageCollectionHours.ToString("N1")
+                <span style="font-size:12px;color:#64748b;">
+                    hours
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="ch-filter-card">
+        <div class="ch-filter-title">
+            <i class="fas fa-filter"></i>
+            Filter Collection Records
+        </div>
+
+        @using (Html.BeginForm(
+            "CollectionHistory",
+            "StoreAdmin",
+            FormMethod.Get))
+        {
+            <div class="ch-filter-grid">
+                <div class="ch-field">
+                    <label for="search">Search</label>
+
+                    <input id="search"
+                           class="ch-input"
+                           type="search"
+                           name="search"
+                           value="@Model.Search"
+                           placeholder="Order reference, member or email" />
+                </div>
+
+                <div class="ch-field">
+                    <label for="outcome">Collection outcome</label>
+
+                    @Html.DropDownList(
+                             "outcome",
+                             new SelectList(
+                                 new[]
+                                 {
+                                new { Value = "", Text = "All outcomes" },
+                                new { Value = "Ready", Text = "Awaiting collection" },
+                                new { Value = "Overdue", Text = "Overdue" },
+                                new { Value = "Collected", Text = "Collected" },
+                                new { Value = "Uncollected", Text = "Uncollected" },
+                                new { Value = "Refunded", Text = "Refunded" },
+                                new { Value = "Resolved", Text = "Resolved" }
+                             },
+                                 "Value",
+                                 "Text",
+                                 Model.Outcome),
+                             new
+                             {
+                                 @class = "ch-input",
+                                 id = "outcome"
+                             })
+                </div>
+
+                <div class="ch-field">
+                    <label for="fromDate">From date</label>
+
+                    <input id="fromDate"
+                           class="ch-input"
+                           type="date"
+                           name="fromDate"
+                           value="@fromDateValue" />
+                </div>
+
+                <div class="ch-field">
+                    <label for="toDate">To date</label>
+
+                    <input id="toDate"
+                           class="ch-input"
+                           type="date"
+                           name="toDate"
+                           value="@toDateValue" />
+                </div>
+
+                <div class="ch-filter-buttons">
+                    <a class="ch-button ch-button-light"
+                       href="@Url.Action(
+                           "CollectionHistory",
+                           "StoreAdmin")">
+                        Clear
+                    </a>
+
+                    <button class="ch-button ch-button-primary"
+                            type="submit">
+                        <i class="fas fa-filter"></i>
+                        Apply
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="ch-table-wrap">
+        @if (!orders.Any())
+        {
+            <div class="ch-empty">
+                <i class="fas fa-box-open"></i>
+                <strong>No matching collection records</strong>
+                <span>Adjust the selected filters and try again.</span>
+            </div>
+        }
+        else
+        {
+            <table class="ch-table">
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Member</th>
+                        <th>Ready date</th>
+                        <th>Deadline</th>
+                        <th>Collected date</th>
+                        <th>Duration</th>
+                        <th>Outcome</th>
+                        <th>Handled by</th>
+                        <th>Signature</th>
+                        <th>Record</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var order in orders)
+                    {
+                        string outcome =
+                            SwiftyS26.Models.StoreReportService
+                                .GetCollectionOutcome(order);
+
+                        bool isOverdue =
+                            order.Status == "ReadyForPickup" &&
+                            order.PickupDeadline.HasValue &&
+                            order.PickupDeadline.Value <= DateTime.Now;
+
+                        string badgeClass = "ch-badge-neutral";
+                        string badgeIcon = "fas fa-circle";
+
+                        switch (outcome)
+                        {
+                            case "Collected On Time":
+                                badgeClass = "ch-badge-success";
+                                badgeIcon = "fas fa-circle-check";
+                                break;
+
+                            case "Collected After Deadline":
+                                badgeClass = "ch-badge-warning";
+                                badgeIcon = "fas fa-clock";
+                                break;
+
+                            case "Awaiting Collection":
+                                badgeClass = "ch-badge-ready";
+                                badgeIcon = "fas fa-store";
+                                break;
+
+                            case "Approaching Deadline":
+                                badgeClass = "ch-badge-warning";
+                                badgeIcon = "fas fa-hourglass-half";
+                                break;
+
+                            case "Overdue":
+                            case "Uncollected – Awaiting Review":
+                                badgeClass = "ch-badge-danger";
+                                badgeIcon = "fas fa-triangle-exclamation";
+                                break;
+
+                            case "Uncollected – Refund Pending":
+                                badgeClass = "ch-badge-warning";
+                                badgeIcon = "fas fa-money-bill-transfer";
+                                break;
+
+                            case "Uncollected – Refunded":
+                                badgeClass = "ch-badge-success";
+                                badgeIcon = "fas fa-money-bill-transfer";
+                                break;
+
+                            case "Uncollected – Resolved":
+                                badgeClass = "ch-badge-neutral";
+                                badgeIcon = "fas fa-circle-check";
+                                break;
+                        }
+
+                        string durationText = "—";
+
+                        if (order.ReadyAt.HasValue &&
+                            order.CollectedAt.HasValue)
+                        {
+                            TimeSpan duration =
+                                order.CollectedAt.Value -
+                                order.ReadyAt.Value;
+
+                            if (duration.TotalDays >= 1)
+                            {
+                                durationText =
+                                    ((int)duration.TotalDays) +
+                                    "d " +
+                                    duration.Hours +
+                                    "h";
+                            }
+                            else
+                            {
+                                durationText =
+                                    ((int)duration.TotalHours) +
+                                    "h " +
+                                    duration.Minutes +
+                                    "m";
+                            }
+                        }
+
+                        <tr class="@(isOverdue
+                            ? "ch-row-overdue"
+                            : "")">
+
+                            <td>
+                                <div class="ch-reference">
+                                    @order.ReferenceNumber
+                                </div>
+
+                                <div class="ch-muted">
+                                    Ordered
+                                    @order.CreatedAt.ToString(
+                                             "dd MMM yyyy")
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="ch-member">
+                                    @(order.Member != null
+                                        ? order.Member.FullName
+                                        : "Unknown member")
+                                </div>
+
+                                <div class="ch-muted">
+                                    @(order.Member != null &&
+                                      !string.IsNullOrWhiteSpace(
+                                          order.Member.Email)
+                                        ? order.Member.Email
+                                        : "No email recorded")
+                                </div>
+                            </td>
+
+                            <td class="ch-date">
+                                @(order.ReadyAt.HasValue
+                                    ? order.ReadyAt.Value.ToString(
+                                        "dd MMM yyyy HH:mm")
+                                    : "—")
+                            </td>
+
+                            <td class="ch-date">
+                                @if (order.PickupDeadline.HasValue)
+                                {
+                                    <span class="@(isOverdue
+                                        ? "ch-overdue"
+                                        : "")">
+                                        @order.PickupDeadline.Value.ToString(
+                                                 "dd MMM yyyy HH:mm")
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span>—</span>
+                                }
+                            </td>
+
+                            <td class="ch-date">
+                                @(order.CollectedAt.HasValue
+                                    ? order.CollectedAt.Value.ToString(
+                                        "dd MMM yyyy HH:mm")
+                                    : "—")
+                            </td>
+
+                            <td>@durationText</td>
+
+                            <td>
+                                <span class="ch-badge @badgeClass">
+                                    <i class="@badgeIcon"></i>
+                                    @outcome
+                                </span>
+                            </td>
+
+                            <td>
+                                @if (order.CollectedByStaffId.HasValue)
+                                {
+                                    <strong>
+                                        Staff #@order.CollectedByStaffId.Value
+                                    </strong>
+                                }
+                                else if (order.Status.StartsWith(
+                                    "Uncollected"))
+                                {
+                                    <span class="ch-muted">
+                                        GymHub System/Admin
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="ch-muted">—</span>
+                                }
+                            </td>
+
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(
+                                    order.PickupSignaturePath))
+                                {
+                                    <span class="ch-signature ch-signature-yes">
+                                        <i class="fas fa-pen-nib"></i>
+                                        Captured
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="ch-signature ch-signature-no">
+                                        <i class="fas fa-minus"></i>
+                                        None
+                                    </span>
+                                }
+                            </td>
+
+                            <td>
+                                <a class="ch-button ch-button-light"
+                                   href="@Url.Action(
+                                       "CollectionHistoryDetails",
+                                       "StoreAdmin",
+                                       new
+                                       {
+                                           id = order.StoreOrderId
+                                       })">
+                                    View Record
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

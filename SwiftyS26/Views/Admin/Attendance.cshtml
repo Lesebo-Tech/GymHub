@@ -1,0 +1,338 @@
+﻿@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="admin-stats-grid">
+    <div class="admin-stat-card blue">
+        <div class="stat-icon"><i class="fas fa-door-open"></i></div>
+        <div class="stat-number" id="att-total-today">0</div>
+        <div class="stat-label">Total Check-ins Today</div>
+    </div>
+    <div class="admin-stat-card green">
+        <div class="stat-icon"><i class="fas fa-running"></i></div>
+        <div class="stat-number" id="att-currently-in">0</div>
+        <div class="stat-label">Currently In Gym</div>
+    </div>
+    <div class="admin-stat-card">
+        <div class="stat-icon"><i class="fas fa-sign-out-alt"></i></div>
+        <div class="stat-number" id="att-checked-out">0</div>
+        <div class="stat-label">Checked Out</div>
+    </div>
+</div>
+
+<div class="att-action-bar">
+    <button class="btn-primary" onclick="openAttendanceModal()"><i class="fas fa-plus"></i> Check In Member</button>
+    <button class="btn-outline" onclick="loadAttendanceReport()"><i class="fas fa-chart-bar"></i> View Report</button>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-header">
+        <div class="admin-card-title"><i class="fas fa-clipboard-list"></i> Today's Attendance</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div class="admin-card-count" id="att-table-count">Loading…</div>
+            <button class="btn-ghost" onclick="loadTodayAttendance()"><i class="fas fa-sync-alt"></i> Refresh</button>
+        </div>
+    </div>
+    <div class="report-filter" id="att-report-filter">
+        <div class="report-filter-inner">
+            <label>FROM</label>
+            <input type="date" id="att-from" />
+            <label>TO</label>
+            <input type="date" id="att-to" />
+            <button class="btn-primary" style="padding:7px 16px;" onclick="applyAttendanceReport()">Apply</button>
+            <button class="btn-ghost" onclick="resetToToday()">Back to Today</button>
+        </div>
+    </div>
+    <div class="admin-table-wrap">
+        <table class="admin-table" id="attendanceTable">
+            <thead>
+                <tr><th>Member</th><th>Member ID</th><th>Plan</th><th>Date</th><th>Check-In</th><th>Check-Out</th><th>Duration</th><th>Action</th></tr>
+            </thead>
+            <tbody id="attendanceTableBody">
+                <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted);">Loading attendance…</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Modals {
+    <div id="attendanceModal" class="modal-overlay">
+        <div class="modal-box wide">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">
+                <div>
+                    <div class="modal-title" style="font-size:22px;">📋 MANAGE ATTENDANCE</div>
+                    <div style="font-size:13px;color:var(--muted);margin-top:4px;">Enter a Member ID to check in or check out.</div>
+                </div>
+                <button onclick="closeAttendanceModal()" style="background:transparent;border:none;font-size:20px;cursor:pointer;color:var(--muted);line-height:1;">✕</button>
+            </div>
+
+            <!-- Step 1: ID input -->
+            <div id="att-step-input">
+                <label class="modal-notes-label">Member ID</label>
+                <div style="display:flex;gap:10px;">
+                    <input type="text" id="att-member-id-input" placeholder="e.g. GH-483920"
+                           style="flex:1;padding:13px 14px;background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans';font-size:15px;font-weight:700;color:var(--text);outline:none;text-transform:uppercase;letter-spacing:1px;"
+                           onkeydown="if(event.key==='Enter') lookupMember()" />
+                    <button onclick="lookupMember()" class="btn-primary" style="white-space:nowrap;">Look Up</button>
+                </div>
+                <div id="att-lookup-error" class="modal-error" style="margin-top:12px;"></div>
+            </div>
+
+            <!-- Step 2: Action -->
+            <div id="att-step-action" style="display:none;">
+                <div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:18px;margin-bottom:18px;">
+                    <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+                        <div style="width:46px;height:46px;border-radius:50%;background:var(--blue-light);display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:18px;color:var(--blue);flex-shrink:0;" id="att-member-initials">—</div>
+                        <div>
+                            <div style="font-weight:700;font-size:16px;color:var(--text);" id="att-member-name">—</div>
+                            <div style="font-size:12px;color:var(--muted);" id="att-member-email">—</div>
+                        </div>
+                        <span id="att-member-plan-badge" style="margin-left:auto;"></span>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <div style="padding:10px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);">
+                            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:4px;">Member ID</div>
+                            <div style="font-family:'Bebas Neue';font-size:15px;letter-spacing:1px;color:var(--blue);" id="att-card-id">—</div>
+                        </div>
+                        <div style="padding:10px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);">
+                            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:4px;">Status</div>
+                            <div style="font-size:13px;font-weight:700;color:var(--green);" id="att-card-status">—</div>
+                        </div>
+                        <div style="padding:10px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);" id="att-checkin-box">
+                            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:4px;">Check-In</div>
+                            <div style="font-size:13px;font-weight:700;color:var(--text);" id="att-card-checkin">—</div>
+                        </div>
+                        <div style="padding:10px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);" id="att-duration-box">
+                            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:4px;">Duration</div>
+                            <div style="font-size:13px;font-weight:700;color:var(--purple);" id="att-card-duration">—</div>
+                        </div>
+                    </div>
+                </div>
+                <div id="att-action-error" class="modal-error"></div>
+                <div class="modal-actions">
+                    <button id="att-checkin-btn" onclick="doCheckIn()" class="modal-btn approve">✅ Check In</button>
+                    <button id="att-checkout-btn" onclick="doCheckOut()" class="modal-btn approve-blue" style="display:none;">🚪 Check Out</button>
+                    <button onclick="resetAttendanceModal()" class="modal-btn cancel">Look Up Another Member</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Success -->
+            <div id="att-step-success" style="display:none;text-align:center;">
+                <div style="font-size:56px;margin-bottom:12px;" id="att-success-icon">✅</div>
+                <div class="modal-title" id="att-success-title">CHECKED IN</div>
+                <div style="font-size:14px;color:var(--muted);margin-bottom:20px;" id="att-success-sub">—</div>
+                <div style="background:var(--green-light);border:1px solid #bbf7d0;border-radius:var(--radius-sm);padding:16px;margin-bottom:20px;text-align:left;">
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #dcfce7;"><span style="color:var(--muted);font-weight:600;">Member</span><span style="font-weight:700;" id="att-success-name">—</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #dcfce7;" id="att-success-checkin-row"><span style="color:var(--muted);font-weight:600;">Check-In</span><span style="font-weight:700;" id="att-success-checkin">—</span></div>
+                    <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;" id="att-success-checkout-row"><span style="color:var(--muted);font-weight:600;">Duration</span><span style="font-weight:700;color:var(--purple);" id="att-success-duration">—</span></div>
+                </div>
+                <div class="modal-actions">
+                    <button onclick="resetAttendanceModal()" class="modal-btn approve-blue">Check In Another Member</button>
+                    <button onclick="closeAttendanceModal()" class="modal-btn cancel">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        var currentAttendanceId = null, attIsAlreadyIn = false;
+
+        function openAttendanceModal() {
+            resetAttendanceModal();
+            document.getElementById('attendanceModal').style.display = 'flex';
+            setTimeout(function () { var inp = document.getElementById('att-member-id-input'); if (inp) inp.focus(); }, 100);
+        }
+
+        function closeAttendanceModal() {
+            document.getElementById('attendanceModal').style.display = 'none';
+            currentAttendanceId = null; attIsAlreadyIn = false;
+        }
+
+        function resetAttendanceModal() {
+            currentAttendanceId = null; attIsAlreadyIn = false;
+            document.getElementById('att-step-input').style.display = 'block';
+            document.getElementById('att-step-action').style.display = 'none';
+            document.getElementById('att-step-success').style.display = 'none';
+            document.getElementById('att-member-id-input').value = '';
+            document.getElementById('att-lookup-error').style.display = 'none';
+            document.getElementById('att-action-error').style.display = 'none';
+        }
+
+        function lookupMember() {
+            var inp = document.getElementById('att-member-id-input');
+            var memberId = inp.value.trim().toUpperCase();
+            var errEl = document.getElementById('att-lookup-error');
+            if (!memberId) { inp.focus(); return; }
+            errEl.style.display = 'none'; inp.disabled = true;
+            fetch('/Admin/CheckIn', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ memberId: memberId, __RequestVerificationToken: getToken() }).toString()
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    inp.disabled = false;
+                    if (!data.success && !data.alreadyIn) {
+                        errEl.innerHTML = data.message || 'Member not found.'; errEl.style.display = 'block'; return;
+                    }
+                    currentAttendanceId = data.attendanceId; attIsAlreadyIn = !!data.alreadyIn;
+                    var initials = (data.memberName || 'XX').split(' ').map(function (n) { return n[0]; }).join('').substring(0, 2).toUpperCase();
+                    document.getElementById('att-member-initials').textContent = initials;
+                    document.getElementById('att-member-name').textContent = data.memberName || '—';
+                    document.getElementById('att-member-email').textContent = '';
+                    document.getElementById('att-card-id').textContent = data.memberNumber || '—';
+                    document.getElementById('att-card-status').textContent = attIsAlreadyIn ? 'Currently In Gym' : 'Checked In ✓';
+                    document.getElementById('att-card-status').style.color = 'var(--green)';
+                    var plan = (data.plan || '').toLowerCase();
+                    var planColor = plan === 'premium' ? 'var(--purple)' : plan === 'standard' ? 'var(--blue)' : 'var(--muted)';
+                    document.getElementById('att-member-plan-badge').innerHTML =
+                        '<span style="padding:3px 10px;border-radius:50px;font-size:11px;font-weight:700;text-transform:uppercase;color:' + planColor + ';">' + (data.plan || '—') + '</span>';
+                    var checkinBox = document.getElementById('att-checkin-box');
+                    var durationBox = document.getElementById('att-duration-box');
+                    if (data.checkIn) {
+                        document.getElementById('att-card-checkin').textContent = data.checkIn;
+                        document.getElementById('att-card-duration').textContent = 'In gym';
+                        checkinBox.style.display = durationBox.style.display = 'block';
+                    } else { checkinBox.style.display = durationBox.style.display = 'none'; }
+                    document.getElementById('att-step-input').style.display = 'none';
+                    document.getElementById('att-step-action').style.display = 'block';
+                    var checkinBtn = document.getElementById('att-checkin-btn');
+                    var checkoutBtn = document.getElementById('att-checkout-btn');
+                    if (attIsAlreadyIn) {
+                        checkinBtn.style.display = 'none';
+                        checkoutBtn.style.display = 'flex';
+                    } else {
+                        checkinBtn.style.display = 'none';
+                        checkoutBtn.style.display = 'flex';
+                        showAttSuccess('checkin', data); loadTodayAttendance(); return;
+                    }
+                })
+                .catch(function () {
+                    inp.disabled = false;
+                    document.getElementById('att-lookup-error').textContent = 'Connection error.';
+                    document.getElementById('att-lookup-error').style.display = 'block';
+                });
+        }
+
+        function doCheckIn() { lookupMember(); }
+
+        function doCheckOut() {
+            if (!currentAttendanceId) return;
+            var errEl = document.getElementById('att-action-error');
+            var checkoutBtn = document.getElementById('att-checkout-btn');
+            errEl.style.display = 'none'; checkoutBtn.disabled = true; checkoutBtn.textContent = 'Processing…';
+            fetch('/Admin/CheckOut', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ attendanceId: currentAttendanceId, __RequestVerificationToken: getToken() }).toString()
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    checkoutBtn.disabled = false; checkoutBtn.textContent = '🚪 Check Out';
+                    if (!data.success) { errEl.innerHTML = data.message || 'Check-out failed.'; errEl.style.display = 'block'; return; }
+                    showAttSuccess('checkout', data); loadTodayAttendance();
+                })
+                .catch(function () { checkoutBtn.disabled = false; checkoutBtn.textContent = '🚪 Check Out'; document.getElementById('att-action-error').textContent = 'Connection error.'; document.getElementById('att-action-error').style.display = 'block'; });
+        }
+
+        function showAttSuccess(type, data) {
+            document.getElementById('att-step-input').style.display = 'none';
+            document.getElementById('att-step-action').style.display = 'none';
+            document.getElementById('att-step-success').style.display = 'block';
+            var isCheckout = (type === 'checkout');
+            document.getElementById('att-success-icon').textContent = isCheckout ? '🚪' : '✅';
+            document.getElementById('att-success-title').textContent = isCheckout ? 'CHECKED OUT' : 'CHECKED IN';
+            document.getElementById('att-success-sub').textContent = isCheckout ? 'Checkout recorded.' : 'Check-in recorded.';
+            document.getElementById('att-success-name').textContent = data.memberName || '—';
+            var checkinRow = document.getElementById('att-success-checkin-row');
+            var checkoutRow = document.getElementById('att-success-checkout-row');
+            if (data.checkIn) { document.getElementById('att-success-checkin').textContent = data.checkIn; checkinRow.style.display = 'flex'; } else { checkinRow.style.display = 'none'; }
+            if (data.duration) { document.getElementById('att-success-duration').textContent = data.duration; checkoutRow.style.display = 'flex'; } else { checkoutRow.style.display = 'none'; }
+            showAdminSuccessBanner(isCheckout
+                ? '🚪 ' + (data.memberName || 'Member') + ' checked out — ' + data.duration
+                : '✅ ' + (data.memberName || 'Member') + ' checked in at ' + data.checkIn);
+        }
+
+        function loadTodayAttendance() {
+            fetch('/Admin/GetTodayAttendance').then(function (r) { return r.json(); }).then(function (data) {
+                if (!data.success) return;
+                renderAttendanceTable(data.records, false);
+                document.getElementById('att-total-today').textContent = data.totalToday || 0;
+                document.getElementById('att-currently-in').textContent = data.currentlyIn || 0;
+                document.getElementById('att-checked-out').textContent = data.checkedOut || 0;
+                document.getElementById('att-table-count').textContent = (data.totalToday || 0) + ' records';
+            }).catch(function () { console.error('Could not load attendance.'); });
+        }
+
+        function renderAttendanceTable(records, showDate) {
+            var tbody = document.getElementById('attendanceTableBody');
+            if (!records || records.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted);">No attendance records found.</td></tr>'; return;
+            }
+            tbody.innerHTML = records.map(function (a) {
+                var checkoutText = a.checkOut || '<span style="color:#f59e0b;font-weight:700;">In Gym</span>';
+                var durText = a.isCheckedOut ? a.duration : '<span style="color:var(--green);">Active</span>';
+                var action = !a.isCheckedOut
+                    ? '<button onclick="quickCheckOut(' + a.attendanceId + ')" class="btn-outline" style="padding:6px 12px;font-size:12px;">🚪 Check Out</button>'
+                    : '<span style="font-size:12px;color:var(--muted);">Completed</span>';
+                return '<tr>'
+                    + '<td class="member-name">' + (a.memberName || '—') + '</td>'
+                    + '<td><span class="member-id-badge">' + (a.memberNumber || '—') + '</span></td>'
+                    + '<td><span class="plan-badge plan-' + (a.plan || '').toLowerCase() + '">' + (a.plan || '—') + '</span></td>'
+                    + '<td style="color:var(--muted);font-size:12px;">' + (showDate ? (a.date || '—') : 'Today') + '</td>'
+                    + '<td style="font-weight:600;">' + (a.checkIn || '—') + '</td>'
+                    + '<td>' + checkoutText + '</td>'
+                    + '<td style="color:var(--purple);font-size:12px;font-weight:600;">' + durText + '</td>'
+                    + '<td>' + action + '</td></tr>';
+            }).join('');
+        }
+
+        function quickCheckOut(attendanceId) {
+            if (!confirm('Check out this member now?')) return;
+            fetch('/Admin/CheckOut', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ attendanceId: attendanceId, __RequestVerificationToken: getToken() }).toString()
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (data.success) { showAdminSuccessBanner('🚪 ' + (data.memberName || 'Member') + ' checked out — ' + data.duration); loadTodayAttendance(); }
+                    else { alert(data.message || 'Check-out failed.'); }
+                })
+                .catch(function () { alert('Connection error.'); });
+        }
+
+        function loadAttendanceReport() {
+            var filter = document.getElementById('att-report-filter');
+            filter.style.display = filter.style.display === 'none' ? 'block' : 'none';
+            if (filter.style.display === 'block') {
+                var toDate = new Date(); var fromDate = new Date(); fromDate.setDate(fromDate.getDate() - 6);
+                document.getElementById('att-to').value = toDate.toISOString().split('T')[0];
+                document.getElementById('att-from').value = fromDate.toISOString().split('T')[0];
+            }
+        }
+
+        function applyAttendanceReport() {
+            var from = document.getElementById('att-from').value;
+            var to = document.getElementById('att-to').value;
+            if (!from || !to) { alert('Please select both dates.'); return; }
+            fetch('/Admin/GetAttendanceReport?from=' + from + '&to=' + to)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    if (!data.success) return;
+                    renderAttendanceTable(data.records, true);
+                    document.getElementById('att-table-count').textContent = data.totalVisits + ' records (' + data.fromDate + ' – ' + data.toDate + ')';
+                })
+                .catch(function () { alert('Could not load report.'); });
+        }
+
+        function resetToToday() {
+            document.getElementById('att-report-filter').style.display = 'none';
+            loadTodayAttendance();
+        }
+
+        document.addEventListener('DOMContentLoaded', loadTodayAttendance);
+    </script>
+}

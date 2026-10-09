@@ -1,0 +1,104 @@
+﻿@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    var totalMembers = (int)(ViewBag.TotalMembers ?? 0);
+    var activeMembers = (int)(ViewBag.ActiveMembers ?? 0);
+    var suspendedMembers = (int)(ViewBag.SuspendedMembers ?? 0);
+    var frozenMembers = (int)(ViewBag.FrozenMembers ?? 0);
+    var basicCount = (int)(ViewBag.BasicCount ?? 0);
+    var standardCount = (int)(ViewBag.StandardCount ?? 0);
+    var premiumCount = (int)(ViewBag.PremiumCount ?? 0);
+    var paymentsThisMonth = (int)(ViewBag.PaymentsThisMonth ?? 0);
+    decimal totalRevenue = ViewBag.TotalRevenue ?? 0m;
+    var recent = ViewBag.RecentMembers as List<SwiftyS26.Models.MemberForm> ?? new List<SwiftyS26.Models.MemberForm>();
+}
+
+<div class="admin-stats-grid">
+    <div class="admin-stat-card blue">
+        <div class="stat-icon"><i class="fas fa-users"></i></div>
+        <div class="stat-number">@totalMembers</div>
+        <div class="stat-label">Total Members</div>
+    </div>
+    <div class="admin-stat-card green">
+        <div class="stat-icon"><i class="fas fa-user-check"></i></div>
+        <div class="stat-number">@activeMembers</div>
+        <div class="stat-label">Active Members</div>
+    </div>
+    <div class="admin-stat-card gold">
+        <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+        <div class="stat-number">R @string.Format("{0:N0}", totalRevenue)</div>
+        <div class="stat-label">Monthly Revenue</div>
+    </div>
+    <div class="admin-stat-card blue">
+        <div class="stat-icon"><i class="fas fa-receipt"></i></div>
+        <div class="stat-number">@paymentsThisMonth</div>
+        <div class="stat-label">Payments This Month</div>
+    </div>
+    <div class="admin-stat-card red">
+        <div class="stat-icon"><i class="fas fa-ban"></i></div>
+        <div class="stat-number">@suspendedMembers</div>
+        <div class="stat-label">Suspended</div>
+    </div>
+    <div class="admin-stat-card purple">
+        <div class="stat-icon"><i class="fas fa-snowflake"></i></div>
+        <div class="stat-number">@frozenMembers</div>
+        <div class="stat-label">Frozen</div>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-header">
+        <div class="admin-card-title"><i class="fas fa-chart-pie"></i> Membership Plan Breakdown</div>
+    </div>
+    <div class="plan-breakdown">
+        <div class="plan-item">
+            <div class="plan-name basic">BASIC</div>
+            <div class="plan-count">@basicCount</div>
+            <div class="plan-label">members</div>
+        </div>
+        <div class="plan-item">
+            <div class="plan-name standard">STANDARD</div>
+            <div class="plan-count">@standardCount</div>
+            <div class="plan-label">members</div>
+        </div>
+        <div class="plan-item">
+            <div class="plan-name premium">PREMIUM</div>
+            <div class="plan-count">@premiumCount</div>
+            <div class="plan-label">members</div>
+        </div>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-header">
+        <div class="admin-card-title"><i class="fas fa-user-plus"></i> Recent Registrations</div>
+        <a href="@Url.Action("Members", "Admin")" class="view-link">
+            View All <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
+    <div class="recent-list">
+        @if (recent.Count > 0)
+        {
+            foreach (var m in recent.Take(5))
+            {
+                <div class="recent-item">
+                    <div class="recent-avatar">@m.FirstName[0]@m.LastName[0]</div>
+                    <div class="recent-info">
+                        <div class="recent-name">@m.FullName</div>
+                        <div class="recent-email">@m.Email</div>
+                    </div>
+                    <div class="recent-meta">
+                        <span class="plan-badge plan-@m.Plan.ToLower()">@m.Plan</span>
+                        <div class="recent-date">@m.RegisteredAt.ToString("dd MMM yyyy")</div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="empty-state" style="padding:32px;">
+                <i class="fas fa-inbox"></i>
+                <p>No registrations yet.</p>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,344 @@
+﻿@model List<SwiftyS26.Models.SupplierProduct>
+
+@{
+    Layout = Session["LoggedInAdmin"] != null
+        ? "~/Views/Shared/_AdminLayout.cshtml"
+        : "~/Views/Shared/_StoreStaffLayout.cshtml";
+
+    ViewBag.Title = "Supplier Catalogue";
+    ViewBag.PageTitle = "SUPPLIER CATALOGUE";
+
+    var supplier = ViewBag.Supplier as SwiftyS26.Models.Supplier;
+    var products = ViewBag.AvailableProducts as List<SwiftyS26.Models.Product> ?? new List<SwiftyS26.Models.Product>();
+    bool isAdmin = ViewBag.IsAdmin == true;
+}
+
+<style>
+    @@keyframes sc-fadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .sc-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+        .sc-header h2 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 26px;
+            letter-spacing: 1px;
+            margin: 0;
+        }
+
+    .sc-sub {
+        font-size: 12.5px;
+        color: #64748B;
+    }
+
+    .sc-btn {
+        padding: 9px 16px;
+        border: 0;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+        .sc-btn.primary {
+            background: #2563EB;
+            color: #fff;
+        }
+
+        .sc-btn.secondary {
+            background: #fff;
+            color: #334155;
+            border: 1px solid #CBD5E1;
+        }
+
+    .sc-wrap {
+        background: #fff;
+        border: 1px solid #E2E8F0;
+        border-radius: 14px;
+        overflow: hidden;
+        animation: sc-fadeUp .35s ease both;
+    }
+
+    .sc-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+        .sc-table th {
+            padding: 11px 14px;
+            background: #F8FAFC;
+            border-bottom: 1px solid #E2E8F0;
+            text-align: left;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #64748B;
+        }
+
+        .sc-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #F1F5F9;
+        }
+
+    .sc-input {
+        width: 110px;
+        padding: 8px;
+        border: 1px solid #CBD5E1;
+        border-radius: 7px;
+    }
+
+    .sc-badge {
+        font-size: 10px;
+        font-weight: 800;
+        padding: 3px 9px;
+        border-radius: 20px;
+    }
+
+    .preferred {
+        background: #EFF6FF;
+        color: #2563EB;
+    }
+
+    .active {
+        background: #F0FDF4;
+        color: #16A34A;
+    }
+
+    .inactive {
+        background: #F1F5F9;
+        color: #64748B;
+    }
+
+    .sc-empty {
+        text-align: center;
+        padding: 40px;
+        color: #64748B;
+    }
+
+    .sc-alert {
+        padding: 12px 16px;
+        border-radius: 10px;
+        margin-bottom: 16px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .success {
+        background: #F0FDF4;
+        color: #16A34A;
+    }
+
+    .error {
+        background: #FEF2F2;
+        color: #DC2626;
+    }
+
+    .sc-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, .45);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .sc-modal-card {
+        background: #fff;
+        border-radius: 14px;
+        padding: 25px;
+        width: 90%;
+        max-width: 470px;
+    }
+
+    .sc-field {
+        margin-bottom: 13px;
+    }
+
+        .sc-field label {
+            display: block;
+            font-size: 11px;
+            font-weight: 800;
+            color: #64748B;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .sc-field input,
+        .sc-field select {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px;
+            border: 1px solid #CBD5E1;
+            border-radius: 8px;
+        }
+
+    @@media (max-width: 700px) {
+        .sc-wrap {
+            overflow-x: auto;
+        }
+
+        .sc-table {
+            min-width: 850px;
+        }
+    }
+</style>
+
+<div class="sc-header">
+    <div>
+        <h2><i class="fas fa-boxes-stacked" style="color:#2563EB"></i> @supplier.Name Catalogue</h2>
+        <div class="sc-sub">Maintain products, supplier costs and expected delivery times.</div>
+    </div>
+    <div>
+        <a class="sc-btn secondary" href="@Url.Action("Suppliers")">Back</a>
+        @if (isAdmin && products.Any())
+        {
+            <button class="sc-btn primary" type="button" onclick="document.getElementById('addCatalogueModal').style.display='flex'">
+                <i class="fas fa-plus"></i> Add Product
+            </button>
+        }
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="sc-alert success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="sc-alert error">@TempData["Error"]</div>
+}
+
+<div class="sc-wrap">
+    <table class="sc-table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Unit Cost</th>
+                <th>Delivery Days</th>
+                <th>Preferred</th>
+                <th>Status</th>
+                <th>Last Updated</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>
+                        <strong>@item.Product.Name</strong><br />
+                        <small>@item.Product.Category</small>
+                    </td>
+                    @using (Html.BeginForm("UpdateSupplierProduct", "StoreAdmin", FormMethod.Post))
+                    {
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="supplierProductId" value="@item.SupplierProductId" />
+
+                        <td>
+                            R
+                            <input class="sc-input" type="number" name="currentUnitCost"
+                                   value="@item.CurrentUnitCost.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
+                                   min="0.01" step="0.01" required />
+                        </td>
+                        <td>
+                            <input class="sc-input" type="number" name="estimatedDeliveryDays"
+                                   value="@item.EstimatedDeliveryDays" min="1" max="365" required />
+                        </td>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="isPreferredSupplier" value="true"
+                                       @(item.IsPreferredSupplier ? "checked" : "") /> Preferred
+                            </label>
+                        </td>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="isActive" value="true"
+                                       @(item.IsActive ? "checked" : "") /> Active
+                            </label>
+                        </td>
+                        <td>@item.PriceUpdatedAt.ToString("dd MMM yyyy")</td>
+                        <td>
+                            @if (isAdmin)
+                            {
+                                <button class="sc-btn primary" type="submit">Save</button>
+                            }
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    @if (!Model.Any())
+    {
+        <div class="sc-empty">No products have been linked to this supplier.</div>
+    }
+</div>
+
+<div id="addCatalogueModal" class="sc-modal">
+    <div class="sc-modal-card">
+        <h3>Add Supplier Product</h3>
+
+        @using (Html.BeginForm("AddSupplierProduct", "StoreAdmin", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="supplierId" value="@supplier.SupplierId" />
+
+            <div class="sc-field">
+                <label>Product *</label>
+                <select name="productId" required>
+                    <option value="">Select product</option>
+                    @foreach (var p in products)
+                    {
+                        <option value="@p.ProductId">@p.Name</option>
+                    }
+                </select>
+            </div>
+
+            <div class="sc-field">
+                <label>Current Supplier Unit Cost *</label>
+                <input type="number" name="currentUnitCost" min="0.01" step="0.01" required />
+            </div>
+
+            <div class="sc-field">
+                <label>Estimated Delivery Days *</label>
+                <input type="number" name="estimatedDeliveryDays" value="7" min="1" max="365" required />
+            </div>
+
+            <div class="sc-field">
+                <label>
+                    <input type="checkbox" name="isPreferredSupplier" value="true" /> Preferred supplier for this product
+                </label>
+            </div>
+
+            <div style="display:flex;gap:10px">
+                <button class="sc-btn primary" type="submit">Add to Catalogue</button>
+                <button class="sc-btn secondary" type="button"
+                        onclick="document.getElementById('addCatalogueModal').style.display='none'">
+                    Cancel
+                </button>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,107 @@
+﻿@{
+    Layout = null;
+    var adminName = Session["LoggedInName"] as string ?? "Member";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GymHub – My QR Code</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <link href="~/Content/admin.css" rel="stylesheet" />
+    <style>
+        .qr-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 80vh;
+            gap: 24px;
+        }
+
+        .qr-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+            .qr-card img {
+                width: 260px;
+                height: 260px;
+                border-radius: 12px;
+                background: #fff;
+                padding: 12px;
+                margin-bottom: 24px;
+            }
+
+        .qr-label {
+            font-family: 'Bebas Neue';
+            font-size: 13px;
+            letter-spacing: 2px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .qr-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--white);
+            margin-bottom: 16px;
+        }
+
+        .qr-hint {
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.6;
+            margin-top: 16px;
+        }
+
+        .qr-back {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 12px 28px;
+            background: var(--blue);
+            color: #fff;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+            .qr-back:hover {
+                background: var(--blue-bright);
+            }
+    </style>
+</head>
+<body class="admin-body" style="display:block;">
+    <div class="qr-wrap">
+        <div class="qr-card">
+            <div class="qr-label">YOUR GYMHUB ACCESS QR CODE</div>
+
+            <img src="data:image/png;base64,@ViewBag.QrBase64"
+                 alt="Your GymHub QR Code" />
+
+            <div class="qr-label">Member ID</div>
+            <div class="qr-value">@ViewBag.MemberNumber</div>
+
+            <div class="qr-label">Name</div>
+            <div class="qr-value">@ViewBag.MemberName</div>
+
+            <div class="qr-label">Plan</div>
+            <div class="qr-value">@ViewBag.Plan.ToUpper()</div>
+
+            <div class="qr-hint">
+                📱 Show this QR code to the scanner at the gym entrance to gain access.
+            </div>
+
+            <a href="/Dashboard/Index" class="qr-back">← Back to Dashboard</a>
+        </div>
+    </div>
+</body>
+</html>

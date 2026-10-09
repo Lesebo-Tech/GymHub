@@ -1,0 +1,1556 @@
+﻿@model SwiftyS26.Models.ReturnRequest
+
+@{
+    Layout =
+        Session["LoggedInAdmin"] != null
+            ? "~/Views/Shared/_AdminLayout.cshtml"
+            : "~/Views/Shared/_StoreStaffLayout.cshtml";
+
+    ViewBag.Title = "Inspect Returned Item";
+    ViewBag.PageTitle = "RETURN INSPECTION";
+
+    var originalItem = Model.StoreOrderItem;
+    var originalProduct =
+        originalItem != null ? originalItem.Product : null;
+
+    var originalOrder =
+        originalItem != null ? originalItem.StoreOrder : null;
+
+    bool isExchange =
+        string.Equals(
+            Model.RequestedResolution,
+            "Exchange",
+            StringComparison.OrdinalIgnoreCase);
+
+    string productImagePath = null;
+
+    if (originalProduct != null &&
+        !string.IsNullOrWhiteSpace(originalProduct.ImagePath))
+    {
+        productImagePath =
+            originalProduct.ImagePath.StartsWith("~")
+                ? Url.Content(originalProduct.ImagePath)
+                : Url.Content(
+                    "~/" +
+                    originalProduct.ImagePath.TrimStart('/'));
+    }
+}
+
+<style>
+    @@keyframes riFadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .ri-page,
+    .ri-page * {
+        box-sizing: border-box;
+    }
+
+    .ri-page {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding-bottom: 45px;
+        color: #0f172a;
+    }
+
+    .ri-page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    .ri-title {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        margin: 0;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 29px;
+        letter-spacing: 1px;
+    }
+
+    .ri-title-icon {
+        width: 39px;
+        height: 39px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 11px;
+        background: #eff6ff;
+        color: #2563eb;
+        font-family: Arial, sans-serif;
+        font-size: 17px;
+    }
+
+    .ri-subtitle {
+        margin: 5px 0 0 50px;
+        color: #64748b;
+        font-size: 12.5px;
+    }
+
+    .ri-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 10px 14px;
+        border: 1px solid #dbe3ee;
+        border-radius: 9px;
+        background: #fff;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .ri-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        margin-bottom: 18px;
+        padding: 13px 15px;
+        border: 1px solid #fecaca;
+        border-radius: 10px;
+        background: #fef2f2;
+        color: #dc2626;
+        font-size: 12.5px;
+        font-weight: 600;
+    }
+
+    .ri-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 330px;
+        gap: 20px;
+        align-items: start;
+    }
+
+    .ri-main {
+        min-width: 0;
+    }
+
+    .ri-card {
+        margin-bottom: 18px;
+        overflow: hidden;
+        border: 1px solid #dbe3ee;
+        border-radius: 15px;
+        background: #fff;
+        animation: riFadeUp .35s ease both;
+    }
+
+    .ri-card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+
+    .ri-card-icon {
+        flex: 0 0 36px;
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        background: #eff6ff;
+        color: #2563eb;
+    }
+
+    .ri-card-header h3 {
+        margin: 0;
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .ri-card-header p {
+        margin: 3px 0 0;
+        color: #64748b;
+        font-size: 11.5px;
+    }
+
+    .ri-card-body {
+        padding: 20px;
+    }
+
+    /* Request information */
+
+    .ri-request-top {
+        display: flex;
+        gap: 17px;
+        align-items: center;
+        margin-bottom: 18px;
+    }
+
+    .ri-product-image-wrap {
+        position: relative;
+        flex: 0 0 82px;
+        width: 82px;
+        height: 82px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        border-radius: 11px;
+        background: #f8fafc;
+    }
+
+    .ri-product-image {
+        display: block;
+        width: 100%;
+        height: 100%;
+        padding: 4px;
+        object-fit: contain;
+    }
+
+    .ri-image-placeholder {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8fafc;
+        color: #94a3b8;
+        font-size: 25px;
+    }
+
+    .ri-product-name {
+        margin-bottom: 5px;
+        color: #0f172a;
+        font-size: 17px;
+        font-weight: 800;
+    }
+
+    .ri-product-meta {
+        color: #64748b;
+        font-size: 12px;
+        line-height: 1.75;
+    }
+
+    .ri-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 7px;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+        .ri-badge.pending {
+            background: #fff7ed;
+            color: #c2410c;
+        }
+
+        .ri-badge.refund {
+            background: #f0fdf4;
+            color: #15803d;
+        }
+
+        .ri-badge.exchange {
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+    .ri-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .ri-detail {
+        padding: 12px 13px;
+        border: 1px solid #e2e8f0;
+        border-radius: 9px;
+        background: #f8fafc;
+    }
+
+    .ri-detail-label {
+        display: block;
+        margin-bottom: 4px;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .ri-detail-value {
+        display: block;
+        color: #0f172a;
+        font-size: 12.5px;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    .ri-member-description {
+        margin-top: 13px;
+        padding: 13px 15px;
+        border-left: 3px solid #2563eb;
+        border-radius: 0 9px 9px 0;
+        background: #eff6ff;
+        color: #334155;
+        font-size: 12px;
+        line-height: 1.6;
+    }
+
+    /* Form */
+
+    .ri-form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .ri-field {
+        margin-bottom: 17px;
+    }
+
+    .ri-field-full {
+        grid-column: 1 / -1;
+    }
+
+    .ri-label {
+        display: block;
+        margin-bottom: 6px;
+        color: #334155;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .ri-required {
+        color: #dc2626;
+    }
+
+    .ri-input,
+    .ri-select,
+    .ri-textarea {
+        display: block;
+        width: 100%;
+        padding: 11px 12px;
+        border: 1.5px solid #dbe3ee;
+        border-radius: 9px;
+        outline: none;
+        background: #fff;
+        color: #0f172a;
+        font-family: inherit;
+        font-size: 13px;
+        transition: border-color .2s, box-shadow .2s;
+    }
+
+        .ri-input:focus,
+        .ri-select:focus,
+        .ri-textarea:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .1);
+        }
+
+        .ri-input[readonly] {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+    .ri-textarea {
+        min-height: 110px;
+        resize: vertical;
+        line-height: 1.55;
+    }
+
+    .ri-help {
+        display: block;
+        margin-top: 5px;
+        color: #64748b;
+        font-size: 10.5px;
+    }
+
+    /* Yes/no controls */
+
+    .ri-choice-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 9px;
+    }
+
+    .ri-choice {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 43px;
+        margin: 0;
+        padding: 10px 12px;
+        border: 1px solid #dbe3ee;
+        border-radius: 9px;
+        background: #fff;
+        color: #334155;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+        .ri-choice input {
+            width: auto;
+            margin: 0;
+            accent-color: #2563eb;
+        }
+
+    /* Evidence */
+
+    .ri-upload {
+        padding: 17px;
+        border: 2px dashed #cbd5e1;
+        border-radius: 11px;
+        background: #f8fafc;
+        text-align: center;
+    }
+
+    .ri-upload-icon {
+        margin-bottom: 8px;
+        color: #2563eb;
+        font-size: 25px;
+    }
+
+    .ri-upload-title {
+        margin-bottom: 4px;
+        color: #334155;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .ri-upload-text {
+        margin-bottom: 12px;
+        color: #64748b;
+        font-size: 10.5px;
+    }
+
+    .ri-file-input {
+        max-width: 100%;
+        color: #475569;
+        font-size: 11px;
+    }
+
+    .ri-preview {
+        display: none;
+        width: 100%;
+        max-height: 260px;
+        margin-top: 14px;
+        border: 1px solid #e2e8f0;
+        border-radius: 9px;
+        object-fit: contain;
+        background: #fff;
+    }
+
+    /* Recommendation */
+
+    .ri-recommendations {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+
+    .ri-recommendation {
+        position: relative;
+        display: block;
+        margin: 0;
+        cursor: pointer;
+    }
+
+        .ri-recommendation input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+    .ri-recommendation-card {
+        display: block;
+        min-height: 100px;
+        padding: 14px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        background: #fff;
+        text-align: center;
+        transition: .2s;
+    }
+
+        .ri-recommendation-card i {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 20px;
+        }
+
+    .ri-recommendation-title {
+        display: block;
+        margin-bottom: 4px;
+        color: #0f172a;
+        font-size: 11.5px;
+        font-weight: 800;
+    }
+
+    .ri-recommendation-text {
+        display: block;
+        color: #64748b;
+        font-size: 9.5px;
+        line-height: 1.4;
+    }
+
+    .ri-recommendation input:checked +
+    .ri-recommendation-card {
+        border-color: #2563eb;
+        background: #eff6ff;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, .08);
+    }
+
+    .ri-resolution-field {
+        display: none;
+        margin-top: 17px;
+        padding: 15px;
+        border: 1px solid #bfdbfe;
+        border-radius: 10px;
+        background: #f8fbff;
+    }
+
+        .ri-resolution-field.visible {
+            display: block;
+        }
+
+    /* Sidebar */
+
+    .ri-sidebar {
+        position: sticky;
+        top: 20px;
+    }
+
+    .ri-summary {
+        overflow: hidden;
+        border: 1px solid #dbe3ee;
+        border-radius: 15px;
+        background: #fff;
+    }
+
+    .ri-summary-header {
+        padding: 17px 19px;
+        background: #0f172a;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    .ri-summary-body {
+        padding: 19px;
+    }
+
+    .ri-summary-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 0;
+        color: #64748b;
+        font-size: 11.5px;
+    }
+
+        .ri-summary-row strong {
+            max-width: 175px;
+            color: #0f172a;
+            text-align: right;
+            overflow-wrap: anywhere;
+        }
+
+    .ri-notice {
+        margin-top: 14px;
+        padding: 13px;
+        border-radius: 9px;
+        background: #fffbeb;
+        color: #92400e;
+        font-size: 10.5px;
+        line-height: 1.6;
+    }
+
+    .ri-actions {
+        display: grid;
+        grid-template-columns: 1fr 1.45fr;
+        gap: 9px;
+        margin-top: 16px;
+    }
+
+    .ri-btn {
+        min-height: 43px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 10px 12px;
+        border-radius: 9px;
+        font-size: 11.5px;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .ri-btn-cancel {
+        border: 1px solid #dbe3ee;
+        background: #fff;
+        color: #475569;
+    }
+
+    .ri-btn-submit {
+        border: none;
+        background: #2563eb;
+        color: #fff;
+    }
+
+        .ri-btn-submit:hover {
+            background: #1d4ed8;
+        }
+
+    @@media (max-width: 950px) {
+        .ri-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .ri-sidebar {
+            position: static;
+        }
+    }
+
+    @@media (max-width: 650px) {
+        .ri-page-header {
+            flex-direction: column;
+        }
+
+        .ri-form-grid,
+        .ri-detail-grid,
+        .ri-recommendations {
+            grid-template-columns: 1fr;
+        }
+
+        .ri-subtitle {
+            margin-left: 0;
+        }
+    }
+</style>
+
+<div class="ri-page">
+    <header class="ri-page-header">
+        <div>
+            <h2 class="ri-title">
+                <span class="ri-title-icon">
+                    <i class="fas fa-magnifying-glass"></i>
+                </span>
+
+                Returned Item Inspection
+            </h2>
+
+            <p class="ri-subtitle">
+                Physically inspect the returned product and send a
+                recommendation to Admin.
+            </p>
+        </div>
+
+        <a href="@Url.Action("Returns", "StoreAdmin")"
+           class="ri-back">
+            <i class="fas fa-arrow-left"></i>
+            Return Queue
+        </a>
+    </header>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="ri-alert">
+            <i class="fas fa-circle-exclamation"></i>
+            <span>@TempData["Error"]</span>
+        </div>
+    }
+
+    @using (Html.BeginForm(
+        "InspectReturn",
+        "StoreAdmin",
+        FormMethod.Post,
+        new
+        {
+            enctype = "multipart/form-data",
+            id = "returnInspectionForm"
+        }))
+    {
+        @Html.AntiForgeryToken()
+
+        <input type="hidden"
+               name="returnRequestId"
+               value="@Model.ReturnRequestId" />
+
+        <div class="ri-layout">
+            <main class="ri-main">
+                <!-- RETURN REQUEST -->
+                <section class="ri-card">
+                    <div class="ri-card-header">
+                        <div class="ri-card-icon">
+                            <i class="fas fa-file-lines"></i>
+                        </div>
+
+                        <div>
+                            <h3>Return Request</h3>
+                            <p>
+                                Member request and original transaction
+                                information
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="ri-card-body">
+                        <div class="ri-request-top">
+                            <div class="ri-product-image-wrap">
+                                @if (!string.IsNullOrWhiteSpace(
+                                    productImagePath))
+                                {
+                                    <img class="ri-product-image"
+                                         src="@productImagePath"
+                                         alt=""
+                                         onerror="hideInspectionImage(this)" />
+
+                                    <div class="ri-image-placeholder"
+                                         style="display:none;">
+                                        <i class="fas fa-box-open"></i>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="ri-image-placeholder">
+                                        <i class="fas fa-box-open"></i>
+                                    </div>
+                                }
+                            </div>
+
+                            <div>
+                                <div class="ri-product-name">
+                                    @(originalProduct != null
+                                        ? originalProduct.Name
+                                        : "Product unavailable")
+                                </div>
+
+                                <div class="ri-product-meta">
+                                    Return quantity:
+                                    <strong>@Model.Quantity</strong>
+                                    <br />
+
+                                    Original unit price:
+                                    <strong>
+                                        R@(originalItem != null
+                                            ? originalItem
+                                                .UnitPriceAtPurchase
+                                                .ToString("F2")
+                                            : "0.00")
+                                    </strong>
+                                </div>
+
+                                <span class="ri-badge pending">
+                                    <i class="fas fa-clock"></i>
+                                    Pending Inspection
+                                </span>
+
+                                <span class="ri-badge @(isExchange
+                                    ? "exchange"
+                                    : "refund")">
+                                    <i class="fas @(isExchange
+                                        ? "fa-right-left"
+                                        : "fa-money-bill-transfer")"></i>
+
+                                    @(isExchange ? "Exchange" : "Refund")
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="ri-detail-grid">
+                            <div class="ri-detail">
+                                <span class="ri-detail-label">
+                                    Return Reference
+                                </span>
+
+                                <span class="ri-detail-value">
+                                    @Model.ReferenceNumber
+                                </span>
+                            </div>
+
+                            <div class="ri-detail">
+                                <span class="ri-detail-label">
+                                    Order Reference
+                                </span>
+
+                                <span class="ri-detail-value">
+                                    @(originalOrder != null
+                                        ? originalOrder.ReferenceNumber
+                                        : "—")
+                                </span>
+                            </div>
+
+                            <div class="ri-detail">
+                                <span class="ri-detail-label">
+                                    Member
+                                </span>
+
+                                <span class="ri-detail-value">
+                                    @(Model.Member != null
+                                        ? Model.Member.FullName
+                                        : "—")
+                                </span>
+                            </div>
+
+                            <div class="ri-detail">
+                                <span class="ri-detail-label">
+                                    Requested
+                                </span>
+
+                                <span class="ri-detail-value">
+                                    @Model.RequestedAt.ToString(
+                                             "dd MMM yyyy, HH:mm")
+                                </span>
+                            </div>
+
+                            <div class="ri-detail">
+                                <span class="ri-detail-label">
+                                    Return Reason
+                                </span>
+
+                                <span class="ri-detail-value">
+                                    @Model.Reason
+                                </span>
+                            </div>
+
+                            <div class="ri-detail">
+                                <span class="ri-detail-label">
+                                    Estimated Return Credit
+                                </span>
+
+                                <span class="ri-detail-value">
+                                    R@(Model.ReturnCreditAmount.HasValue
+                                        ? Model.ReturnCreditAmount.Value
+                                            .ToString("F2")
+                                        : "0.00")
+                                </span>
+                            </div>
+
+                            @if (isExchange)
+                            {
+                                <div class="ri-detail">
+                                    <span class="ri-detail-label">
+                                        Exchange Type
+                                    </span>
+
+                                    <span class="ri-detail-value">
+                                        @(Model.ExchangeType ==
+                                            "SameProduct"
+                                                ? "Same product"
+                                                : "Different product")
+                                    </span>
+                                </div>
+
+                                <div class="ri-detail">
+                                    <span class="ri-detail-label">
+                                        Requested Replacement
+                                    </span>
+
+                                    <span class="ri-detail-value">
+                                        @(Model.ExchangeProduct != null
+                                            ? Model.ExchangeProduct.Name
+                                            : "—")
+                                        ×
+                                        @(Model.ExchangeQuantity ?? 0)
+                                    </span>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="ri-member-description">
+                            <strong>Member’s description:</strong>
+                            <br />
+                            @(string.IsNullOrWhiteSpace(Model.Description)
+                                ? "No additional description supplied."
+                                : Model.Description)
+                        </div>
+                    </div>
+                </section>
+
+                <!-- RECEIPT VERIFICATION -->
+                <section class="ri-card">
+                    <div class="ri-card-header">
+                        <div class="ri-card-icon">
+                            <i class="fas fa-hand-holding-box"></i>
+                        </div>
+
+                        <div>
+                            <h3>Item Receipt Verification</h3>
+                            <p>
+                                Confirm what the member physically presented
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="ri-card-body">
+                        <div class="ri-form-grid">
+                            <div class="ri-field">
+                                <label class="ri-label"
+                                       for="quantityPresented">
+                                    Quantity Presented
+                                    <span class="ri-required">*</span>
+                                </label>
+
+                                <input class="ri-input"
+                                       id="quantityPresented"
+                                       type="number"
+                                       name="quantityPresented"
+                                       min="@Model.Quantity"
+                                       max="@Model.Quantity"
+                                       value="@Model.Quantity"
+                                       required />
+
+                                <span class="ri-help">
+                                    All @Model.Quantity requested unit(s)
+                                    must be presented.
+                                </span>
+                            </div>
+
+                            <div class="ri-field">
+                                <label class="ri-label">
+                                    Product Matches Purchase
+                                    <span class="ri-required">*</span>
+                                </label>
+
+                                <div class="ri-choice-grid">
+                                    <label class="ri-choice">
+                                        <input type="radio"
+                                               name="productMatchesPurchase"
+                                               value="true"
+                                               required />
+                                        Yes
+                                    </label>
+
+                                    <label class="ri-choice">
+                                        <input type="radio"
+                                               name="productMatchesPurchase"
+                                               value="false" />
+                                        No
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="ri-field ri-field-full">
+                                <label class="ri-label">
+                                    Are All Accessories Present?
+                                    <span class="ri-required">*</span>
+                                </label>
+
+                                <div class="ri-choice-grid">
+                                    <label class="ri-choice">
+                                        <input type="radio"
+                                               name="accessoriesComplete"
+                                               value="true"
+                                               required />
+                                        Yes / Complete
+                                    </label>
+
+                                    <label class="ri-choice">
+                                        <input type="radio"
+                                               name="accessoriesComplete"
+                                               value="false" />
+                                        No / Missing items
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- CONDITION -->
+                <section class="ri-card">
+                    <div class="ri-card-header">
+                        <div class="ri-card-icon">
+                            <i class="fas fa-boxes-stacked"></i>
+                        </div>
+
+                        <div>
+                            <h3>Physical Condition Assessment</h3>
+                            <p>
+                                Record the product and packaging condition
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="ri-card-body">
+                        <div class="ri-form-grid">
+                            <div class="ri-field">
+                                <label class="ri-label"
+                                       for="itemCondition">
+                                    Item Condition
+                                    <span class="ri-required">*</span>
+                                </label>
+
+                                <select class="ri-select"
+                                        id="itemCondition"
+                                        name="itemCondition"
+                                        required>
+                                    <option value="">
+                                        Select condition
+                                    </option>
+                                    <option value="Unopened">
+                                        Unopened
+                                    </option>
+                                    <option value="LikeNew">
+                                        Like New
+                                    </option>
+                                    <option value="Used">
+                                        Used
+                                    </option>
+                                    <option value="Damaged">
+                                        Damaged
+                                    </option>
+                                    <option value="SeverelyDamaged">
+                                        Severely Damaged
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="ri-field">
+                                <label class="ri-label"
+                                       for="packagingCondition">
+                                    Packaging Condition
+                                    <span class="ri-required">*</span>
+                                </label>
+
+                                <select class="ri-select"
+                                        id="packagingCondition"
+                                        name="packagingCondition"
+                                        required>
+                                    <option value="">
+                                        Select packaging condition
+                                    </option>
+                                    <option value="OriginalPackaging">
+                                        Original Packaging
+                                    </option>
+                                    <option value="OpenedPackaging">
+                                        Opened Packaging
+                                    </option>
+                                    <option value="Missing">
+                                        Packaging Missing
+                                    </option>
+                                    <option value="Damaged">
+                                        Packaging Damaged
+                                    </option>
+                                    <option value="NotApplicable">
+                                        Not Applicable
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- FAULT ASSESSMENT -->
+                <section class="ri-card">
+                    <div class="ri-card-header">
+                        <div class="ri-card-icon">
+                            <i class="fas fa-screwdriver-wrench"></i>
+                        </div>
+
+                        <div>
+                            <h3>Fault Assessment</h3>
+                            <p>
+                                Verify the reported issue and likely cause
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="ri-card-body">
+                        <div class="ri-form-grid">
+                            <div class="ri-field">
+                                <label class="ri-label"
+                                       for="faultVerification">
+                                    Fault Verification
+                                    <span class="ri-required">*</span>
+                                </label>
+
+                                <select class="ri-select"
+                                        id="faultVerification"
+                                        name="faultVerification"
+                                        required>
+                                    <option value="">
+                                        Select result
+                                    </option>
+                                    <option value="Verified">
+                                        Fault Verified
+                                    </option>
+                                    <option value="PartiallyVerified">
+                                        Partially Verified
+                                    </option>
+                                    <option value="NotVerified">
+                                        Fault Not Verified
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="ri-field">
+                                <label class="ri-label"
+                                       for="faultCause">
+                                    Likely Cause
+                                    <span class="ri-required">*</span>
+                                </label>
+
+                                <select class="ri-select"
+                                        id="faultCause"
+                                        name="faultCause"
+                                        required>
+                                    <option value="">
+                                        Select likely cause
+                                    </option>
+                                    <option value="ManufacturingDefect">
+                                        Manufacturing Defect
+                                    </option>
+                                    <option value="ProductFailure">
+                                        Product Failure
+                                    </option>
+                                    <option value="CustomerDamage">
+                                        Customer Damage
+                                    </option>
+                                    <option value="NormalWear">
+                                        Normal Wear and Tear
+                                    </option>
+                                    <option value="WrongItem">
+                                        Incorrect Product Supplied
+                                    </option>
+                                    <option value="UnableToDetermine">
+                                        Unable to Determine
+                                    </option>
+                                    <option value="Other">
+                                        Other
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="ri-field ri-field-full">
+                                <label class="ri-label"
+                                       for="reviewNotes">
+                                    Inspection Notes
+                                    <span class="ri-required">*</span>
+                                </label>
+
+                                <textarea class="ri-textarea"
+                                          id="reviewNotes"
+                                          name="reviewNotes"
+                                          minlength="10"
+                                          maxlength="500"
+                                          required
+                                          placeholder="Describe what you observed, tests performed and the reason for your recommendation."></textarea>
+
+                                <span class="ri-help">
+                                    Minimum 10 characters, maximum 500.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- DISPOSITION AND EVIDENCE -->
+                <section class="ri-card">
+                    <div class="ri-card-header">
+                        <div class="ri-card-icon">
+                            <i class="fas fa-box-archive"></i>
+                        </div>
+
+                        <div>
+                            <h3>Item Disposition and Evidence</h3>
+                            <p>
+                                Recommend what should happen to the returned
+                                item
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="ri-card-body">
+                        <div class="ri-field">
+                            <label class="ri-label"
+                                   for="itemDisposition">
+                                Recommended Item Disposition
+                                <span class="ri-required">*</span>
+                            </label>
+
+                            <select class="ri-select"
+                                    id="itemDisposition"
+                                    name="itemDisposition"
+                                    required>
+                                <option value="">
+                                    Select disposition
+                                </option>
+                                <option value="Restock">
+                                    Return to Sellable Stock
+                                </option>
+                                <option value="Quarantine">
+                                    Quarantine as Damaged
+                                </option>
+                                <option value="ReturnToSupplier">
+                                    Return to Supplier
+                                </option>
+                                <option value="Dispose">
+                                    Dispose of Item
+                                </option>
+                                <option value="AdminDecision">
+                                    Admin Decision Required
+                                </option>
+                            </select>
+
+                            <span class="ri-help">
+                                Inventory will not be changed until Admin
+                                approves the final decision.
+                            </span>
+                        </div>
+
+                        <div class="ri-field">
+                            <label class="ri-label"
+                                   for="evidenceImage">
+                                Inspection Evidence
+                            </label>
+
+                            <div class="ri-upload">
+                                <div class="ri-upload-icon">
+                                    <i class="fas fa-camera"></i>
+                                </div>
+
+                                <div class="ri-upload-title">
+                                    Upload an inspection photograph
+                                </div>
+
+                                <div class="ri-upload-text">
+                                    JPG, JPEG, PNG or WEBP. Maximum 5 MB.
+                                </div>
+
+                                <input class="ri-file-input"
+                                       id="evidenceImage"
+                                       type="file"
+                                       name="evidenceImage"
+                                       accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" />
+
+                                <img id="evidencePreview"
+                                     class="ri-preview"
+                                     alt="Inspection evidence preview" />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- RECOMMENDATION -->
+                <section class="ri-card">
+                    <div class="ri-card-header">
+                        <div class="ri-card-icon">
+                            <i class="fas fa-clipboard-check"></i>
+                        </div>
+
+                        <div>
+                            <h3>Staff Recommendation</h3>
+                            <p>
+                                This recommendation is sent to Admin for the
+                                final decision
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="ri-card-body">
+                        <div class="ri-recommendations">
+                            <label class="ri-recommendation">
+                                <input type="radio"
+                                       name="recommendation"
+                                       value="Approve"
+                                       required />
+
+                                <span class="ri-recommendation-card">
+                                    <i class="fas fa-circle-check"
+                                       style="color:#16a34a;"></i>
+
+                                    <span class="ri-recommendation-title">
+                                        Recommend Approval
+                                    </span>
+
+                                    <span class="ri-recommendation-text">
+                                        Inspection supports the member’s
+                                        request.
+                                    </span>
+                                </span>
+                            </label>
+
+                            <label class="ri-recommendation">
+                                <input type="radio"
+                                       name="recommendation"
+                                       value="Reject" />
+
+                                <span class="ri-recommendation-card">
+                                    <i class="fas fa-circle-xmark"
+                                       style="color:#dc2626;"></i>
+
+                                    <span class="ri-recommendation-title">
+                                        Recommend Rejection
+                                    </span>
+
+                                    <span class="ri-recommendation-text">
+                                        Inspection does not support the
+                                        request.
+                                    </span>
+                                </span>
+                            </label>
+
+                            <label class="ri-recommendation">
+                                <input type="radio"
+                                       name="recommendation"
+                                       value="Escalate" />
+
+                                <span class="ri-recommendation-card">
+                                    <i class="fas fa-triangle-exclamation"
+                                       style="color:#d97706;"></i>
+
+                                    <span class="ri-recommendation-title">
+                                        Escalate
+                                    </span>
+
+                                    <span class="ri-recommendation-text">
+                                        Admin investigation or judgment is
+                                        required.
+                                    </span>
+                                </span>
+                            </label>
+                        </div>
+
+                        <div id="recommendedResolutionSection"
+                             class="ri-resolution-field">
+                            <label class="ri-label"
+                                   for="recommendedResolution">
+                                Recommended Resolution
+                                <span class="ri-required">*</span>
+                            </label>
+
+                            <select class="ri-select"
+                                    id="recommendedResolution"
+                                    name="recommendedResolution">
+                                <option value="">
+                                    Select recommended resolution
+                                </option>
+
+                                <option value="Refund"
+                                        @(isExchange ? "" : "selected")>
+                                    Approve Refund
+                                </option>
+
+                                @if (Model.ExchangeProductId.HasValue)
+                                {
+                                    <option value="Exchange"
+                                            @(isExchange ? "selected" : "")>
+                                        Approve Exchange
+                                    </option>
+                                }
+                            </select>
+
+                            @if (!Model.ExchangeProductId.HasValue)
+                            {
+                                <span class="ri-help">
+                                    Exchange is unavailable because the
+                                    member did not select a replacement
+                                    product.
+                                </span>
+                            }
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            <!-- SIDEBAR -->
+            <aside class="ri-sidebar">
+                <div class="ri-summary">
+                    <div class="ri-summary-header">
+                        Inspection Summary
+                    </div>
+
+                    <div class="ri-summary-body">
+                        <div class="ri-summary-row">
+                            <span>Return</span>
+                            <strong>@Model.ReferenceNumber</strong>
+                        </div>
+
+                        <div class="ri-summary-row">
+                            <span>Member</span>
+
+                            <strong>
+                                @(Model.Member != null
+                                    ? Model.Member.FullName
+                                    : "—")
+                            </strong>
+                        </div>
+
+                        <div class="ri-summary-row">
+                            <span>Product</span>
+
+                            <strong>
+                                @(originalProduct != null
+                                    ? originalProduct.Name
+                                    : "—")
+                            </strong>
+                        </div>
+
+                        <div class="ri-summary-row">
+                            <span>Quantity</span>
+                            <strong>@Model.Quantity</strong>
+                        </div>
+
+                        <div class="ri-summary-row">
+                            <span>Member requested</span>
+
+                            <strong>
+                                @(isExchange ? "Exchange" : "Refund")
+                            </strong>
+                        </div>
+
+                        @if (isExchange)
+                        {
+                            <div class="ri-summary-row">
+                                <span>Replacement</span>
+
+                                <strong>
+                                    @(Model.ExchangeProduct != null
+                                        ? Model.ExchangeProduct.Name
+                                        : "—")
+                                </strong>
+                            </div>
+                        }
+
+                        <div class="ri-notice">
+                            <i class="fas fa-shield-halved"></i>
+
+                            This inspection is a recommendation only.
+                            Do not refund the member, reserve replacement
+                            stock or update inventory from this page.
+                            Admin must make the final decision.
+                        </div>
+
+                        <div class="ri-actions">
+                            <a href="@Url.Action(
+                                    "Returns",
+                                    "StoreAdmin")"
+                               class="ri-btn ri-btn-cancel">
+                                Cancel
+                            </a>
+
+                            <button type="submit"
+                                    class="ri-btn ri-btn-submit">
+                                <i class="fas fa-paper-plane"></i>
+                                Send to Admin
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    }
+</div>
+
+<script>(function () {
+        var recommendationInputs =
+            document.querySelectorAll(
+                'input[name="recommendation"]'
+            );
+
+        var resolutionSection =
+            document.getElementById(
+                "recommendedResolutionSection"
+            );
+
+        var resolutionSelect =
+            document.getElementById(
+                "recommendedResolution"
+            );
+
+        var evidenceInput =
+            document.getElementById("evidenceImage");
+
+        var evidencePreview =
+            document.getElementById("evidencePreview");
+
+        function updateRecommendation() {
+            var selected =
+                document.querySelector(
+                    'input[name="recommendation"]:checked'
+                );
+
+            var recommendation =
+                selected ? selected.value : "";
+
+            if (recommendation === "Approve") {
+                resolutionSection.classList.add("visible");
+                resolutionSelect.required = true;
+            } else {
+                resolutionSection.classList.remove("visible");
+                resolutionSelect.required = false;
+                resolutionSelect.value = "";
+            }
+        }
+
+        recommendationInputs.forEach(function (input) {
+            input.addEventListener(
+                "change",
+                updateRecommendation
+            );
+        });
+
+        evidenceInput.addEventListener(
+            "change",
+            function () {
+                var file =
+                    evidenceInput.files &&
+                    evidenceInput.files.length > 0
+                        ? evidenceInput.files[0]
+                        : null;
+
+                if (!file) {
+                    evidencePreview.style.display = "none";
+                    evidencePreview.removeAttribute("src");
+                    return;
+                }
+
+                if (file.size > 5 * 1024 * 1024) {
+                    alert(
+                        "The evidence image cannot exceed 5 MB."
+                    );
+
+                    evidenceInput.value = "";
+                    evidencePreview.style.display = "none";
+                    evidencePreview.removeAttribute("src");
+                    return;
+                }
+
+                var reader = new FileReader();
+
+                reader.onload = function (event) {
+                    evidencePreview.src =
+                        event.target.result;
+
+                    evidencePreview.style.display =
+                        "block";
+                };
+
+                reader.readAsDataURL(file);
+            }
+        );
+
+        updateRecommendation();
+    })();
+
+    function hideInspectionImage(image) {
+        image.style.display = "none";
+
+        var placeholder =
+            image.nextElementSibling;
+
+        if (placeholder) {
+            placeholder.style.display = "flex";
+        }
+    }</script>

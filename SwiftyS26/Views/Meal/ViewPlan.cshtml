@@ -1,0 +1,370 @@
+﻿@model SwiftyS26.Models.MealPlan
+@using System.Linq
+
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.PageTitle = "Your Meal Plan";
+    ViewBag.ActivePage = "nutrition";
+
+    var days = Model.Items.Select(i => i.DayNumber).Distinct().OrderBy(d => d).ToList();
+    var mealOrder = new[] { "Breakfast", "Lunch", "Dinner", "Snack" };
+
+    var mealColors = new Dictionary<string, string>
+{
+        { "Breakfast", "#2563EB" },
+        { "Lunch", "#D97706" },
+        { "Dinner", "#DC2626" },
+        { "Snack", "#16A34A" }
+    };
+}
+
+<style>
+    .plan-page {
+        max-width: 1000px;
+        margin: 0 auto;
+    }
+
+    .plan-header {
+        margin-bottom: 24px;
+    }
+
+    .plan-title {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 30px;
+        letter-spacing: 1px;
+        color: #0F172A;
+    }
+
+    .plan-subtitle {
+        color: #64748B;
+        margin-top: 4px;
+        font-size: 13.5px;
+    }
+
+    .alert-box.success {
+        background: #F0FDF4;
+        border: 1px solid #BBF7D0;
+        color: #15803D;
+        padding: 14px 18px;
+        border-radius: 10px;
+        font-size: 13.5px;
+        font-weight: 600;
+        margin-bottom: 20px;
+    }
+
+    .panel {
+        background: #fff;
+        border: 1px solid #E2E8F0;
+        border-radius: 14px;
+        padding: 22px;
+        margin-bottom: 20px;
+    }
+
+    .panel-title {
+        font-size: 14px;
+        font-weight: 800;
+        margin-bottom: 16px;
+        color: #0F172A;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .panel-title i {
+            color: #2563EB;
+        }
+
+    .targets-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+        text-align: center;
+    }
+
+    .target-value {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 26px;
+        color: #0F172A;
+    }
+
+    .target-label {
+        color: #64748B;
+        font-size: 11px;
+        text-transform: uppercase;
+        font-weight: 700;
+        letter-spacing: .4px;
+        margin-top: 2px;
+    }
+
+    .day-tabs {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        margin-bottom: 18px;
+    }
+
+    .day-tab {
+        flex-shrink: 0;
+        padding: 10px 20px;
+        border-radius: 10px;
+        border: 1.5px solid #E2E8F0;
+        background: #fff;
+        color: #64748B;
+        font-weight: 700;
+        font-size: 13px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all .15s;
+    }
+
+        .day-tab.active {
+            background: linear-gradient(135deg, #2563EB, #1D4ED8);
+            border-color: #2563EB;
+            color: #fff;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, .3);
+        }
+
+    .day-total {
+        color: #64748B;
+        font-size: 13px;
+        margin-bottom: 16px;
+    }
+
+    .meal-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+
+    .recipe-card {
+        border: 1px solid #E2E8F0;
+        border-radius: 14px;
+        padding: 18px;
+        transition: box-shadow .15s;
+    }
+
+        .recipe-card:hover {
+            box-shadow: 0 4px 14px rgba(15, 23, 42, .06);
+        }
+
+    .meal-time-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .3px;
+        color: #fff;
+    }
+
+    .recipe-name {
+        font-weight: 800;
+        font-size: 15px;
+        color: #0F172A;
+        margin: 10px 0 2px;
+    }
+
+    .recipe-portion {
+        color: #94A3B8;
+        font-size: 12px;
+        margin-bottom: 8px;
+    }
+
+    .recipe-macros {
+        font-size: 12.5px;
+        color: #475569;
+        font-weight: 600;
+    }
+
+    .recipe-desc {
+        font-size: 12px;
+        color: #64748B;
+        margin-top: 8px;
+        line-height: 1.5;
+    }
+
+    .plan-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .accept-btn {
+        border: none;
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #16A34A, #15803D);
+        color: #fff;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 13.5px;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(22, 163, 74, .3);
+        transition: transform .15s;
+    }
+
+        .accept-btn:hover {
+            transform: translateY(-2px);
+        }
+
+    .regenerate-btn {
+        border: 1.5px solid #E2E8F0;
+        padding: 12px 24px;
+        background: #fff;
+        color: #64748B;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 13.5px;
+        cursor: pointer;
+        transition: all .15s;
+    }
+
+        .regenerate-btn:hover {
+            border-color: #CBD5E1;
+            color: #0F172A;
+        }
+
+    .accepted-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #F0FDF4;
+        color: #15803D;
+        padding: 10px 18px;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 13px;
+    }
+
+    @@media (max-width: 700px) {
+        .targets-grid {
+            grid-template-columns: repeat(2, 1fr);
+            row-gap: 18px;
+        }
+
+        .meal-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="plan-page">
+
+    <div class="plan-header">
+        <h1 class="plan-title"><i class="fas fa-calendar-check" style="color:#2563EB;margin-right:8px;font-size:26px;"></i>Your 7-Day Meal Plan</h1>
+        <div class="plan-subtitle">Generated for your @Model.GoalType goal.</div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert-box success">@TempData["Success"]</div>
+    }
+
+    <div class="panel">
+        <div class="panel-title"><i class="fas fa-bullseye"></i> Daily Targets</div>
+        <div class="targets-grid">
+            <div>
+                <div class="target-value">@Model.TargetCalories</div>
+                <div class="target-label">Kcal</div>
+            </div>
+            <div>
+                <div class="target-value">@Model.TargetProtein g</div>
+                <div class="target-label">Protein</div>
+            </div>
+            <div>
+                <div class="target-value">@Model.TargetCarbs g</div>
+                <div class="target-label">Carbs</div>
+            </div>
+            <div>
+                <div class="target-value">@Model.TargetFat g</div>
+                <div class="target-label">Fat</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-title"><i class="fas fa-calendar-week"></i> Meal Schedule</div>
+
+        <div class="day-tabs" role="tablist">
+            @for (int idx = 0; idx < days.Count; idx++)
+            {
+                <a class="day-tab @(idx == 0 ? "active" : "")" data-toggle="tab"
+                   href="#day-@days[idx]" role="tab" onclick="setActiveDayTab(this)">Day @days[idx]</a>
+            }
+        </div>
+
+        <div class="tab-content">
+            @for (int idx = 0; idx < days.Count; idx++)
+            {
+                var dayNum = days[idx];
+                var dayItems = Model.Items.Where(i => i.DayNumber == dayNum)
+                                           .OrderBy(i => Array.IndexOf(mealOrder, i.MealTime))
+                                           .ToList();
+                var dayCalories = dayItems.Sum(i => i.Recipe.Calories);
+
+               <div class="tab-pane fade @(idx == 0 ? "show active" : "")" id="day-@dayNum" role="tabpanel">
+                   <div class="day-pane-header">
+                       <span class="day-pane-number">Day @dayNum</span>
+                       <span class="day-pane-meta">@dayItems.Count meals &bull; @dayCalories kcal total</span>
+                  
+                   @foreach (var item in dayItems)
+                   {
+                       string badgeColor = mealColors.ContainsKey(item.MealTime) ? mealColors[item.MealTime] : "#64748B";
+
+                       <div class="recipe-card">
+                           <span class="meal-time-badge" style="background:@badgeColor;">@item.MealTime</span>
+                           <div class="recipe-name">@item.Recipe.Name</div>
+                           <div class="recipe-portion">@item.Recipe.PortionDescription</div>
+                           <div class="recipe-macros">
+                               @item.Recipe.Calories kcal &bull;
+                               P: @item.Recipe.Protein g &bull;
+                               C: @item.Recipe.Carbs g &bull;
+                               F: @item.Recipe.Fat g
+                           </div>
+                           @if (!string.IsNullOrEmpty(item.Recipe.Description))
+                           {
+                               <div class="recipe-desc">@item.Recipe.Description</div>
+                           }
+                       </div>
+                 
+                   }
+               </div>
+                </div>
+
+            }
+        </div>
+    </div>
+
+    <div class="panel">
+        @if (!Model.IsAccepted)
+        {
+            <div class="plan-actions">
+                @using (Html.BeginForm("AcceptPlan", "Meal", FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="mealPlanId" value="@Model.MealPlanId" />
+                    <button type="submit" class="accept-btn"><i class="fas fa-check"></i> Accept This Plan</button>
+                }
+                @using (Html.BeginForm("DietPlan", "Meal", FormMethod.Get))
+                {
+                    <button type="submit" class="regenerate-btn"><i class="fas fa-rotate"></i> Regenerate</button>
+                }
+            </div>
+        }
+        else
+        {
+            <span class="accepted-badge"><i class="fas fa-circle-check"></i> Plan Accepted</span>
+        }
+    </div>
+
+</div>
+
+<script>
+    function setActiveDayTab(clicked) {
+        document.querySelectorAll('.day-tab').forEach(function (el) {
+            el.classList.remove('active');
+        });
+        clicked.classList.add('active');
+    }
+</script>

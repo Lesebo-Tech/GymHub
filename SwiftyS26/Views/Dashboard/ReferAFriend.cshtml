@@ -1,0 +1,480 @@
+﻿@model SwiftyS26.Models.MemberForm
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.ActivePage = "referral";
+    ViewBag.PageTitle = "Refer a Friend";
+    bool notEligible = ViewBag.NotEligible ?? false;
+}
+
+@section head {
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <style>
+        :root {
+            --blue: #2563eb;
+            --blue-dark: #1d4ed8;
+            --blue-light: #eff6ff;
+            --blue-mid: #dbeafe;
+            --green: #16a34a;
+            --green-light: #f0fdf4;
+            --red: #dc2626;
+            --red-light: #fef2f2;
+            --gold: #d97706;
+            --gold-light: #fffbeb;
+            --text: #0f172a;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --bg2: #ffffff;
+            --bg3: #f1f5f9;
+            --radius: 14px;
+            --radius-sm: 10px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,.06);
+            --shadow-md: 0 4px 16px rgba(0,0,0,.08);
+        }
+
+        /* ── Local overrides for global layout classes ── */
+        .section-header {
+            margin-bottom: 26px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .section-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 28px;
+            letter-spacing: 1.5px;
+            color: var(--text);
+        }
+
+        .section-sub {
+            font-size: 13.5px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .dash-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            padding: 24px;
+            font-family: 'DM Sans', sans-serif;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+            .card-title i {
+                color: var(--blue);
+            }
+
+        /* Status card (not eligible) */
+        .status-card {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .status-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .status-card.suspended .status-icon {
+            background: var(--gold-light);
+            color: var(--gold);
+        }
+
+        .status-title {
+            font-weight: 700;
+            font-size: 15px;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .status-desc {
+            font-size: 13.5px;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+            .status-desc strong {
+                color: var(--text);
+            }
+
+        .card-desc {
+            font-size: 13.5px;
+            color: var(--muted);
+            margin-bottom: 18px;
+            line-height: 1.55;
+        }
+
+            .card-desc strong {
+                color: var(--text);
+            }
+
+        .referral-link-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+            .referral-link-row input {
+                flex: 1;
+                font-family: ui-monospace, Menlo, monospace;
+                font-size: 13.5px;
+                padding: 12px 14px;
+                border-radius: var(--radius-sm);
+                border: 1.5px solid var(--border);
+                background: var(--bg3);
+                color: var(--text-sub, #334155);
+            }
+
+        .btn-copy {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 700;
+            font-size: 13.5px;
+            padding: 0 20px;
+            border-radius: var(--radius-sm);
+            border: none;
+            cursor: pointer;
+            background: var(--blue);
+            color: #fff;
+            transition: all 0.18s ease;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+            .btn-copy:hover {
+                background: var(--blue-dark);
+            }
+
+        .share-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .share-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 13px;
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            border: 1.5px solid var(--border);
+            text-decoration: none;
+            cursor: pointer;
+            background: #fff;
+            transition: all 0.18s ease;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+            .share-btn.whatsapp {
+                color: var(--green);
+            }
+
+                .share-btn.whatsapp:hover {
+                    background: var(--green-light);
+                    border-color: rgba(22,163,74,.3);
+                }
+
+            .share-btn.sms {
+                color: var(--blue);
+            }
+
+                .share-btn.sms:hover {
+                    background: var(--blue-light);
+                    border-color: var(--blue-mid);
+                }
+
+            .share-btn.email {
+                color: var(--muted);
+            }
+
+                .share-btn.email:hover {
+                    background: var(--bg3);
+                    border-color: #cbd2dc;
+                }
+
+            .share-btn.native {
+                color: var(--muted);
+            }
+
+                .share-btn.native:hover {
+                    background: var(--bg3);
+                    border-color: #cbd2dc;
+                }
+
+        .referral-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        @@media (max-width: 640px) {
+            .referral-stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .referral-stat-card {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 0;
+        }
+
+        .referral-stat-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            background: var(--blue-light);
+            color: var(--blue);
+        }
+
+            .referral-stat-icon.gold {
+                background: var(--gold-light);
+                color: var(--gold);
+            }
+
+        .referral-stat-number {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 32px;
+            letter-spacing: 1px;
+            color: var(--text);
+            line-height: 1;
+        }
+
+        .referral-stat-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .referral-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 36px 16px;
+            text-align: center;
+            color: var(--muted);
+        }
+
+            .referral-empty i {
+                font-size: 26px;
+                opacity: 0.4;
+            }
+
+            .referral-empty p {
+                font-size: 13.5px;
+                margin: 0;
+            }
+
+        .referral-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .referral-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 4px;
+            border-bottom: 1px solid var(--bg3);
+        }
+
+            .referral-row:last-child {
+                border-bottom: none;
+            }
+
+        .referral-row-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .referral-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            background: var(--blue-light);
+            color: var(--blue);
+        }
+
+        .referral-friend-name {
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        .referral-joined-date {
+            font-size: 12.5px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .referral-points-earned {
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--green);
+        }
+    </style>
+}
+
+<div class="section-header">
+    <div class="section-title">REFER A FRIEND</div>
+    <div class="section-sub">Share your link — earn points when your friend joins</div>
+</div>
+
+@if (notEligible)
+{
+    <div class="dash-card status-card suspended">
+        <div class="status-icon"><i class="fas fa-triangle-exclamation"></i></div>
+        <div>
+            <div class="status-title">Referrals require an active membership</div>
+            <p class="status-desc">Your current status is <strong>@Model.Status</strong>. Reactivate your membership to start referring friends.</p>
+        </div>
+    </div>
+}
+else
+{
+    string referralLink = ViewBag.ReferralLink as string ?? "";
+    var referrals = ViewBag.Referrals as List<SwiftyS26.Models.Referral> ?? new List<SwiftyS26.Models.Referral>();
+
+    <!-- Referral Link Card -->
+    <div class="dash-card">
+        <div class="card-title"><i class="fas fa-link"></i> Your Referral Link</div>
+        <p class="card-desc">Anyone who joins using this link earns you <strong>@SwiftyS26.Models.ReferralHelper.REFERRAL_REWARD_POINTS points</strong> once they register.</p>
+
+        <div class="referral-link-row">
+            <input type="text" id="referral-link-input" value="@referralLink" readonly />
+            <button class="btn-copy" id="copy-btn" onclick="copyReferralLink()">
+                <i class="fas fa-copy"></i> <span id="copy-btn-label">Copy</span>
+            </button>
+        </div>
+
+        <div class="share-buttons">
+            <a class="share-btn whatsapp" target="_blank"
+               href="https://wa.me/?text=@Html.Raw(Uri.EscapeDataString("Join me at GymHub! Sign up with my link: " + referralLink))">
+                <i class="fab fa-whatsapp"></i> WhatsApp
+            </a>
+            <a class="share-btn sms"
+               href="sms:?body=@Html.Raw(Uri.EscapeDataString("Join me at GymHub! Sign up with my link: " + referralLink))">
+                <i class="fas fa-comment-sms"></i> SMS
+            </a>
+            <a class="share-btn email"
+               href="mailto:?subject=@Html.Raw(Uri.EscapeDataString("Join me at GymHub!"))&body=@Html.Raw(Uri.EscapeDataString("I've been training at GymHub and thought you'd like it. Sign up with my link: " + referralLink))">
+                <i class="fas fa-envelope"></i> Email
+            </a>
+            <button class="share-btn native" id="native-share-btn" onclick="nativeShare()" style="display:none;">
+                <i class="fas fa-share-nodes"></i> More
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="referral-stats-grid">
+        <div class="dash-card referral-stat-card">
+            <div class="referral-stat-icon"><i class="fas fa-user-group"></i></div>
+            <div class="referral-stat-number">@ViewBag.TotalReferrals</div>
+            <div class="referral-stat-label">Friends Referred</div>
+        </div>
+        <div class="dash-card referral-stat-card">
+            <div class="referral-stat-icon gold"><i class="fas fa-star"></i></div>
+            <div class="referral-stat-number">@ViewBag.TotalPointsEarned</div>
+            <div class="referral-stat-label">Points Earned</div>
+        </div>
+    </div>
+
+    <!-- History -->
+    <div class="dash-card">
+        <div class="card-title"><i class="fas fa-clock-rotate-left"></i> Referral History</div>
+
+        @if (!referrals.Any())
+        {
+            <div class="referral-empty">
+                <i class="fas fa-user-plus"></i>
+                <p>No referrals yet — share your link above to get started!</p>
+            </div>
+        }
+        else
+        {
+            <div class="referral-list">
+                @foreach (var r in referrals)
+                {
+                    <div class="referral-row">
+                        <div class="referral-row-left">
+                            <div class="referral-avatar">@(r.ReferredMember != null ? r.ReferredMember.FullName.Substring(0, 1).ToUpper() : "?")</div>
+                            <div>
+                                <div class="referral-friend-name">@(r.ReferredMember != null ? r.ReferredMember.FullName : "—")</div>
+                                <div class="referral-joined-date">Joined @r.RegisteredAtDisplay</div>
+                            </div>
+                        </div>
+                        <div class="referral-points-earned">+@r.RewardPoints pts</div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@section scripts {
+    <script>
+        function copyReferralLink() {
+            var input = document.getElementById('referral-link-input');
+            input.select();
+            input.setSelectionRange(0, 99999);
+
+            navigator.clipboard.writeText(input.value).then(function () {
+                var label = document.getElementById('copy-btn-label');
+                label.textContent = 'Copied!';
+                setTimeout(function () { label.textContent = 'Copy'; }, 2000);
+            }).catch(function () {
+                document.execCommand('copy');
+            });
+        }
+
+        if (navigator.share) {
+            document.getElementById('native-share-btn').style.display = 'inline-flex';
+        }
+
+        function nativeShare() {
+            var link = document.getElementById('referral-link-input').value;
+            navigator.share({
+                title: 'Join me at GymHub!',
+                text: 'I\'ve been training at GymHub and thought you\'d like it.',
+                url: link
+            }).catch(function () { /* user cancelled — no-op */ });
+        }</script>
+}

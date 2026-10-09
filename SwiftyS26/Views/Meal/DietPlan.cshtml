@@ -1,0 +1,284 @@
+﻿@model SwiftyS26.Models.FitnessProfile
+@using System.Linq
+
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.PageTitle = "Diet Plan Generator";
+    ViewBag.ActivePage = "nutrition";
+}
+
+<style>
+    .diet-page {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .diet-header {
+        margin-bottom: 24px;
+    }
+
+    .diet-title {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 30px;
+        letter-spacing: 1px;
+        color: #0F172A;
+    }
+
+    .diet-subtitle {
+        color: #64748B;
+        margin-top: 4px;
+        font-size: 13.5px;
+    }
+
+    .alert-box {
+        background: #FEF2F2;
+        border: 1px solid #FECACA;
+        color: #B91C1C;
+        padding: 14px 18px;
+        border-radius: 10px;
+        font-size: 13.5px;
+        font-weight: 600;
+        margin-bottom: 20px;
+    }
+
+        .alert-box.success {
+            background: #F0FDF4;
+            border-color: #BBF7D0;
+            color: #15803D;
+        }
+
+    .panel {
+        background: #fff;
+        border: 1px solid #E2E8F0;
+        border-radius: 14px;
+        padding: 22px;
+        margin-bottom: 20px;
+    }
+
+    .panel-title {
+        font-size: 14px;
+        font-weight: 800;
+        margin-bottom: 16px;
+        color: #0F172A;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .panel-title i {
+            color: #2563EB;
+        }
+
+    .profile-stats {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 14px;
+        text-align: center;
+    }
+
+    .profile-stat-value {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 24px;
+        color: #0F172A;
+    }
+
+    .profile-stat-label {
+        color: #64748B;
+        font-size: 11px;
+        text-transform: uppercase;
+        font-weight: 700;
+        letter-spacing: .4px;
+        margin-top: 4px;
+    }
+
+    .update-link {
+        display: inline-block;
+        margin-top: 16px;
+        color: #2563EB;
+        font-weight: 700;
+        font-size: 12.5px;
+        text-decoration: none;
+    }
+
+        .update-link:hover {
+            text-decoration: underline;
+        }
+
+    .form-group-diet {
+        margin-bottom: 20px;
+    }
+
+        .form-group-diet label {
+            display: block;
+            font-weight: 700;
+            font-size: 13px;
+            color: #0F172A;
+            margin-bottom: 8px;
+        }
+
+    .diet-select {
+        width: 100%;
+        max-width: 320px;
+        padding: 10px 14px;
+        border: 1.5px solid #E2E8F0;
+        border-radius: 10px;
+        font-size: 13.5px;
+        color: #0F172A;
+        background: #fff;
+    }
+
+        .diet-select:focus {
+            outline: none;
+            border-color: #2563EB;
+        }
+
+    .allergy-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .allergy-chip {
+        position: relative;
+    }
+
+        .allergy-chip input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .allergy-chip label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 16px;
+            border: 1.5px solid #E2E8F0;
+            border-radius: 20px;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #64748B;
+            cursor: pointer;
+            transition: all .15s;
+        }
+
+        .allergy-chip input:checked + label {
+            background: #EFF6FF;
+            border-color: #2563EB;
+            color: #2563EB;
+        }
+
+    .generate-btn {
+        border: none;
+        padding: 13px 26px;
+        background: linear-gradient(135deg, #2563EB, #1D4ED8);
+        color: #fff;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 13.5px;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, .3);
+        transition: transform .15s;
+    }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+        }
+
+    @@media (max-width: 700px) {
+        .profile-stats {
+            grid-template-columns: repeat(3, 1fr);
+            row-gap: 20px;
+        }
+    }
+</style>
+
+<div class="diet-page">
+
+    <div class="diet-header">
+        <h1 class="diet-title"><i class="fas fa-calendar-week" style="color:#2563EB;margin-right:8px;font-size:26px;"></i>Diet Plan Generator</h1>
+        <div class="diet-subtitle">Build a 7-day meal plan around your goal and targets.</div>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert-box">@TempData["Error"]</div>
+    }
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert-box success">@TempData["Success"]</div>
+    }
+
+    <div class="panel">
+        <div class="panel-title"><i class="fas fa-id-card"></i> Your Profile</div>
+        <div class="profile-stats">
+            <div>
+                <div class="profile-stat-value">@Model.WeightKg.ToString("0.#") kg</div>
+                <div class="profile-stat-label">Weight</div>
+            </div>
+            <div>
+                <div class="profile-stat-value">@Model.HeightCm.ToString("0.#") cm</div>
+                <div class="profile-stat-label">Height</div>
+            </div>
+            <div>
+                <div class="profile-stat-value">@Model.Age</div>
+                <div class="profile-stat-label">Age</div>
+            </div>
+            <div>
+                <div class="profile-stat-value" style="font-size:18px;">@Model.GoalType</div>
+                <div class="profile-stat-label">Goal</div>
+            </div>
+            <div>
+                <div class="profile-stat-value">@Model.BMR.ToString("N0")</div>
+                <div class="profile-stat-label">BMR</div>
+            </div>
+            <div>
+                <div class="profile-stat-value">@Model.TDEE.ToString("N0")</div>
+                <div class="profile-stat-label">TDEE</div>
+            </div>
+        </div>
+        @Html.ActionLink("Update your fitness profile", "Profile", "Fitness", null, new { @class = "update-link" })
+    </div>
+
+    <div class="panel">
+        <div class="panel-title"><i class="fas fa-leaf"></i> Dietary Needs</div>
+
+        @using (Html.BeginForm("GenerateDietPlan", "Meal", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+
+            <div class="form-group-diet">
+                <label>Dietary Preference</label>
+                <select name="dietaryPreference" class="diet-select">
+                    @foreach (var pref in (string[])ViewBag.DietaryPreferences)
+                    {
+                        <option value="@pref" selected="@(Model.DietaryPreference == pref)">@pref</option>
+                    }
+                </select>
+            </div>
+
+            <div class="form-group-diet">
+                <label>Allergies</label>
+                <div class="allergy-grid">
+                    @{
+                        var currentAllergies = (Model.Allergies ?? "").Split(',').Select(a => a.Trim()).ToList();
+                    }
+                    @foreach (var allergen in (string[])ViewBag.Allergens)
+                    {
+                        <div class="allergy-chip">
+                            <input type="checkbox" name="allergies" value="@allergen" id="allergy_@allergen"
+                                   checked="@(currentAllergies.Contains(allergen))" />
+                            <label for="allergy_@allergen">@allergen</label>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <button type="submit" class="generate-btn"><i class="fas fa-wand-magic-sparkles"></i> Generate My Meal Plan</button>
+        }
+    </div>
+
+</div>

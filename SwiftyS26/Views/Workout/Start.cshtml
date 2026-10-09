@@ -1,0 +1,196 @@
+﻿@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.ActivePage = "workout";
+    ViewBag.PageTitle = "Workout: " + ViewBag.PlanName;
+
+    string exercisesJson = ViewBag.ExercisesJson;
+    int memberId = (int)(ViewBag.MemberId ?? 0);
+    int planId = (int)(ViewBag.PlanId ?? 0);
+}
+
+@section head {
+    <link href="~/Content/workout-session.css" rel="stylesheet" />
+}
+
+<div class="session-container" id="sessionContainer">
+
+    <!-- PROGRESS BAR -->
+    <div class="session-progress">
+        <div class="session-progress-fill" id="progressFill"></div>
+    </div>
+
+    <!-- SESSION HEADER -->
+    <div class="session-header">
+        <button class="session-exit-btn" id="btnAbandon" onclick="confirmAbandon()">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="session-name">@ViewBag.PlanName</div>
+        <div class="session-timer" id="elapsedDisplay">0:00</div>
+    </div>
+
+    <!-- SCREEN 1: PRE-START -->
+    <div class="session-screen active" id="screenStart">
+        <div class="prestart-card">
+
+            <div class="prestart-category" style="color: @ViewBag.CategoryColor">
+                <i class="@ViewBag.CategoryIconClass"></i> @ViewBag.CategoryName
+            </div>
+
+            <h1 class="prestart-title">@ViewBag.PlanName</h1>
+
+            <div class="prestart-meta">
+                <span><i class="fas fa-clock"></i> ~@ViewBag.PlanMinutes min</span>
+                <span><i class="fas fa-list"></i> <span id="totalExCount"></span> exercises</span>
+                @{
+                    string difficulty = ViewBag.PlanDifficulty as string ?? "";
+                }
+                <span class="difficulty-badge @difficulty.ToLower()">@difficulty</span>
+            </div>
+
+            <p class="prestart-description">@ViewBag.PlanDescription</p>
+
+            <div class="exercise-preview" id="exercisePreview"></div>
+
+            <button class="btn-start-workout" onclick="startWorkout()">
+                <i class="fas fa-play"></i> Begin Workout
+            </button>
+
+        </div>
+    </div>
+
+    <!-- SCREEN 2: ACTIVE EXERCISE -->
+    <div class="session-screen" id="screenExercise">
+
+        <div class="exercise-counter">
+            Exercise <span id="exNum">1</span> of <span id="exTotal">0</span>
+        </div>
+
+        <div class="exercise-media">
+            <img src="" alt="Exercise demo" class="exercise-image" id="exMediaImg"
+                 onerror="this.src='/Content/workout-media/placeholder.gif'" />
+            <div class="exercise-muscle" id="exMuscleTag"></div>
+        </div>
+
+        <div class="exercise-content">
+            <h2 class="exercise-name" id="exName">Exercise Name</h2>
+            <div class="exercise-metrics" id="exMetricRow"></div>
+            <p class="exercise-instructions" id="exInstructions"></p>
+
+            <div class="set-tracker">
+                <div class="set-tracker-label">Sets Completed</div>
+                <div class="set-dots" id="setDots"></div>
+            </div>
+        </div>
+
+        <div class="session-controls">
+            <button class="ctrl-btn secondary" id="btnSkip" onclick="skipExercise()">
+                <i class="fas fa-forward-step"></i>
+                <span>Skip</span>
+            </button>
+            <button class="ctrl-btn primary" id="btnStartPause" onclick="toggleStartPause()">
+                <i class="fas fa-play" id="btnIcon"></i>
+                <span id="btnLabel">Start</span>
+            </button>
+            <button class="ctrl-btn secondary" id="btnNextSet" onclick="completeSet()" style="display:none">
+                <i class="fas fa-check"></i>
+                <span>Set Done</span>
+            </button>
+        </div>
+
+    </div>
+
+    <!-- SCREEN 3: REST -->
+    <div class="session-screen" id="screenRest">
+        <div class="rest-screen">
+            <p class="rest-label">REST TIME</p>
+            <div class="rest-timer">
+                <svg class="rest-ring" viewBox="0 0 120 120">
+                    <circle class="rest-ring-bg" cx="60" cy="60" r="54" />
+                    <circle class="rest-ring-fill" cx="60" cy="60" r="54" id="restRing" />
+                </svg>
+                <div class="rest-countdown" id="restCountdown">30</div>
+            </div>
+            <p class="rest-next-label">Up Next</p>
+            <p class="rest-next-name" id="restNextName">—</p>
+            <button class="btn-skip-rest" onclick="skipRest()">
+                Skip Rest <i class="fas fa-forward"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- SCREEN 4: COMPLETION -->
+    <div class="session-screen" id="screenComplete">
+        <div class="complete-card">
+
+            <div class="complete-icon">
+                <i class="fas fa-trophy"></i>
+            </div>
+            <h1 class="complete-title">Workout Complete!</h1>
+            <p class="complete-subtitle">Outstanding effort. Here's your session summary:</p>
+
+            <div class="complete-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="cDuration">—</div>
+                    <div class="stat-label">Duration</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="cExercises">—</div>
+                    <div class="stat-label">Exercises</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="cCalories">—</div>
+                    <div class="stat-label">~Cal Burned</div>
+                </div>
+            </div>
+
+            <div id="badgeAwards" class="badge-awards" style="display:none"></div>
+
+            <!-- FIX: btnViewSummary was completely missing from this view.
+                 workout-session.js does el.btnViewSummary = byId('btnViewSummary')
+                 at startup. When finishWorkout() called disableSummaryBtn() it
+                 crashed with "Cannot read properties of null" — stopping execution
+                 before saveSession() on the next line ever ran.
+                 The href starts as "#" and is replaced with the real summary URL
+                 by enableSummaryBtn() once the AJAX save returns a sessionId. -->
+            <div class="complete-actions">
+                <a href="@Url.Action("Index", "Workout")" class="btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Hub
+                </a>
+                <a href="#" id="btnViewSummary" class="btn-primary" style="opacity:0.5; pointer-events:none">
+                    Saving&hellip;
+                </a>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<!-- ABANDON MODAL -->
+<div class="modal-overlay" id="abandonModal" style="display:none">
+    <div class="modal-card">
+        <div class="modal-icon warning">
+            <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="modal-title warning">Abandon Workout?</div>
+        <div class="modal-body">
+            Your progress will be saved as a partial session.
+        </div>
+        <div class="modal-btn-row">
+            <button class="modal-btn-confirm danger" onclick="abandonWorkout()">Abandon</button>
+            <button class="modal-btn-cancel" onclick="closeAbandonModal()">Keep Going</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const EXERCISES   = @Html.Raw(exercisesJson ?? "[]");
+        const PLAN_ID     = @planId;
+        const MEMBER_ID   = @memberId;
+        const SAVE_URL    = '@Url.Action("SaveSession", "Workout")';
+        const SUMMARY_URL = '@Url.Action("Summary",     "Workout")';
+        const HUB_URL     = '@Url.Action("Index",       "Workout")';
+    </script>
+    <script src="~/Scripts/workout-session.js?v=2"></script>
+}

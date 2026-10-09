@@ -1,0 +1,214 @@
+﻿@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.ActivePage = "workout";
+    ViewBag.PageTitle = "Workout History";
+
+    // ── Cast to named VM — anonymous types break dynamic access in Razor ──
+    var sessionRows = ViewBag.SessionRows as List<SwiftyS26.Models.SessionRowVm>;
+    int current = ViewBag.CurrentPage;
+    int total = ViewBag.TotalPages;
+    int completed = ViewBag.TotalCompleted;
+    int minutes = ViewBag.TotalMinutes;
+    int streak = ViewBag.Streak;
+    int totalSess = ViewBag.TotalSessions;
+}
+
+@section head {
+    <link href="~/Content/workout.css" rel="stylesheet" />
+}
+
+<div class="back-nav">
+    <a href="@Url.Action("Index", "Workout")" class="back-link">
+        <i class="fas fa-arrow-left"></i> Back to Workout Hub
+    </a>
+</div>
+
+<div class="section-header">
+    <div class="section-title">Workout History</div>
+    <div class="section-sub">Track your fitness journey and progress</div>
+</div>
+
+<!-- Lifetime Stats -->
+<div class="stats-grid-workout">
+    <div class="stat-card-workout">
+        <div class="stat-icon-workout blue"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-info-workout">
+            <div class="stat-value-workout">@completed</div>
+            <div class="stat-label-workout">Completed</div>
+        </div>
+    </div>
+    <div class="stat-card-workout">
+        <div class="stat-icon-workout green"><i class="fas fa-clock"></i></div>
+        <div class="stat-info-workout">
+            <div class="stat-value-workout">@minutes</div>
+            <div class="stat-label-workout">Total Minutes</div>
+        </div>
+    </div>
+    <div class="stat-card-workout">
+        <div class="stat-icon-workout orange"><i class="fas fa-bolt"></i></div>
+        <div class="stat-info-workout">
+            <div class="stat-value-workout">@streak</div>
+            <div class="stat-label-workout">Day Streak</div>
+        </div>
+    </div>
+    <div class="stat-card-workout">
+        <div class="stat-icon-workout purple"><i class="fas fa-calendar-week"></i></div>
+        <div class="stat-info-workout">
+            <div class="stat-value-workout">@totalSess</div>
+            <div class="stat-label-workout">Total Sessions</div>
+        </div>
+    </div>
+</div>
+
+<!-- Activity Chart -->
+<div class="dash-card">
+    <div class="card-header">
+        <div class="card-title"><i class="fas fa-chart-line"></i> Recent Activity</div>
+        <div class="card-sub">Last 7 completed workouts</div>
+    </div>
+    <div class="chart-container">
+        <canvas id="activityChart" height="80"></canvas>
+    </div>
+</div>
+
+<!-- Session Log -->
+<div class="dash-card">
+    <div class="card-header">
+        <div class="card-title"><i class="fas fa-list-ul"></i> Session Log</div>
+        <a href="@Url.Action("Index", "Workout")" class="card-action-btn">
+            <i class="fas fa-plus"></i> Start New Workout
+        </a>
+    </div>
+
+    @if (sessionRows == null || !sessionRows.Any())
+    {
+        <div class="empty-state">
+            <i class="fas fa-dumbbell"></i>
+            <p>No sessions recorded yet</p>
+            <span>Start your first workout to see your history here</span>
+            <a href="@Url.Action("Index", "Workout")" class="empty-state-btn">
+                Start Workout <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="workout-table">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-dumbbell"></i> Plan</th>
+                        <th><i class="fas fa-tag"></i> Category</th>
+                        <th><i class="fas fa-calendar"></i> Date</th>
+                        <th><i class="fas fa-clock"></i> Duration</th>
+                        <th><i class="fas fa-flag-checkered"></i> Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in sessionRows)
+                    {
+                        var dur = TimeSpan.FromSeconds(row.DurationSecs);
+                        <tr>
+                            <td class="plan-name-cell">@row.PlanName</td>
+                            <td>
+                                <span class="category-dot"
+                                      style="background: @row.CategoryColor"></span>
+                                @row.CategoryName
+                            </td>
+                            <td>@row.StartedAt</td>
+                            <td>
+                                @dur.Minutes<span class="stat-unit">m</span>
+                                @dur.Seconds<span class="duration-sec">s</span>
+                            </td>
+                            <td>
+                                <span class="session-badge @(row.Status == "Completed" ? "completed" : "in-progress")">
+                                    @row.Status
+                                </span>
+                            </td>
+                            <td>
+                                <a href="@Url.Action("Summary", "Workout", new { sessionId = row.SessionId })"
+                                   class="view-link">
+                                    View <i class="fas fa-arrow-right"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        if (total > 1)
+        {
+            <div class="pagination">
+                @if (current > 1)
+                {
+                    <a href="@Url.Action("History", "Workout", new { page = current - 1 })" class="page-btn">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </a>
+                }
+                <span class="page-info">Page @current of @total</span>
+                @if (current < total)
+                {
+                    <a href="@Url.Action("History", "Workout", new { page = current + 1 })" class="page-btn">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </a>
+                }
+            </div>
+        }
+    }
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const chartData = @Html.Raw(ViewBag.ChartDataJson ?? "[]");
+
+        if (chartData && chartData.length > 0) {
+            const ctx = document.getElementById('activityChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.map(d => d.date),
+                    datasets: [{
+                        label: 'Duration (minutes)',
+                        data: chartData.map(d => d.duration),
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderColor: '#3B82F6',
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        barPercentage: 0.65
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ctx.raw + ' minutes'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#64748B', font: { size: 11 } }
+                        },
+                        y: {
+                            grid: { color: '#E2E8F0', drawBorder: false },
+                            ticks: {
+                                color: '#64748B',
+                                font: { size: 11 },
+                                stepSize: 10,
+                                callback: val => val + 'm'
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+}

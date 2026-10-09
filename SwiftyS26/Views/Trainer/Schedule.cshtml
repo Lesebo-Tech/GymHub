@@ -1,0 +1,546 @@
+﻿@model List<SwiftyS26.Models.TrainingSession>
+@{
+    Layout = "~/Views/Shared/_TrainerLayout.cshtml";
+    ViewBag.Title = "Schedule";
+
+    var sessions = Model ?? new List<SwiftyS26.Models.TrainingSession>();
+    var availability = ViewBag.Availability as List<SwiftyS26.Models.TrainerAvailability>
+                       ?? new List<SwiftyS26.Models.TrainerAvailability>();
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <style>
+        /* ── Stats Row ── */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 18px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transition: all .2s;
+        }
+
+            .stat-card:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-md);
+            }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+
+            .stat-icon.blue {
+                background: var(--blue-light);
+                color: var(--blue);
+            }
+
+            .stat-icon.green {
+                background: var(--green-light);
+                color: var(--green);
+            }
+
+            .stat-icon.red {
+                background: var(--red-light);
+                color: var(--red);
+            }
+
+            .stat-icon.orange {
+                background: var(--orange-light);
+                color: var(--orange);
+            }
+
+        .stat-info {
+            flex: 1;
+        }
+
+        .stat-number {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 32px;
+            letter-spacing: 1px;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* ── Filter Tabs ── */
+        .filter-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-tab {
+            padding: 8px 20px;
+            border-radius: 40px;
+            border: 1.5px solid var(--border);
+            background: var(--bg2);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+            .filter-tab:hover {
+                border-color: var(--blue);
+                color: var(--blue);
+            }
+
+            .filter-tab.active {
+                background: var(--blue);
+                border-color: var(--blue);
+                color: #fff;
+            }
+
+        /* ── Table Card ── */
+        .table-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-count {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* ── Data Table ── */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+            .data-table th {
+                padding: 12px 16px;
+                text-align: left;
+                font-size: 11px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                color: var(--text-muted);
+                background: var(--bg3);
+                border-bottom: 1px solid var(--border);
+                white-space: nowrap;
+            }
+
+            .data-table td {
+                padding: 14px 16px;
+                border-bottom: 1px solid var(--border);
+                vertical-align: middle;
+            }
+
+            .data-table tr:last-child td {
+                border-bottom: none;
+            }
+
+            .data-table tr:hover td {
+                background: var(--blue-light);
+            }
+
+        /* ── Member Cell ── */
+        .member-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .member-avatar-mini {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--blue), var(--blue-bright));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .member-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* ── Badges ── */
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .badge-blue {
+            background: var(--blue-light);
+            color: var(--blue);
+        }
+
+        .badge-green {
+            background: var(--green-light);
+            color: var(--green);
+        }
+
+        .badge-red {
+            background: var(--red-light);
+            color: var(--red);
+        }
+
+        .badge-orange {
+            background: var(--orange-light);
+            color: var(--orange);
+        }
+
+        /* ── Action Buttons ── */
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .action-form {
+            display: inline;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            font-family: 'DM Sans', sans-serif;
+            cursor: pointer;
+            transition: all .2s;
+            border: none;
+        }
+
+        .action-btn-success {
+            background: var(--green-light);
+            color: var(--green);
+        }
+
+            .action-btn-success:hover {
+                background: var(--green);
+                color: #fff;
+            }
+
+        .action-btn-danger {
+            background: var(--red-light);
+            color: var(--red);
+        }
+
+            .action-btn-danger:hover {
+                background: var(--red);
+                color: #fff;
+            }
+
+        .action-separator {
+            color: var(--border);
+        }
+
+        /* ── Alert ── */
+        .alert-success {
+            background: var(--green-light);
+            border: 1px solid rgba(34,197,94,.2);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--green);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* ── Empty State ── */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+            .empty-state i {
+                font-size: 48px;
+                margin-bottom: 16px;
+                opacity: .4;
+                display: block;
+            }
+
+            .empty-state p {
+                font-size: 14px;
+                margin-bottom: 16px;
+            }
+
+            .empty-state a {
+                color: var(--blue);
+                text-decoration: none;
+                font-weight: 600;
+            }
+
+        .text-muted {
+            color: var(--text-muted);
+        }
+
+        /* ── Responsive ── */
+        @@media (max-width: 900px) {
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .filter-tab {
+                padding: 6px 14px;
+                font-size: 12px;
+            }
+
+            .data-table th,
+            .data-table td {
+                padding: 10px 12px;
+            }
+        }
+
+        @@media (max-width: 600px) {
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+
+            .card-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                gap: 6px;
+            }
+
+            .action-separator {
+                display: none;
+            }
+        }
+    </style>
+}
+
+<!-- ── Page Header ── -->
+<div class="section-header">
+    <div class="section-title">Schedule</div>
+    <div class="section-sub">@sessions.Count training session(s)</div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert-success">
+        <i class="fas fa-check-circle"></i> @TempData["Success"]
+    </div>
+}
+
+@{
+    int scheduled = sessions.Count(s => s.Status == "Scheduled");
+    int completed = sessions.Count(s => s.Status == "Completed");
+    int cancelled = sessions.Count(s => s.Status == "Cancelled");
+}
+
+<!-- ── Stats ── -->
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="fas fa-calendar-alt"></i></div>
+        <div class="stat-info">
+            <div class="stat-number">@sessions.Count</div>
+            <div class="stat-label">Total Sessions</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon orange"><i class="fas fa-clock"></i></div>
+        <div class="stat-info">
+            <div class="stat-number">@scheduled</div>
+            <div class="stat-label">Scheduled</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-info">
+            <div class="stat-number">@completed</div>
+            <div class="stat-label">Completed</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon red"><i class="fas fa-times-circle"></i></div>
+        <div class="stat-info">
+            <div class="stat-number">@cancelled</div>
+            <div class="stat-label">Cancelled</div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Filter Tabs ── -->
+<div class="filter-tabs">
+    <button class="filter-tab active" onclick="filterSessions('all', this)">All Sessions</button>
+    <button class="filter-tab" onclick="filterSessions('Scheduled', this)">Scheduled</button>
+    <button class="filter-tab" onclick="filterSessions('Completed', this)">Completed</button>
+    <button class="filter-tab" onclick="filterSessions('Cancelled', this)">Cancelled</button>
+</div>
+
+<!-- ── Sessions Table ── -->
+<div class="table-card">
+    <div class="card-header">
+        <div class="card-title"><i class="fas fa-list-ul"></i> Training Sessions</div>
+        <div class="card-count">@sessions.Count sessions</div>
+    </div>
+
+    @if (sessions.Any())
+    {
+        <div style="overflow-x:auto;">
+            <table class="data-table" id="sessionsTable">
+                <thead>
+                    <tr>
+                        <th><i class="fas fa-calendar"></i> Date</th>
+                        <th><i class="fas fa-clock"></i> Time</th>
+                        <th><i class="fas fa-user"></i> Member</th>
+                        <th><i class="fas fa-tag"></i> Type</th>
+                        <th><i class="fas fa-hourglass-half"></i> Duration</th>
+                        <th><i class="fas fa-flag-checkered"></i> Status</th>
+                        <th><i class="fas fa-cog"></i> Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in sessions)
+                    {
+                        string memberName = s.MemberForm != null
+                            ? s.MemberForm.FirstName + " " + s.MemberForm.LastName
+                            : "—";
+
+                        string memberInitials = "";
+                        if (s.MemberForm?.FirstName?.Length > 0)
+                        {
+                            memberInitials += s.MemberForm.FirstName[0];
+                        }
+                        if (s.MemberForm?.LastName?.Length > 0)
+                        {
+                            memberInitials += s.MemberForm.LastName[0];
+                        }
+
+                        string statusClass = s.Status == "Completed" ? "badge-green"
+                                           : s.Status == "Cancelled" ? "badge-red"
+                                           : "badge-orange";
+
+                        <tr data-status="@s.Status">
+                            <td>@s.SessionDate.ToString("dd MMM yyyy")</td>
+                            <td class="text-muted">@s.TimeSlot</td>
+                            <td>
+                                <div class="member-cell">
+                                    <div class="member-avatar-mini">@memberInitials</div>
+                                    <span class="member-name">@memberName</span>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-blue">@s.SessionType</span></td>
+                            <td class="text-muted">@s.Duration</td>
+                            <td><span class="badge @statusClass">@s.Status</span></td>
+                            <td>
+                                @if (s.Status == "Scheduled")
+                                {
+                                    <div class="action-buttons">
+                                        @using (Html.BeginForm("UpdateSessionStatus", "Trainer", FormMethod.Post, new { @class = "action-form" }))
+                                        {
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="sessionId" value="@s.SessionId" />
+                                            <input type="hidden" name="status" value="Completed" />
+                                            <button type="submit" class="action-btn action-btn-success">
+                                                <i class="fas fa-check"></i> Complete
+                                            </button>
+                                        }
+                                        <span class="action-separator">|</span>
+                                        @using (Html.BeginForm("UpdateSessionStatus", "Trainer", FormMethod.Post, new { @class = "action-form" }))
+                                        {
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="sessionId" value="@s.SessionId" />
+                                            <input type="hidden" name="status" value="Cancelled" />
+                                            <button type="submit" class="action-btn action-btn-danger">
+                                                <i class="fas fa-times"></i> Cancel
+                                            </button>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+    else
+    {
+        <div class="empty-state">
+            <i class="fas fa-calendar-alt"></i>
+            <p>No sessions yet</p>
+            
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        function filterSessions(status, btn) {
+            document.querySelectorAll('.filter-tab').forEach(function (b) {
+                b.classList.remove('active');
+            });
+            btn.classList.add('active');
+
+            document.querySelectorAll('#sessionsTable tbody tr').forEach(function (row) {
+                row.style.display = (status === 'all' || row.getAttribute('data-status') === status)
+                    ? '' : 'none';
+            });
+        }
+    </script>
+}

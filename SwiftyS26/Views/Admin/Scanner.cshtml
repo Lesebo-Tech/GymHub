@@ -1,0 +1,180 @@
+﻿@{
+    Layout = null;
+    var adminName = Session["LoggedInAdminName"] as string ?? "Admin";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GymHub – QR Scanner</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="~/Content/admin.css" rel="stylesheet" />
+</head>
+<body class="admin-body">
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="admin-sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-icon">GH</div>
+            <div class="logo-text">Gym<span>Hub</span></div>
+        </div>
+        <div class="sidebar-admin-info">
+            <div class="sidebar-avatar">&#128100;</div>
+            <div class="sidebar-name">@adminName</div>
+            <div class="sidebar-role">Administrator</div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/Admin/Dashboard" class="sidebar-link">&#128202; Dashboard</a>
+            <a href="/Admin/Scanner" class="sidebar-link active">&#128247; QR Scanner</a>
+        </nav>
+        <div class="sidebar-footer">
+            @using (Html.BeginForm("Logout", "Admin", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <button type="submit" class="sidebar-logout">&#128682; Sign Out</button>
+            }
+        </div>
+    </aside>
+
+    <!-- ===== MAIN ===== -->
+    <main class="admin-main">
+        <div class="admin-topbar">
+            <div class="topbar-title">&#128247; Member QR Scanner</div>
+            <div class="topbar-date">@DateTime.Now.ToString("dddd, dd MMMM yyyy")</div>
+        </div>
+
+        <div class="scanner-layout">
+
+            <!-- ===== LEFT: Scanner + Manual Input ===== -->
+            <div class="scanner-panel">
+                <div class="scanner-header">
+                    <div class="scanner-title">SCAN MEMBER QR CODE</div>
+                    <p class="scanner-sub">
+                        Point the camera at the member's QR code, or enter the Member ID manually below.
+                    </p>
+                </div>
+
+                <!-- Camera -->
+                <div class="camera-wrap" id="cameraWrap">
+                    <video id="cameraFeed" autoplay playsinline
+                           style="width:100%;border-radius:12px;display:block;"></video>
+                    <canvas id="scanCanvas" style="display:none;"></canvas>
+                    <div class="scan-overlay">
+                        <div class="scan-corner tl"></div>
+                        <div class="scan-corner tr"></div>
+                        <div class="scan-corner bl"></div>
+                        <div class="scan-corner br"></div>
+                        <div class="scan-line" id="scanLine"></div>
+                    </div>
+                </div>
+
+                <!-- Camera controls -->
+                <div class="scanner-controls">
+                    <button class="scanner-btn start" id="startBtn" onclick="startCamera()">
+                        &#128247; Start Camera
+                    </button>
+                    <button class="scanner-btn stop" id="stopBtn" onclick="stopCamera()" style="display:none;">
+                        &#9209; Stop Camera
+                    </button>
+                </div>
+
+                <p class="scanner-hint">
+                    Allow camera access when prompted by your browser
+                </p>
+
+                <!-- ===== MANUAL MEMBER ID INPUT ===== -->
+                <div class="manual-id-section">
+                    <div class="manual-id-title">&#9998; Or Enter Member ID Manually</div>
+                    <div class="manual-id-wrap">
+                        <input type="text"
+                               id="manualMemberId"
+                               class="manual-id-input"
+                               placeholder="e.g. GH-987805"
+                               maxlength="12"
+                               oninput="this.value = this.value.toUpperCase()"
+                               onkeydown="if(event.key==='Enter') verifyManualId()" />
+                        <button class="manual-id-btn" onclick="verifyManualId()">
+                            Verify Access
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== RIGHT: Result Panel ===== -->
+            <div class="result-panel">
+                <div class="result-title">ACCESS RESULT</div>
+
+                <!-- Waiting -->
+                <div class="result-waiting" id="resultWaiting">
+                    <div class="waiting-icon">&#128269;</div>
+                    <div class="waiting-text">Waiting for verification...</div>
+                    <div class="waiting-sub">
+                        Scan a QR code or enter a Member ID above
+                    </div>
+                </div>
+
+                <!-- Success -->
+                <div class="result-success" id="resultSuccess" style="display:none;">
+                    <div class="result-icon">&#9989;</div>
+                    <div class="result-status-text">ACCESS GRANTED</div>
+                    <div class="result-member-card">
+                        <div class="result-row">
+                            <span class="result-label">Member Name</span>
+                            <span class="result-value" id="successName">—</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Member ID</span>
+                            <span class="result-value" id="successId">—</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Plan</span>
+                            <span class="result-value" id="successPlan">—</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Status</span>
+                            <span class="result-value" style="color:#16A34A;">Active &#10003;</span>
+                        </div>
+                    </div>
+                    <button class="result-reset-btn" onclick="resetScanner()">
+                        Scan Next Member &#8594;
+                    </button>
+                </div>
+
+                <!-- Denied -->
+                <div class="result-denied" id="resultDenied" style="display:none;">
+                    <div class="result-icon">&#10060;</div>
+                    <div class="result-status-text">ACCESS DENIED</div>
+                    <div class="result-denied-msg" id="deniedMsg">—</div>
+                    <div class="result-member-card" id="deniedCard" style="display:none;">
+                        <div class="result-row">
+                            <span class="result-label">Member Name</span>
+                            <span class="result-value" id="deniedName">—</span>
+                        </div>
+                        <div class="result-row">
+                            <span class="result-label">Member ID</span>
+                            <span class="result-value" id="deniedId">—</span>
+                        </div>
+                    </div>
+                    <button class="result-reset-btn denied" onclick="resetScanner()">
+                        Try Again &#8594;
+                    </button>
+                </div>
+
+                <!-- Scan History -->
+                <div class="scan-history">
+                    <div class="history-title">Recent Scans Today</div>
+                    <div id="scanHistory">
+                        <div class="history-empty">No scans yet today</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+    <script src="~/Scripts/scanner.js"></script>
+    <script src="~/Scripts/admin.js"></script>
+</body>
+</html>

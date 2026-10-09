@@ -1,0 +1,117 @@
+﻿@model SwiftyS26.Models.MemberForm
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.ActivePage = "payments";
+    ViewBag.PageTitle = "Payment History";
+    string nextBillingDate = ViewBag.NextBillingDate ?? "—";
+}
+
+@section head {
+    <link href="~/Content/payments.css" rel="stylesheet" />
+}
+
+<div class="section-header">
+    <div class="section-title">Payment History</div>
+    <div class="section-sub">All your GymHub transactions in one place</div>
+</div>
+
+<!-- Summary Cards -->
+<div class="payment-summary-cards">
+    <div class="pay-sum-card">
+        <div class="pay-sum-icon green">
+            <i class="fas fa-credit-card"></i>
+        </div>
+        <div class="pay-sum-info">
+            <div class="pay-sum-label">Total Paid</div>
+            <div class="pay-sum-value">
+                R @((Model.Payments != null && Model.Payments.Any()
+                    ? Model.Payments.Where(p => p.Status == "Paid" || p.Status == "Success").Sum(p => p.Amount)
+                    : 0).ToString("F2"))
+            </div>
+        </div>
+    </div>
+    <div class="pay-sum-card">
+        <div class="pay-sum-icon orange">
+            <i class="fas fa-calendar"></i>
+        </div>
+        <div class="pay-sum-info">
+            <div class="pay-sum-label">Next Payment Due</div>
+            <div class="pay-sum-value">@(Model.Status == "Active" ? "R" + Model.MonthlyFee.ToString("F2") : "N/A")</div>
+        </div>
+    </div>
+    <div class="pay-sum-card">
+        <div class="pay-sum-icon blue">
+            <i class="fas fa-calendar-alt"></i>
+        </div>
+        <div class="pay-sum-info">
+            <div class="pay-sum-label">Next Billing Date</div>
+            <div class="pay-sum-value">@nextBillingDate</div>
+        </div>
+    </div>
+</div>
+
+<!-- Transactions Table -->
+<div class="dash-card">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fas fa-receipt"></i> All Transactions
+        </div>
+        <button class="card-action-btn" onclick="downloadStatement()">
+            <i class="fas fa-download"></i> Download Statement
+        </button>
+    </div>
+    <div class="payments-table-wrap">
+        <table class="payments-table">
+            <thead>
+                <tr>
+                    <th><i class="fas fa-calendar"></i> Date</th>
+                    <th><i class="fas fa-tag"></i> Description</th>
+                    <th><i class="fas fa-credit-card"></i> Method</th>
+                    <th><i class="fas fa-coin"></i> Amount</th>
+                    <th><i class="fas fa-flag-checkered"></i> Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Payments != null && Model.Payments.Count > 0)
+                {
+                    foreach (var p in Model.Payments.OrderByDescending(x => x.PaymentDate))
+                    {
+                        <tr>
+                            <td class="payment-date-cell">@p.PaymentDate.ToString("dd MMM yyyy")</td>
+                            <td class="payment-desc-cell">@p.Description</td>
+                            <td class="payment-method-cell">@p.Method</td>
+                            <td class="payment-amount-cell">R @p.Amount.ToString("F2")</td>
+                            <td class="payment-status-cell">
+                                <span class="pay-status @p.Status.ToLower()">@p.Status</span>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="5" class="empty-table">
+                            <i class="fas fa-credit-card"></i>
+                            <p>No payment records yet</p>
+                            <span>First debit on <strong>@nextBillingDate</strong></span>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+    var memberInfo = {
+        name:            '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(Model.FullName))',
+        firstName:       '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(Model.FirstName))',
+        memberNumber:    '@Model.MemberNumber',
+        plan:            '@Model.Plan',
+        monthlyFee:      @Model.MonthlyFee,
+        status:          '@Model.Status',
+        nextBillingDate: '@nextBillingDate'
+    };
+    </script>
+}

@@ -1,0 +1,357 @@
+﻿@{
+    Layout = Session["LoggedInAdmin"] != null ? "~/Views/Shared/_AdminLayout.cshtml" : "~/Views/Shared/_StoreStaffLayout.cshtml";
+    ViewBag.Title = "Scan for Pickup";
+    ViewBag.PageTitle = "SCAN FOR PICKUP";
+}
+
+<style>
+    @@keyframes sp-fadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes sp-scanLine {
+        0% {
+            top: 0;
+        }
+
+        100% {
+            top: 100%;
+        }
+    }
+
+    @@keyframes sp-successPop {
+        0% {
+            transform: scale(.6);
+            opacity: 0;
+        }
+
+        60% {
+            transform: scale(1.08);
+        }
+
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    .sp-wrap {
+        max-width: 480px;
+        margin: 0 auto;
+        animation: sp-fadeUp .4s ease both;
+    }
+
+    .sp-header {
+        margin-bottom: 18px;
+    }
+
+        .sp-header h2 {
+            font-family: 'Bebas Neue',sans-serif;
+            font-size: 24px;
+            letter-spacing: 1px;
+        }
+
+    #sp-reader {
+        width: 100%;
+        border-radius: 14px;
+        overflow: hidden;
+        background: #000;
+        position: relative;
+    }
+
+    .sp-scan-frame {
+        position: absolute;
+        inset: 20%;
+        border: 2px solid rgba(255,255,255,.5);
+        border-radius: 12px;
+        pointer-events: none;
+    }
+
+    .sp-scan-line {
+        position: absolute;
+        left: 20%;
+        right: 20%;
+        height: 2px;
+        background: #22D3EE;
+        box-shadow: 0 0 8px #22D3EE;
+        animation: sp-scanLine 1.8s ease-in-out infinite alternate;
+    }
+
+    .sp-status {
+        text-align: center;
+        padding: 16px;
+        font-size: 13px;
+        color: #64748b;
+    }
+
+    .sp-result-card {
+        display: none;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 24px;
+        animation: sp-successPop .4s cubic-bezier(.34,1.56,.64,1) both;
+    }
+
+    .sp-result-icon {
+        font-size: 36px;
+        text-align: center;
+        margin-bottom: 12px;
+    }
+
+    .sp-result-title {
+        font-weight: 800;
+        font-size: 17px;
+        text-align: center;
+        margin-bottom: 4px;
+    }
+
+    .sp-result-sub {
+        font-size: 13px;
+        color: #64748b;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .sp-sig-label {
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: #334155;
+    }
+
+    #signature-pad-canvas {
+        width: 100%;
+        height: 180px;
+        border: 2px dashed rgba(0,0,0,.15);
+        border-radius: 12px;
+        touch-action: none;
+        background: #FAFBFF;
+    }
+
+    .sp-sig-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .sp-clear-btn {
+        flex: 1;
+        padding: 10px;
+        background: #F1F5F9;
+        border: none;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 12.5px;
+        cursor: pointer;
+        color: #334155;
+    }
+
+    .sp-confirm-btn {
+        flex: 2;
+        padding: 12px;
+        background: linear-gradient(135deg,#16A34A,#15803D);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-weight: 800;
+        font-size: 13.5px;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(22,163,74,.3);
+    }
+
+        .sp-confirm-btn:disabled {
+            background: #94A3B8;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+    .sp-scan-again {
+        display: block;
+        width: 100%;
+        margin-top: 14px;
+        padding: 10px;
+        background: none;
+        border: 1.5px solid rgba(0,0,0,.1);
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 12.5px;
+        cursor: pointer;
+        color: #64748b;
+    }
+
+    @@media (max-width: 500px) {
+        .sp-result-card {
+            padding: 18px;
+        }
+
+        #signature-pad-canvas {
+            height: 150px;
+        }
+    }
+</style>
+
+<div class="sp-wrap">
+    <div class="sp-header"><h2><i class="fas fa-qrcode" style="color:#2563EB;"></i> Scan for Pickup</h2></div>
+
+    <div id="sp-reader">
+        <div class="sp-scan-frame"><div class="sp-scan-line"></div></div>
+    </div>
+    <div class="sp-status" id="sp-status">Ask the member to show their GymHub QR code.</div>
+
+    <div class="sp-result-card" id="sp-result">
+        <div class="sp-result-icon" id="sp-result-icon"></div>
+        <div class="sp-result-title" id="sp-result-title"></div>
+        <div class="sp-result-sub" id="sp-result-sub"></div>
+
+        <div id="sp-signature-section" style="display:none;">
+            <div class="sp-sig-label">Member's signature to confirm collection:</div>
+            <canvas id="signature-pad-canvas"></canvas>
+            <div class="sp-sig-actions">
+                <button type="button" class="sp-clear-btn" id="sp-clear-btn">Clear</button>
+                <button type="button" class="sp-confirm-btn" id="sp-confirm-btn" disabled>
+                    <i class="fas fa-check"></i> Confirm Collection
+                </button>
+            </div>
+        </div>
+
+        <button type="button" class="sp-scan-again" id="sp-scan-again">Scan Another</button>
+    </div>
+</div>
+
+@using (Html.BeginForm("MarkCollected", "StoreAdmin", FormMethod.Post, new { id = "collectForm", style = "display:none;" }))
+{
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="orderId" id="collect_OrderId" />
+    <input type="hidden" name="signatureData" id="collect_SignatureData" />
+}
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+<script>
+(function () {
+    var statusEl = document.getElementById('sp-status');
+    var readerEl = document.getElementById('sp-reader');
+    var resultEl = document.getElementById('sp-result');
+    var resultIcon = document.getElementById('sp-result-icon');
+    var resultTitle = document.getElementById('sp-result-title');
+    var resultSub = document.getElementById('sp-result-sub');
+    var sigSection = document.getElementById('sp-signature-section');
+    var canvas = document.getElementById('signature-pad-canvas');
+    var clearBtn = document.getElementById('sp-clear-btn');
+    var confirmBtn = document.getElementById('sp-confirm-btn');
+    var scanAgainBtn = document.getElementById('sp-scan-again');
+    var collectForm = document.getElementById('collectForm');
+    var collectOrderId = document.getElementById('collect_OrderId');
+    var collectSignatureData = document.getElementById('collect_SignatureData');
+
+    var verifyUrl = '@Url.Action("VerifyPickup", "StoreAdmin")';
+    var scanner = null;
+    var signaturePad = null;
+    var busy = false;
+
+    function token() {
+        var el = document.querySelector('input[name="__RequestVerificationToken"]');
+        return el ? el.value : '';
+    }
+
+    function resizeCanvas() {
+        var ratio = Math.max(window.devicePixelRatio || 1, 1);
+        canvas.width = canvas.offsetWidth * ratio;
+        canvas.height = canvas.offsetHeight * ratio;
+        canvas.getContext("2d").scale(ratio, ratio);
+        if (signaturePad) signaturePad.clear();
+    }
+
+    function startScanner() {
+        readerEl.style.display = 'block';
+        resultEl.style.display = 'none';
+        statusEl.style.display = 'block';
+        statusEl.textContent = 'Ask the member to show their GymHub QR code.';
+        busy = false;
+
+        scanner = new Html5Qrcode('sp-reader');
+        scanner.start(
+            { facingMode: 'environment' },
+            { fps: 10, qrbox: { width: 240, height: 240 } },
+            onScanSuccess,
+            function () { }
+        ).catch(function () {
+            statusEl.textContent = 'Could not access the camera. Please allow camera permission and reload.';
+        });
+    }
+
+    function onScanSuccess(decodedText) {
+        if (busy) return;
+        busy = true;
+        if (scanner) scanner.stop().catch(function () {});
+        readerEl.style.display = 'none';
+        statusEl.textContent = 'Checking order...';
+
+        var fd = new FormData();
+        fd.append('qrData', decodedText);
+        fd.append('__RequestVerificationToken', token());
+
+        fetch(verifyUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                statusEl.style.display = 'none';
+                resultEl.style.display = 'block';
+
+                if (data.success) {
+                    resultIcon.textContent = '✅';
+                    resultTitle.textContent = data.referenceNumber + ' — ' + data.memberName;
+                    resultSub.textContent = data.itemCount + ' item(s) ready for collection';
+                    sigSection.style.display = 'block';
+                    collectOrderId.value = data.orderId;
+
+                    setTimeout(function () {
+                        resizeCanvas();
+                        signaturePad = new SignaturePad(canvas, { minWidth: 1, maxWidth: 2.5, penColor: '#0F172A' });
+                        signaturePad.addEventListener('endStroke', function () {
+                            confirmBtn.disabled = signaturePad.isEmpty();
+                        });
+                    }, 50);
+                } else {
+                    resultIcon.textContent = '⚠️';
+                    resultTitle.textContent = data.memberName || 'Not found';
+                    resultSub.textContent = data.message || 'Something went wrong.';
+                    sigSection.style.display = 'none';
+                }
+            })
+            .catch(function () {
+                statusEl.style.display = 'none';
+                resultEl.style.display = 'block';
+                resultIcon.textContent = '⚠️';
+                resultTitle.textContent = 'Something went wrong';
+                resultSub.textContent = 'Please try scanning again.';
+            });
+    }
+
+    clearBtn.addEventListener('click', function () {
+        if (signaturePad) signaturePad.clear();
+        confirmBtn.disabled = true;
+    });
+
+    confirmBtn.addEventListener('click', function () {
+        if (!signaturePad || signaturePad.isEmpty()) return;
+        collectSignatureData.value = signaturePad.toDataURL('image/png');
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Confirming...';
+        collectForm.submit();
+    });
+
+    scanAgainBtn.addEventListener('click', startScanner);
+    window.addEventListener('resize', function () { if (signaturePad) resizeCanvas(); });
+
+    startScanner();
+})();
+</script>

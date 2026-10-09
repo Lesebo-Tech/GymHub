@@ -1,0 +1,737 @@
+﻿@model List<SwiftyS26.Models.MemberProgress>
+@using SwiftyS26.Models
+@{
+    Layout = "~/Views/Shared/_TrainerLayout.cshtml";
+    ViewBag.Title = "Progress Tracking";
+
+    var sessionLogs = ViewBag.SessionLogs as List<WorkoutSessionLog> ?? new List<WorkoutSessionLog>();
+    var members = ViewBag.Members as SelectList;
+    int? selectedMemberId = ViewBag.SelectedMemberId as int?;
+    var progressNotes = ViewBag.ProgressNotes as List<DailyProgressNote> ?? new List<DailyProgressNote>();
+
+    var orderedLogs = sessionLogs.OrderBy(l => l.SessionDate).ToList();
+
+    int statTotal = orderedLogs.Count;
+    int statCompleted = orderedLogs.Count(l => l.Status == "Completed");
+    int statAbsent = orderedLogs.Count(l => l.Status == "Absent");
+    int totalWeeks = statTotal > 0 ? (int)Math.Ceiling(statTotal / 7.0) : 0;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <style>
+        /* Filter Bar */
+        .filter-bar {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 16px 24px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+            .filter-bar label {
+                font-size: 12px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                color: var(--text-muted);
+            }
+
+        .member-select {
+            min-width: 240px;
+            padding: 10px 14px;
+            background: var(--bg3);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            color: var(--text-primary);
+            cursor: pointer;
+            outline: none;
+        }
+
+            .member-select:focus {
+                border-color: var(--blue);
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+
+        /* Stats Row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.2s;
+        }
+
+            .stat-card:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-md);
+            }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+            .stat-icon.blue {
+                background: var(--blue-light);
+                color: var(--blue);
+            }
+
+            .stat-icon.green {
+                background: var(--green-light);
+                color: var(--green);
+            }
+
+            .stat-icon.red {
+                background: var(--red-light);
+                color: var(--red);
+            }
+
+        .stat-info {
+            flex: 1;
+        }
+
+        .stat-number {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 32px;
+            letter-spacing: 1px;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Week Block */
+        .week-block {
+            margin-bottom: 32px;
+        }
+
+        .week-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .week-title {
+            font-size: 14px;
+            font-weight: 800;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .week-line {
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .week-badge {
+            background: var(--blue);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            border-radius: 20px;
+            padding: 4px 12px;
+        }
+
+        /* Day Card */
+        .day-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            margin-bottom: 12px;
+            overflow: hidden;
+        }
+
+        .day-card-header {
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+            .day-card-header:hover {
+                background: var(--bg3);
+            }
+
+        .day-header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .day-number {
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--blue);
+            background: var(--blue-light);
+            border-radius: 8px;
+            padding: 4px 14px;
+            font-family: 'DM Mono', monospace;
+        }
+
+        .day-date {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+            .status-pill.completed {
+                background: var(--green-light);
+                color: var(--green);
+            }
+
+            .status-pill.absent {
+                background: var(--red-light);
+                color: var(--red);
+            }
+
+            .status-pill.auto {
+                background: var(--orange-light);
+                color: var(--orange);
+            }
+
+        .expand-icon {
+            transition: transform 0.2s;
+        }
+
+            .expand-icon.open {
+                transform: rotate(180deg);
+            }
+
+        /* Collapsible Body */
+        .collapsible-body {
+            display: none;
+            border-top: 1px solid var(--border);
+            padding: 20px;
+        }
+
+            .collapsible-body.open {
+                display: block;
+            }
+
+        /* Exercise Chips */
+        .exercise-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 12px 0;
+        }
+
+        .exercise-chip {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 5px 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Absent Note */
+        .absent-note {
+            background: var(--red-light);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 13px;
+            color: var(--red);
+        }
+
+        /* Description Section */
+        .desc-section {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .desc-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .desc-locked {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+            font-size: 13px;
+            color: var(--text-primary);
+            line-height: 1.5;
+            position: relative;
+        }
+
+            .desc-locked i {
+                position: absolute;
+                top: 12px;
+                right: 12px;
+                color: var(--text-muted);
+                font-size: 12px;
+            }
+
+        .desc-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .desc-textarea {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg3);
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            resize: vertical;
+            min-height: 90px;
+            outline: none;
+        }
+
+            .desc-textarea:focus {
+                border-color: var(--blue);
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+
+        .desc-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .desc-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, var(--blue), var(--blue-bright));
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+            .btn-save:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+            }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            z-index: 1000;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+            animation: slideIn 0.3s ease;
+        }
+
+            .toast.success {
+                background: var(--green-light);
+                color: var(--green);
+                border: 1px solid rgba(34, 197, 94, 0.2);
+            }
+
+            .toast.error {
+                background: var(--red-light);
+                color: var(--red);
+                border: 1px solid rgba(239, 68, 68, 0.2);
+            }
+
+        @@keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+        }
+
+            .empty-state i {
+                font-size: 48px;
+                margin-bottom: 16px;
+                opacity: 0.4;
+            }
+
+            .empty-state h3 {
+                font-size: 18px;
+                margin-bottom: 8px;
+            }
+
+            .empty-state p {
+                color: var(--text-muted);
+                font-size: 13px;
+            }
+
+        /* Responsive */
+        @@media (max-width: 900px) {
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+
+            .week-header {
+                flex-wrap: wrap;
+            }
+
+            .day-card-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .desc-footer {
+                flex-direction: column;
+            }
+
+            .btn-save {
+                width: 100%;
+            }
+        }
+    </style>
+}
+
+<!-- Page Header -->
+<div class="section-header">
+    <div class="section-title">Progress Tracking</div>
+    <div class="section-sub">Daily session history and trainer notes — grouped by week</div>
+</div>
+
+<!-- Member Filter -->
+<div class="filter-bar">
+    <label><i class="fas fa-user"></i> Select Member</label>
+    <select id="memberSelect" class="member-select" onchange="filterMember(this.value)">
+        <option value="">— Select a Member —</option>
+        @if (members != null)
+        {
+            foreach (SelectListItem item in members)
+            {
+                <option value="@item.Value" @(item.Selected ? "selected" : "")>@item.Text</option>
+            }
+        }
+    </select>
+</div>
+
+@if (selectedMemberId.HasValue && orderedLogs.Any())
+{
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-icon blue"><i class="fas fa-calendar-alt"></i></div>
+            <div class="stat-info">
+                <div class="stat-number">@statTotal</div>
+                <div class="stat-label">Total Days</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-info">
+                <div class="stat-number">@statCompleted</div>
+                <div class="stat-label">Completed</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon red"><i class="fas fa-times-circle"></i></div>
+            <div class="stat-info">
+                <div class="stat-number">@statAbsent</div>
+                <div class="stat-label">Absent</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Weeks -->
+    for (int w = 0; w < totalWeeks; w++)
+    {
+        var weekLogs = orderedLogs.Skip(w * 7).Take(7).ToList();
+        int weekNum = w + 1;
+        int wCompleted = weekLogs.Count(l => l.Status == "Completed");
+
+        <div class="week-block">
+            <div class="week-header">
+                <span class="week-title"><i class="fas fa-calendar-week"></i> Week @weekNum</span>
+                <div class="week-line"></div>
+                <span class="week-badge">@wCompleted / @weekLogs.Count days completed</span>
+            </div>
+
+            @for (int i = 0; i < weekLogs.Count; i++)
+            {
+                var log = weekLogs[i];
+                int dayNum = (w * 7) + i + 1;
+                var note = progressNotes.FirstOrDefault(n => n.WorkoutSessionLogId == log.WorkoutSessionLogId);
+                bool hasNote = note != null && !string.IsNullOrWhiteSpace(note.TrainerDescription);
+                bool isAbsent = log.Status == "Absent";
+                bool isAuto = log.Notes?.Contains("[Auto]") == true;
+
+                var exercises = string.IsNullOrWhiteSpace(log.ExercisesSummary)
+                    ? new List<string>()
+                    : log.ExercisesSummary.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                          .Select(e => e.Trim())
+                          .Where(e => !string.IsNullOrEmpty(e))
+                          .ToList();
+
+                <div class="day-card" id="dayCard-@log.WorkoutSessionLogId">
+                    <div class="day-card-header" onclick="toggleDay(@log.WorkoutSessionLogId)">
+                        <div class="day-header-left">
+                            <span class="day-number">Day @dayNum</span>
+                            <span class="day-date"><i class="fas fa-calendar-alt"></i> @log.SessionDate.ToString("dddd, dd MMM yyyy")</span>
+                        </div>
+                        <div>
+                            @if (isAbsent)
+                            {
+                                <span class="status-pill absent"><i class="fas fa-user-slash"></i> Absent</span>
+                            }
+                            else if (isAuto)
+                            {
+                                <span class="status-pill auto"><i class="fas fa-clock"></i> Auto-saved</span>
+                            }
+                            else
+                            {
+                                <span class="status-pill completed"><i class="fas fa-check"></i> Completed</span>
+                            }
+                            <i class="fas fa-chevron-down expand-icon" id="icon-@log.WorkoutSessionLogId"></i>
+                        </div>
+                    </div>
+
+                    <div class="collapsible-body" id="body-@log.WorkoutSessionLogId">
+                        @if (isAbsent)
+                        {
+                            <div class="absent-note">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Absent:</strong>
+                                @(string.IsNullOrWhiteSpace(log.Notes) ? "No reason provided." : log.Notes.Replace("[Auto]", "").Trim())
+                            </div>
+                        }
+                        else
+                        {
+                            if (exercises.Any())
+                            {
+                                <div class="exercise-chips">
+                                    @foreach (var ex in exercises)
+                                    {
+                                        <span class="exercise-chip"><i class="fas fa-check-circle"></i> @ex</span>
+                                    }
+                                </div>
+                            }
+
+                            if (log.ActualDurationSeconds > 0)
+                            {
+                                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+                                    <i class="fas fa-clock"></i> Duration: <strong>@(log.ActualDurationSeconds / 60) min @(log.ActualDurationSeconds % 60) sec</strong>
+                                </div>
+                            }
+                        }
+
+                        <div class="desc-section">
+                            <div class="desc-label"><i class="fas fa-pen"></i> Trainer's Description</div>
+                            @if (hasNote)
+                            {
+                                <div class="desc-locked">
+                                    @note.TrainerDescription
+                                    <i class="fas fa-lock"></i>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="desc-form" id="descForm-@log.WorkoutSessionLogId">
+                                    <textarea class="desc-textarea"
+                                              id="descText-@log.WorkoutSessionLogId"
+                                              placeholder="Write a description of how @(log.MemberForm?.FirstName ?? "the member") did on Day @dayNum..."
+                                              maxlength="500"
+                                              oninput="updateCharCount(@log.WorkoutSessionLogId, this)"></textarea>
+                                    <div class="desc-footer">
+                                        <span class="desc-hint" id="charCount-@log.WorkoutSessionLogId">0 / 500 characters — Once saved, this cannot be changed.</span>
+                                        <button class="btn-save" onclick="saveDescription(@log.WorkoutSessionLogId)">
+                                            <i class="fas fa-save"></i> Save Description
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+else if (selectedMemberId.HasValue)
+{
+    <div class="empty-state">
+        <i class="fas fa-calendar-alt"></i>
+        <h3>No sessions yet</h3>
+        <p>No workout sessions have been logged for this member.</p>
+    </div>
+}
+else
+{
+    <div class="empty-state">
+        <i class="fas fa-user-plus"></i>
+        <h3>Select a member</h3>
+        <p>Choose a member from the dropdown above to view their weekly progress.</p>
+    </div>
+}
+
+@Html.AntiForgeryToken()
+
+@section Scripts {
+    <script>
+        function filterMember(memberId) {
+            var baseUrl = '@Url.Action("MemberProgress", "Trainer")';
+            window.location.href = memberId ? (baseUrl + '?memberId=' + memberId) : baseUrl;
+        }
+
+        function toggleDay(logId) {
+            var body = document.getElementById('body-' + logId);
+            var icon = document.getElementById('icon-' + logId);
+            if (body) {
+                body.classList.toggle('open');
+                if (icon) icon.classList.toggle('open');
+            }
+        }
+
+        function updateCharCount(logId, element) {
+            var hint = document.getElementById('charCount-' + logId);
+            if (hint) {
+                hint.textContent = element.value.length + ' / 500 characters — Once saved, this cannot be changed.';
+            }
+        }
+
+        function getToken() {
+            var token = document.querySelector('input[name="__RequestVerificationToken"]');
+            return token ? token.value : '';
+        }
+
+        function showToast(message, type) {
+            var toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            toast.innerHTML = '<i class="fas fa-' + (type === 'success' ? 'check-circle' : 'exclamation-circle') + '"></i> ' + message;
+            document.body.appendChild(toast);
+            setTimeout(function() {
+                toast.style.opacity = '0';
+                setTimeout(function() { toast.remove(); }, 300);
+            }, 3000);
+        }
+
+        function saveDescription(logId) {
+            var textarea = document.getElementById('descText-' + logId);
+            if (!textarea) return;
+
+            var text = textarea.value.trim();
+            if (text.length < 5) {
+                showToast('Please write at least 5 characters.', 'error');
+                return;
+            }
+
+            var btn = textarea.closest('.desc-form')?.querySelector('.btn-save');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Saving...';
+            }
+
+            fetch('@Url.Action("SaveProgressNote", "Trainer")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: '__RequestVerificationToken=' + encodeURIComponent(getToken()) +
+                      '&workoutSessionLogId=' + logId +
+                      '&description=' + encodeURIComponent(text)
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    var form = document.getElementById('descForm-' + logId);
+                    var locked = document.createElement('div');
+                    locked.className = 'desc-locked';
+                    locked.innerHTML = text + '<i class="fas fa-lock"></i>';
+                    form.parentNode.replaceChild(locked, form);
+                    showToast('Description saved and locked.', 'success');
+                } else {
+                    showToast(data.message || 'Could not save description.', 'error');
+                }
+            })
+            .catch(function() {
+                showToast('Network error. Please try again.', 'error');
+            })
+            .finally(function() {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-save"></i> Save Description';
+                }
+            });
+        }
+
+        // Auto-open first day card of each week
+        document.addEventListener('DOMContentLoaded', function() {
+            var firstBodies = document.querySelectorAll('.week-block .day-card:first-child .collapsible-body');
+            firstBodies.forEach(function(body) {
+                body.classList.add('open');
+                var logId = body.id.replace('body-', '');
+                var icon = document.getElementById('icon-' + logId);
+                if (icon) icon.classList.add('open');
+            });
+        });
+    </script>
+}

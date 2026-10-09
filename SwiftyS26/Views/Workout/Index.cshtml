@@ -1,0 +1,199 @@
+﻿@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.ActivePage = "workout";
+    ViewBag.PageTitle = "Workout Hub";
+
+    var categories = ViewBag.Categories as List<SwiftyS26.Models.WorkoutCategory>;
+    var recentSessions = ViewBag.RecentSessions as List<SwiftyS26.Models.WorkoutSession>;
+    var badges = ViewBag.Badges as List<SwiftyS26.Models.UserBadge>;
+
+    int totalWorkouts = ViewBag.TotalWorkouts ?? 0;
+    int streak = ViewBag.Streak ?? 0;
+    int badgeCount = badges != null ? badges.Count : 0;
+    int sessionCount = recentSessions != null ? recentSessions.Count : 0;
+}
+
+@section head {
+    <link href="~/Content/workout.css" rel="stylesheet" />
+}
+
+<!-- Page Header -->
+<div class="section-header">
+    <div class="section-title">Workout Hub</div>
+    <div class="section-sub">Train hard, track smart — reach your fitness goals</div>
+</div>
+
+<!-- ── STATS OVERVIEW ──────────────────────────────────────────────── -->
+<div class="stats-grid-workout">
+    <div class="stat-card-workout">
+        <div class="stat-icon-workout blue">
+            <i class="fas fa-fire"></i>
+        </div>
+        <div class="stat-info-workout">
+            <div class="stat-value-workout">@totalWorkouts</div>
+            <div class="stat-label-workout">Total Workouts</div>
+        </div>
+    </div>
+    <div class="stat-card-workout">
+        <div class="stat-icon-workout orange">
+            <i class="fas fa-bolt"></i>
+        </div>
+        <div class="stat-info-workout">
+            <div class="stat-value-workout">@streak</div>
+            <div class="stat-label-workout">Day Streak</div>
+        </div>
+    </div>
+    <div class="stat-card-workout">
+        <div class="stat-icon-workout green">
+            <i class="fas fa-medal"></i>
+        </div>
+        <div class="stat-info-workout">
+            <div class="stat-value-workout">@badgeCount</div>
+            <div class="stat-label-workout">Achievements</div>
+        </div>
+    </div>
+    <div class="stat-card-workout">
+        <div class="stat-icon-workout purple">
+            <i class="fas fa-calendar-check"></i>
+        </div>
+        <div class="stat-info-workout">
+            <div class="stat-value-workout">@sessionCount</div>
+            <div class="stat-label-workout">Recent Sessions</div>
+        </div>
+    </div>
+</div>
+
+<!-- ── WORKOUT CATEGORIES ──────────────────────────────────────────── -->
+<div class="dash-card">
+    <div class="card-header">
+        <div class="card-title">
+            <i class="fas fa-bullseye"></i> Choose Your Goal
+        </div>
+        <div class="card-sub">Pick a category to get started</div>
+    </div>
+
+    @if (categories == null || !categories.Any())
+    {
+        <div class="empty-state">
+            <i class="fas fa-dumbbell"></i>
+            <p>No categories available</p>
+        </div>
+    }
+    else
+    {
+        <div class="categories-grid">
+            @foreach (var cat in categories)
+            {
+                int planCount = cat.WorkoutPlans != null ? cat.WorkoutPlans.Count : 0;
+
+                <a href="@Url.Action("Category", "Workout", new { slug = cat.Slug })" class="category-card">
+                    <div class="category-icon" style="background: @cat.ColorAccent20; color: @cat.ColorAccent">
+                        <i class="@cat.IconClass"></i>
+                    </div>
+                    <div class="category-info">
+                        <h3 class="category-name">@cat.Name</h3>
+                        <p class="category-desc">@cat.Description</p>
+                        <div class="category-meta">
+                            <i class="fas fa-list"></i>
+                            <span>@planCount @(planCount == 1 ? "plan" : "plans")</span>
+                        </div>
+                    </div>
+                    <i class="fas fa-arrow-right category-arrow"></i>
+                </a>
+            }
+        </div>
+    }
+</div>
+
+<!-- ── RECENT SESSIONS & ACHIEVEMENTS ─────────────────────────────── -->
+<div class="workout-grid-2cols">
+
+    <!-- Recent Sessions -->
+    <div class="dash-card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-history"></i> Recent Sessions
+            </div>
+            <a href="@Url.Action("History", "Workout")" class="card-action-btn">
+                View All <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+
+        @if (recentSessions == null || !recentSessions.Any())
+        {
+            <div class="empty-state">
+                <i class="fas fa-dumbbell"></i>
+                <p>No workouts yet</p>
+                <span>Start your first session above</span>
+            </div>
+        }
+        else
+        {
+            <div class="sessions-list">
+                @foreach (var s in recentSessions)
+                {
+                    string accentColor = (s.Plan != null && s.Plan.Category != null)
+                        ? s.Plan.Category.ColorAccent
+                        : "#3B82F6";
+
+                    string planName = s.Plan != null ? s.Plan.Name : "Workout";
+                    int durationMin = s.TotalDurationSeconds / 60;
+                    bool isCompleted = s.Status == "Completed";
+
+                    <div class="session-item">
+                        <div class="session-dot" style="background: @accentColor"></div>
+                        <div class="session-details">
+                            <div class="session-name">@planName</div>
+                            <div class="session-meta">
+                                <i class="fas fa-calendar-alt"></i> @s.StartedAt.ToString("dd MMM yyyy")
+                                &nbsp;
+                                <i class="fas fa-clock"></i> @durationMin min
+                            </div>
+                        </div>
+                        <span class="session-badge @(isCompleted ? "completed" : "in-progress")">
+                            @s.Status
+                        </span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Achievements / Badges -->
+    <div class="dash-card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-trophy"></i> Achievements
+            </div>
+            <div class="card-sub">Earn badges by completing workouts</div>
+        </div>
+
+        @if (badges == null || !badges.Any())
+        {
+            <div class="empty-state small">
+                <i class="fas fa-medal"></i>
+                <p>No badges yet</p>
+                <span>Complete workouts to earn your first badge</span>
+            </div>
+        }
+        else
+        {
+            <div class="badges-grid">
+                @foreach (var b in badges)
+                {
+                    <div class="badge-item" title="@b.Description">
+                        <i class="@b.IconClass"></i>
+                        <span>@b.BadgeName</span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+</div>
+
+@section scripts {
+    <script>
+        console.log('Workout Hub loaded');
+    </script>
+}

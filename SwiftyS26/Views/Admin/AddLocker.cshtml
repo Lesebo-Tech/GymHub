@@ -1,0 +1,56 @@
+﻿@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewBag.PageTitle = "ADD LOCKER";
+    ViewBag.ActiveNav = "lockers";
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="admin-card" style="border-left: 4px solid var(--red); background: var(--red-light); padding: 14px 20px; color: var(--red); font-weight: 600;">
+        @TempData["Error"]
+    </div>
+}
+
+<div class="admin-card" style="max-width: 480px;">
+    <div class="admin-card-header">
+        <div class="admin-card-title">
+            <i class="fas fa-lock"></i>
+            Add New Locker
+        </div>
+    </div>
+
+    <div style="padding: 24px 22px;">
+        @using (Html.BeginForm("AddLocker", "Admin", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+
+            <div style="margin-bottom: 18px;">
+                <label style="display:block; font-size: 12.5px; font-weight: 700; color: var(--text); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px;">Locker Number</label>
+                <input type="text"
+                       name="lockerNumber"
+                       required
+                       placeholder="e.g. A01"
+                       style="width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 14px; transition: border-color .18s;"
+                       onfocus="this.style.borderColor='var(--blue)'"
+                       onblur="this.style.borderColor='var(--border)'" />
+            </div>
+
+            <div style="margin-bottom: 22px;">
+                <label style="display:block; font-size: 12.5px; font-weight: 700; color: var(--text); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px;">Location</label>
+                <input type="text"
+                       name="location"
+                       placeholder="e.g. Men's Change Room"
+                       style="width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 14px; transition: border-color .18s;"
+                       onfocus="this.style.borderColor='var(--blue)'"
+                       onblur="this.style.borderColor='var(--border)'" />
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-plus"></i> Add Locker
+                </button>
+                @Html.ActionLink("Cancel", "ManageLockers", null, new { @class = "btn-outline" })
+            </div>
+        }
+    </div>
+</div>

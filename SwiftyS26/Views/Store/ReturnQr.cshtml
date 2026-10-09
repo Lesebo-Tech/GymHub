@@ -1,0 +1,402 @@
+﻿@model SwiftyS26.Models.ReturnRequest
+
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.Title = "Return QR Code";
+    ViewBag.PageTitle = "RETURN QR CODE";
+
+    string orderReference =
+        Model.StoreOrderItem?.StoreOrder?.ReferenceNumber ?? "—";
+
+    string productName =
+        Model.StoreOrderItem?.Product?.Name ?? "Store product";
+
+    bool canPresent =
+        Model.Status == "Pending";
+
+    bool completed =
+        Model.Status == "Approved" ||
+        Model.Status == "Refunded" ||
+        Model.Status == "ExchangeCompleted" ||
+        Model.Status == "Rejected" ||
+        Model.Status == "Cancelled";
+}
+
+<style>
+    .rq-page {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 20px 0 50px;
+    }
+
+    .rq-heading {
+        margin-bottom: 20px;
+    }
+
+        .rq-heading h2 {
+            margin: 0 0 6px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 30px;
+            letter-spacing: 1px;
+            color: #0f172a;
+        }
+
+        .rq-heading p {
+            margin: 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+    .rq-card {
+        overflow: hidden;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        box-shadow: 0 12px 35px rgba(15, 23, 42, .06);
+    }
+
+    .rq-card-header {
+        padding: 20px 24px;
+        background: #0f172a;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+
+    .rq-card-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .rq-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 11px;
+        background: #2563eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
+
+    .rq-card-title strong {
+        display: block;
+        font-size: 15px;
+    }
+
+    .rq-card-title span {
+        display: block;
+        margin-top: 3px;
+        color: #cbd5e1;
+        font-size: 12px;
+    }
+
+    .rq-status {
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, .12);
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .rq-body {
+        padding: 28px;
+    }
+
+    .rq-product {
+        padding: 16px;
+        margin-bottom: 24px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+    }
+
+    .rq-product-label {
+        margin-bottom: 5px;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: .6px;
+        text-transform: uppercase;
+    }
+
+    .rq-product-name {
+        color: #0f172a;
+        font-size: 17px;
+        font-weight: 800;
+    }
+
+    .rq-product-details {
+        margin-top: 6px;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .rq-code-container {
+        text-align: center;
+    }
+
+    .rq-code-frame {
+        display: inline-flex;
+        padding: 16px;
+        background: #fff;
+        border: 2px solid #dbeafe;
+        border-radius: 16px;
+    }
+
+        .rq-code-frame img {
+            display: block;
+            width: 240px;
+            height: 240px;
+            max-width: 100%;
+            object-fit: contain;
+        }
+
+    .rq-reference-label {
+        margin-top: 18px;
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .rq-reference {
+        margin-top: 4px;
+        color: #0f172a;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 23px;
+        letter-spacing: 1px;
+    }
+
+    .rq-order-reference {
+        margin-top: 4px;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .rq-notice {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-top: 24px;
+        padding: 14px 16px;
+        border-radius: 11px;
+        font-size: 13px;
+        line-height: 1.55;
+    }
+
+        .rq-notice.ready {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: #1d4ed8;
+        }
+
+        .rq-notice.processing {
+            background: #fffbeb;
+            border: 1px solid #fde68a;
+            color: #a16207;
+        }
+
+        .rq-notice.finished {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            color: #475569;
+        }
+
+    .rq-actions {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 22px;
+        flex-wrap: wrap;
+    }
+
+    .rq-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 11px 18px;
+        border-radius: 9px;
+        font-size: 13px;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+        .rq-btn.primary {
+            background: #2563eb;
+            color: #fff;
+            border: 1px solid #2563eb;
+        }
+
+        .rq-btn.secondary {
+            background: #fff;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+        }
+
+    @@media print {
+        .rq-heading,
+        .rq-actions,
+        header,
+        nav,
+        aside {
+            display: none !important;
+        }
+
+        .rq-page {
+            padding: 0;
+        }
+
+        .rq-card {
+            box-shadow: none;
+        }
+    }
+
+    @@media (max-width: 600px) {
+        .rq-body {
+            padding: 20px 16px;
+        }
+
+        .rq-code-frame img {
+            width: 210px;
+            height: 210px;
+        }
+
+        .rq-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="rq-page">
+
+    <div class="rq-heading">
+        <h2>
+            <i class="fas fa-qrcode" style="color:#2563eb;"></i>
+            Return QR Code
+        </h2>
+
+        <p>
+            Present this QR code with the physical product at GymHub.
+        </p>
+    </div>
+
+    <div class="rq-card">
+
+        <div class="rq-card-header">
+            <div class="rq-card-title">
+                <div class="rq-icon">
+                    <i class="fas fa-rotate-left"></i>
+                </div>
+
+                <div>
+                    <strong>Return or Exchange Request</strong>
+                    <span>Secure item-inspection identification</span>
+                </div>
+            </div>
+
+            <span class="rq-status">
+                @Model.Status
+            </span>
+        </div>
+
+        <div class="rq-body">
+
+            <div class="rq-product">
+                <div class="rq-product-label">
+                    Product being returned
+                </div>
+
+                <div class="rq-product-name">
+                    @productName
+                </div>
+
+                <div class="rq-product-details">
+                    Quantity: @Model.Quantity
+                    &nbsp;&bull;&nbsp;
+                    Reason: @Model.Reason
+                </div>
+            </div>
+
+            <div class="rq-code-container">
+
+                <div class="rq-code-frame">
+                    <img src="data:image/png;base64,@Model.ReturnQrBase64"
+                         alt="QR code for return @Model.ReferenceNumber" />
+                </div>
+
+                <div class="rq-reference-label">
+                    Return reference
+                </div>
+
+                <div class="rq-reference">
+                    @Model.ReferenceNumber
+                </div>
+
+                <div class="rq-order-reference">
+                    Order: @orderReference
+                </div>
+            </div>
+
+            @if (canPresent)
+            {
+                <div class="rq-notice ready">
+                    <i class="fas fa-circle-info"></i>
+
+                    <div>
+                        Bring the product and show this QR code to Store
+                        Staff. Staff will scan it before inspecting the item.
+                        Submission does not guarantee approval.
+                    </div>
+                </div>
+            }
+            else if (completed)
+            {
+                <div class="rq-notice finished">
+                    <i class="fas fa-circle-check"></i>
+
+                    <div>
+                        This request has reached the
+                        <strong>@Model.Status</strong> stage. The QR code
+                        can no longer start a new inspection.
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="rq-notice processing">
+                    <i class="fas fa-clock"></i>
+
+                    <div>
+                        This request is currently being processed.
+                        Its current status is
+                        <strong>@Model.Status</strong>.
+                    </div>
+                </div>
+            }
+
+            <div class="rq-actions">
+                <a href="@Url.Action("MyOrders", "Store")"
+                   class="rq-btn secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    My Orders
+                </a>
+
+                <button type="button"
+                        class="rq-btn primary"
+                        onclick="window.print()">
+                    <i class="fas fa-print"></i>
+                    Print QR
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>

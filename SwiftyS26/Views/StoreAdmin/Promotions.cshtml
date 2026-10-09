@@ -1,0 +1,349 @@
+﻿@model List<SwiftyS26.Models.Promotion>
+@{
+    Layout = Session["LoggedInAdmin"] != null ? "~/Views/Shared/_AdminLayout.cshtml" : "~/Views/Shared/_StoreStaffLayout.cshtml";
+    ViewBag.Title = "Promotions";
+    ViewBag.PageTitle = "PROMOTIONS";
+    var allProducts = ViewBag.AllProducts as List<SwiftyS26.Models.Product> ?? new List<SwiftyS26.Models.Product>();
+    DateTime nearExpiryCutoff = ViewBag.NearExpiryCutoff;
+}
+
+<style>
+    @@keyframes pr-fadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .pr-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+        .pr-header h2 {
+            font-family: 'Bebas Neue',sans-serif;
+            font-size: 26px;
+            letter-spacing: 1px;
+        }
+
+    .pr-section-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: #334155;
+        margin: 22px 0 12px;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+    }
+
+    .pr-toolbar {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .pr-search {
+        flex: 1;
+        min-width: 200px;
+        padding: 10px 14px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 9px;
+        font-size: 13px;
+    }
+
+    .pr-filter-chips {
+        display: flex;
+        gap: 6px;
+    }
+
+    .pr-chip {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 12.5px;
+        font-weight: 700;
+        color: #64748b;
+        background: #fff;
+        border: 1.5px solid #e2e8f0;
+        cursor: pointer;
+    }
+
+        .pr-chip.active {
+            background: #7C3AED;
+            color: #fff;
+            border-color: #7C3AED;
+        }
+
+    .pr-product-row {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        animation: pr-fadeUp .25s ease both;
+    }
+
+        .pr-product-row.near-expiry {
+            border-color: #FCD34D;
+        }
+
+    .pr-product-info {
+        font-size: 13px;
+    }
+
+        .pr-product-info strong {
+            display: block;
+            font-size: 13.5px;
+        }
+
+    .pr-meta {
+        font-size: 11.5px;
+        color: #64748b;
+        margin-top: 2px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .pr-expiry-flag {
+        color: #D97706;
+        font-weight: 700;
+    }
+
+    .pr-create-btn {
+        padding: 8px 16px;
+        background: #7C3AED;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 12.5px;
+        cursor: pointer;
+    }
+
+    .pr-badge {
+        background: #F0FDF4;
+        color: #16A34A;
+        font-size: 10.5px;
+        font-weight: 700;
+        padding: 3px 10px;
+        border-radius: 20px;
+    }
+
+    .pr-active {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        animation: pr-fadeUp .3s ease both;
+    }
+
+    .pr-price-line del {
+        color: #94A3B8;
+        margin-right: 8px;
+    }
+
+    .pr-price-line strong {
+        color: #16A34A;
+    }
+
+    .pr-cancel-btn {
+        padding: 7px 14px;
+        background: #FEF2F2;
+        color: #DC2626;
+        border: 1px solid rgba(220,38,38,.2);
+        border-radius: 7px;
+        font-size: 11.5px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .pr-empty {
+        text-align: center;
+        padding: 30px;
+        color: #64748b;
+        font-size: 13px;
+    }
+</style>
+
+<div class="pr-header"><h2><i class="fas fa-tag" style="color:#7C3AED;"></i> Promotions</h2></div>
+
+@if (TempData["Success"] != null)
+{
+    <div style="background:#F0FDF4;color:#16A34A;border:1px solid rgba(22,163,74,.2);padding:12px 16px;border-radius:10px;margin-bottom:16px;font-weight:600;font-size:13px;">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div style="background:#FEF2F2;color:#DC2626;border:1px solid rgba(220,38,38,.2);padding:12px 16px;border-radius:10px;margin-bottom:16px;font-weight:600;font-size:13px;">@TempData["Error"]</div>
+}
+
+<div class="pr-section-title"><i class="fas fa-tags"></i> Create a Promotion</div>
+
+<div class="pr-toolbar">
+    <input type="text" class="pr-search" id="productSearch" placeholder="Search products..." onkeyup="filterProducts()">
+    <div class="pr-filter-chips">
+        <div class="pr-chip active" id="chipAll" onclick="setFilter('all')">All Products</div>
+        <div class="pr-chip" id="chipExpiry" onclick="setFilter('expiry')">Near Expiry Only</div>
+    </div>
+</div>
+
+<div id="productList">
+    @foreach (var p in allProducts)
+    {
+        bool isNearExpiry = p.ExpiryDate.HasValue && p.ExpiryDate.Value <= nearExpiryCutoff;
+        bool hasActive = p.Promotions != null && p.Promotions.Any(x => x.IsCurrentlyRunning);
+
+        <div class="pr-product-row @(isNearExpiry ? "near-expiry" : "")" data-name="@p.Name.ToLower()" data-expiry="@(isNearExpiry ? "1" : "0")">
+            <div class="pr-product-info">
+                <strong>@p.Name</strong>
+                <div class="pr-meta">
+                    <span>@p.Category — R@(p.NormalPrice.ToString("F2"))</span>
+                    @if (isNearExpiry)
+                    {
+                        <span class="pr-expiry-flag"><i class="fas fa-hourglass-half"></i> Expires @(p.ExpiryDate?.ToString("dd MMM yyyy"))</span>
+                    }
+                </div>
+            </div>
+            @if (!hasActive)
+            {
+                <button type="button" class="pr-create-btn"
+                        onclick="openCreateModal(@p.ProductId, '@Html.Raw(HttpUtility.JavaScriptStringEncode(p.Name))', '@(p.ExpiryDate.HasValue ? p.ExpiryDate.Value.ToString("yyyy-MM-dd") : "")', '@(p.ExpiryDate.HasValue ? p.ExpiryDate.Value.ToString("dd MMM yyyy") : "")')">
+                    Create Promotion
+                </button>
+            }
+            else
+            {
+                <span class="pr-badge">Already on promotion</span>
+            }
+        </div>
+    }
+    @if (!allProducts.Any())
+    {
+        <div class="pr-empty">No active products found.</div>
+    }
+</div>
+<div id="noResults" class="pr-empty" style="display:none;">No products match your search.</div>
+
+<div class="pr-section-title"><i class="fas fa-circle-check"></i> Active Promotions</div>
+@if (!Model.Any())
+{
+    <div class="pr-empty">No active promotions.</div>
+}
+else
+{
+    foreach (var promo in Model)
+    {
+        <div class="pr-active">
+            <div>
+                <strong>@(promo.Product?.Name)</strong> — @promo.DiscountPercent% off
+                <div class="pr-price-line"><del>R@(promo.Product?.NormalPrice.ToString("F2"))</del> <strong>R@(promo.DiscountedPrice.ToString("F2"))</strong></div>
+                <div style="font-size:11.5px;color:#64748b;">@promo.StartDate.ToString("dd MMM") &ndash; @promo.EndDate.ToString("dd MMM yyyy")</div>
+            </div>
+            @if (promo.IsCurrentlyRunning)
+            {
+                <span class="pr-badge">Running</span>
+            }
+            @using (Html.BeginForm("CancelPromotion", "StoreAdmin", FormMethod.Post, new { style = "display:inline;" }))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" value="@promo.PromotionId" />
+                <button type="submit" class="pr-cancel-btn">Cancel</button>
+            }
+        </div>
+    }
+}
+
+<!-- Create Promotion Modal -->
+<div id="createModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:14px;padding:26px;max-width:420px;width:90%;">
+        <div style="font-weight:700;margin-bottom:6px;">Create Promotion — <span id="createProductName"></span></div>
+        <p style="font-size:12px;color:#94A3B8;margin-bottom:16px;" id="createExpiryNote"></p>
+        @using (Html.BeginForm("CreatePromotion", "StoreAdmin", FormMethod.Post))
+        {
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="productId" id="create_ProductId" />
+            <div style="margin-bottom:12px;">
+                <label style="display:block;font-size:12px;font-weight:700;margin-bottom:5px;">Discount %</label>
+                <input type="number" name="discountPercent" min="1" max="90" value="20" required style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px;" />
+            </div>
+            <div style="margin-bottom:12px;">
+                <label style="display:block;font-size:12px;font-weight:700;margin-bottom:5px;">Start Date</label>
+                <input type="date" name="startDate" id="create_StartDate" required style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px;" />
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="display:block;font-size:12px;font-weight:700;margin-bottom:5px;">End Date</label>
+                <input type="date" name="endDate" id="create_EndDate" required style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:8px;" />
+            </div>
+            <div style="display:flex;gap:10px;">
+                <button type="submit" style="flex:1;padding:11px;background:#7C3AED;color:#fff;border:none;border-radius:8px;font-weight:700;">Create Promotion</button>
+                <button type="button" onclick="closeCreateModal()" style="flex:1;padding:11px;background:transparent;border:1px solid #e2e8f0;border-radius:8px;">Cancel</button>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    var currentFilter = 'all';
+
+    function setFilter(filter) {
+        currentFilter = filter;
+        document.getElementById('chipAll').classList.toggle('active', filter === 'all');
+        document.getElementById('chipExpiry').classList.toggle('active', filter === 'expiry');
+        filterProducts();
+    }
+
+    function filterProducts() {
+        var term = document.getElementById('productSearch').value.toLowerCase();
+        var rows = document.querySelectorAll('.pr-product-row');
+        var visibleCount = 0;
+
+        rows.forEach(function (row) {
+            var matchesSearch = row.dataset.name.indexOf(term) !== -1;
+            var matchesFilter = currentFilter === 'all' || row.dataset.expiry === '1';
+            var show = matchesSearch && matchesFilter;
+            row.style.display = show ? 'flex' : 'none';
+            if (show) visibleCount++;
+        });
+
+        document.getElementById('noResults').style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+
+    function openCreateModal(productId, name, expiryDate, expiryDisplay) {
+        document.getElementById('create_ProductId').value = productId;
+        document.getElementById('createProductName').textContent = name;
+        document.getElementById('create_StartDate').value = new Date().toISOString().split('T')[0];
+
+        if (expiryDate) {
+            document.getElementById('createExpiryNote').textContent = 'End date must be before ' + expiryDisplay + '.';
+            var maxEnd = new Date(expiryDate);
+            maxEnd.setDate(maxEnd.getDate() - 1);
+            document.getElementById('create_EndDate').max = maxEnd.toISOString().split('T')[0];
+        } else {
+            document.getElementById('createExpiryNote').textContent = 'This product does not expire — any end date is fine.';
+            document.getElementById('create_EndDate').removeAttribute('max');
+        }
+
+        document.getElementById('createModal').style.display = 'flex';
+    }
+    function closeCreateModal() { document.getElementById('createModal').style.display = 'none'; }
+</script>

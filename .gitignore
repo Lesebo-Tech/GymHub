@@ -1,0 +1,28 @@
+# Visual Studio build files
+.vs/
+**/bin/
+**/obj/
+**/packages/
+*.user
+*.suo
+
+# Local database files
+*.mdf
+*.ldf
+
+# Sensitive configuration
+Web.config
+**/Web.config
+Web.Debug.config
+Web.Release.config
+appsettings.*.json
+
+# Environment variables
+.env
+.env.*s
+
+# Azure publishing profiles and credentials
+**/Properties/PublishProfiles/
+*.pubxml
+*.pubxml.user
+*.publishsettings

@@ -1,0 +1,1257 @@
+﻿@model SwiftyS26.Models.ReturnRequest
+
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewBag.Title = "Return Decision";
+    ViewBag.PageTitle = "RETURN AUTHORISATION";
+
+    var orderItem = Model.StoreOrderItem;
+    var originalProduct =
+        orderItem != null ? orderItem.Product : null;
+
+    var originalOrder =
+        orderItem != null ? orderItem.StoreOrder : null;
+
+    bool memberRequestedExchange =
+        string.Equals(
+            Model.RequestedResolution,
+            "Exchange",
+            StringComparison.OrdinalIgnoreCase);
+
+    bool staffRecommendedExchange =
+        string.Equals(
+            Model.StaffRecommendedResolution,
+            "Exchange",
+            StringComparison.OrdinalIgnoreCase);
+
+    decimal returnCredit =
+        Model.ReturnCreditAmount ??
+        Model.RefundAmount ??
+        0m;
+
+    decimal exchangeTotal =
+        Model.ExchangeTotalAmount ?? 0m;
+
+    decimal exchangeDifference =
+        Model.ExchangePriceDifference ?? 0m;
+
+    string evidencePath = null;
+
+    if (!string.IsNullOrWhiteSpace(
+        Model.InspectionEvidencePath))
+    {
+        evidencePath =
+            Model.InspectionEvidencePath.StartsWith("~")
+                ? Url.Content(Model.InspectionEvidencePath)
+                : Url.Content(
+                    "~/" +
+                    Model.InspectionEvidencePath.TrimStart('/'));
+    }
+}
+
+<style>
+    @@keyframes rdFadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .rd-page,
+    .rd-page * {
+        box-sizing: border-box;
+    }
+
+    .rd-page {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding-bottom: 45px;
+        color: #0f172a;
+    }
+
+    .rd-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+
+    .rd-title {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        margin: 0;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 29px;
+        letter-spacing: 1px;
+    }
+
+    .rd-title-icon {
+        width: 39px;
+        height: 39px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 11px;
+        background: #f5f3ff;
+        color: #7c3aed;
+        font-family: Arial, sans-serif;
+        font-size: 17px;
+    }
+
+    .rd-subtitle {
+        margin: 5px 0 0 50px;
+        color: #64748b;
+        font-size: 12.5px;
+    }
+
+    .rd-back {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 10px 14px;
+        border: 1px solid #dbe3ee;
+        border-radius: 9px;
+        background: #fff;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .rd-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        margin-bottom: 18px;
+        padding: 13px 15px;
+        border: 1px solid #fecaca;
+        border-radius: 10px;
+        background: #fef2f2;
+        color: #dc2626;
+        font-size: 12.5px;
+        font-weight: 600;
+    }
+
+    .rd-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: 20px;
+        align-items: start;
+    }
+
+    .rd-main {
+        min-width: 0;
+    }
+
+    .rd-card {
+        margin-bottom: 18px;
+        overflow: hidden;
+        border: 1px solid #dbe3ee;
+        border-radius: 15px;
+        background: #fff;
+        animation: rdFadeUp .35s ease both;
+    }
+
+    .rd-card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 20px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+
+    .rd-card-icon {
+        flex: 0 0 36px;
+        width: 36px;
+        height: 36px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        background: #eff6ff;
+        color: #2563eb;
+    }
+
+    .rd-card-header h3 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 800;
+    }
+
+    .rd-card-header p {
+        margin: 3px 0 0;
+        color: #64748b;
+        font-size: 11.5px;
+    }
+
+    .rd-card-body {
+        padding: 20px;
+    }
+
+    .rd-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .rd-detail {
+        padding: 12px 13px;
+        border: 1px solid #e2e8f0;
+        border-radius: 9px;
+        background: #f8fafc;
+    }
+
+    .rd-detail-label {
+        display: block;
+        margin-bottom: 4px;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .rd-detail-value {
+        display: block;
+        color: #0f172a;
+        font-size: 12.5px;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    .rd-note {
+        margin-top: 13px;
+        padding: 13px 15px;
+        border-left: 3px solid #2563eb;
+        border-radius: 0 9px 9px 0;
+        background: #eff6ff;
+        color: #334155;
+        font-size: 12px;
+        line-height: 1.6;
+    }
+
+    .rd-staff-result {
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        margin-bottom: 15px;
+        padding: 13px 15px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+        .rd-staff-result.approve {
+            background: #f0fdf4;
+            color: #15803d;
+        }
+
+        .rd-staff-result.reject {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .rd-staff-result.escalate {
+            background: #fffbeb;
+            color: #b45309;
+        }
+
+    .rd-evidence {
+        display: block;
+        width: 100%;
+        max-height: 330px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        object-fit: contain;
+        background: #f8fafc;
+    }
+
+    .rd-no-evidence {
+        padding: 35px 20px;
+        border: 2px dashed #cbd5e1;
+        border-radius: 10px;
+        background: #f8fafc;
+        color: #64748b;
+        text-align: center;
+        font-size: 12px;
+    }
+
+    /* Financial information */
+
+    .rd-financial {
+        overflow: hidden;
+        border: 1px solid #dbeafe;
+        border-radius: 11px;
+    }
+
+    .rd-financial-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        padding: 11px 14px;
+        border-bottom: 1px solid #e2e8f0;
+        color: #64748b;
+        font-size: 12px;
+    }
+
+        .rd-financial-row:last-child {
+            border-bottom: none;
+        }
+
+        .rd-financial-row strong {
+            color: #0f172a;
+            text-align: right;
+        }
+
+        .rd-financial-row.total {
+            background: #f8fafc;
+            color: #0f172a;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+    .rd-difference-pay {
+        color: #dc2626 !important;
+    }
+
+    .rd-difference-refund {
+        color: #16a34a !important;
+    }
+
+    /* Form */
+
+    .rd-field {
+        margin-bottom: 17px;
+    }
+
+        .rd-field:last-child {
+            margin-bottom: 0;
+        }
+
+    .rd-label {
+        display: block;
+        margin-bottom: 6px;
+        color: #334155;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .rd-required {
+        color: #dc2626;
+    }
+
+    .rd-select,
+    .rd-textarea {
+        display: block;
+        width: 100%;
+        padding: 11px 12px;
+        border: 1.5px solid #dbe3ee;
+        border-radius: 9px;
+        outline: none;
+        background: #fff;
+        color: #0f172a;
+        font-family: inherit;
+        font-size: 13px;
+    }
+
+        .rd-select:focus,
+        .rd-textarea:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+        }
+
+    .rd-textarea {
+        min-height: 115px;
+        resize: vertical;
+        line-height: 1.55;
+    }
+
+    .rd-help {
+        display: block;
+        margin-top: 6px;
+        color: #64748b;
+        font-size: 10.5px;
+    }
+
+    .rd-warning {
+        margin-top: 14px;
+        padding: 13px;
+        border-radius: 9px;
+        background: #fffbeb;
+        color: #92400e;
+        font-size: 10.5px;
+        line-height: 1.6;
+    }
+
+    /* Sidebar */
+
+    .rd-sidebar {
+        position: sticky;
+        top: 20px;
+    }
+
+    .rd-decision-card {
+        overflow: hidden;
+        border: 1px solid #dbe3ee;
+        border-radius: 15px;
+        background: #fff;
+    }
+
+    .rd-decision-header {
+        padding: 17px 19px;
+        background: #0f172a;
+        color: #fff;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    .rd-decision-body {
+        padding: 19px;
+    }
+
+    .rd-summary-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 0;
+        color: #64748b;
+        font-size: 11.5px;
+    }
+
+        .rd-summary-row strong {
+            max-width: 180px;
+            color: #0f172a;
+            text-align: right;
+            overflow-wrap: anywhere;
+        }
+
+    .rd-button {
+        width: 100%;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 11px 14px;
+        border-radius: 9px;
+        font-size: 12px;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .rd-approve-button {
+        border: none;
+        background: #16a34a;
+        color: #fff;
+    }
+
+        .rd-approve-button:hover {
+            background: #15803d;
+        }
+
+    .rd-reject-button {
+        margin-top: 9px;
+        border: 1px solid #fecaca;
+        background: #fff;
+        color: #dc2626;
+    }
+
+    .rd-reject-panel {
+        display: none;
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 1px solid #e2e8f0;
+    }
+
+        .rd-reject-panel.visible {
+            display: block;
+        }
+
+    .rd-reject-submit {
+        border: none;
+        background: #dc2626;
+        color: #fff;
+    }
+
+    .rd-cancel-reject {
+        margin-top: 8px;
+        border: 1px solid #dbe3ee;
+        background: #fff;
+        color: #475569;
+    }
+
+    @@media (max-width: 950px) {
+        .rd-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .rd-sidebar {
+            position: static;
+        }
+    }
+
+    @@media (max-width: 650px) {
+        .rd-header {
+            flex-direction: column;
+        }
+
+        .rd-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .rd-subtitle {
+            margin-left: 0;
+        }
+    }
+</style>
+
+<div class="rd-page">
+    <header class="rd-header">
+        <div>
+            <h2 class="rd-title">
+                <span class="rd-title-icon">
+                    <i class="fas fa-user-shield"></i>
+                </span>
+
+                Return or Exchange Authorisation
+            </h2>
+
+            <p class="rd-subtitle">
+                Review the member request and Store Staff inspection
+                before making the final decision.
+            </p>
+        </div>
+
+        <a href="@Url.Action("Returns", "StoreAdmin")"
+           class="rd-back">
+            <i class="fas fa-arrow-left"></i>
+            Return Queue
+        </a>
+    </header>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="rd-alert">
+            <i class="fas fa-circle-exclamation"></i>
+            <span>@TempData["Error"]</span>
+        </div>
+    }
+
+    <div class="rd-layout">
+        <main class="rd-main">
+            <!-- MEMBER REQUEST -->
+            <section class="rd-card">
+                <div class="rd-card-header">
+                    <div class="rd-card-icon">
+                        <i class="fas fa-file-lines"></i>
+                    </div>
+
+                    <div>
+                        <h3>Member Request</h3>
+                        <p>Original order and requested resolution</p>
+                    </div>
+                </div>
+
+                <div class="rd-card-body">
+                    <div class="rd-grid">
+                        <div class="rd-detail">
+                            <span class="rd-detail-label">
+                                Return Reference
+                            </span>
+
+                            <span class="rd-detail-value">
+                                @Model.ReferenceNumber
+                            </span>
+                        </div>
+
+                        <div class="rd-detail">
+                            <span class="rd-detail-label">
+                                Order Reference
+                            </span>
+
+                            <span class="rd-detail-value">
+                                @(originalOrder != null
+                                    ? originalOrder.ReferenceNumber
+                                    : "—")
+                            </span>
+                        </div>
+
+                        <div class="rd-detail">
+                            <span class="rd-detail-label">
+                                Member
+                            </span>
+
+                            <span class="rd-detail-value">
+                                @(Model.Member != null
+                                    ? Model.Member.FullName
+                                    : "—")
+                            </span>
+                        </div>
+
+                        <div class="rd-detail">
+                            <span class="rd-detail-label">
+                                Requested Date
+                            </span>
+
+                            <span class="rd-detail-value">
+                                @Model.RequestedAt.ToString(
+                                         "dd MMM yyyy, HH:mm")
+                            </span>
+                        </div>
+
+                        <div class="rd-detail">
+                            <span class="rd-detail-label">
+                                Product
+                            </span>
+
+                            <span class="rd-detail-value">
+                                @(originalProduct != null
+                                    ? originalProduct.Name
+                                    : "—")
+                                × @Model.Quantity
+                            </span>
+                        </div>
+
+                        <div class="rd-detail">
+                            <span class="rd-detail-label">
+                                Requested Resolution
+                            </span>
+
+                            <span class="rd-detail-value">
+                                @(memberRequestedExchange
+                                    ? "Exchange"
+                                    : "Refund")
+                            </span>
+                        </div>
+
+                        <div class="rd-detail">
+                            <span class="rd-detail-label">
+                                Reason
+                            </span>
+
+                            <span class="rd-detail-value">
+                                @Model.Reason
+                            </span>
+                        </div>
+
+                        <div class="rd-detail">
+                            <span class="rd-detail-label">
+                                Return Credit
+                            </span>
+
+                            <span class="rd-detail-value">
+                                R@(returnCredit.ToString("F2"))
+                            </span>
+                        </div>
+
+                        @if (memberRequestedExchange)
+                        {
+                            <div class="rd-detail">
+                                <span class="rd-detail-label">
+                                    Replacement
+                                </span>
+
+                                <span class="rd-detail-value">
+                                    @(Model.ExchangeProduct != null
+                                        ? Model.ExchangeProduct.Name
+                                        : "Unavailable")
+                                    × @(Model.ExchangeQuantity ?? 0)
+                                </span>
+                            </div>
+
+                            <div class="rd-detail">
+                                <span class="rd-detail-label">
+                                    Exchange Type
+                                </span>
+
+                                <span class="rd-detail-value">
+                                    @(Model.ExchangeType == "SameProduct"
+                                        ? "Like-for-like"
+                                        : "Different product")
+                                </span>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="rd-note">
+                        <strong>Member description:</strong>
+                        <br />
+
+                        @(string.IsNullOrWhiteSpace(Model.Description)
+                            ? "No description supplied."
+                            : Model.Description)
+                    </div>
+                </div>
+            </section>
+
+            <!-- STAFF INSPECTION -->
+            <section class="rd-card">
+                <div class="rd-card-header">
+                    <div class="rd-card-icon">
+                        <i class="fas fa-magnifying-glass"></i>
+                    </div>
+
+                    <div>
+                        <h3>Store Staff Inspection</h3>
+                        <p>Physical assessment and recommendation</p>
+                    </div>
+                </div>
+
+                <div class="rd-card-body">
+                    <div class="rd-staff-result @(
+                        Model.StaffRecommendation == "Approve"
+                            ? "approve"
+                            : Model.StaffRecommendation == "Reject"
+                                ? "reject"
+                                : "escalate")">
+
+                        <i class="fas @(
+                            Model.StaffRecommendation == "Approve"
+                                ? "fa-circle-check"
+                                : Model.StaffRecommendation == "Reject"
+                                    ? "fa-circle-xmark"
+                                    : "fa-triangle-exclamation")">
+                        </i>
+
+                        Staff recommendation:
+                        @(Model.StaffRecommendation ?? "Not recorded")
+
+                        @if (!string.IsNullOrWhiteSpace(
+                            Model.StaffRecommendedResolution))
+                        {
+                            <span>
+                                — @Model.StaffRecommendedResolution
+                            </span>
+                        }
+                    </div>
+
+                    <div class="rd-grid">
+                        <div class="rd-detail">
+                            <span class="rd-detail-label">
+                                Quantity Presented
+                            </span>
+
+                            <span class="rd-detail-value">
+                                @(Model.QuantityPresented ?? 0)
+                            </span>
+                        </div>
+
+                        <div class="rd-detail">
+                            <span class="rd-detail-label">
+                                Item Condition
+                            </span>
+
+                            <span class="rd-detail-value">
+                                @(Model.ItemCondition ?? "—")
+                            </span>
+                        </div>
+
+                        <div class="rd-detail">
+                            <span class="rd-detail-label">
+                                Packaging
+                            </span>
+
+                            <span class="rd-detail-value">
+                                @(Model.PackagingCondition ?? "—")
+                            </span>
+                        </div>
+
+                        <div class="rd-detail">
+                            <span class="rd-detail-label">
+                                Product Matches Purchase
+                            </span>
+
+                            <span class="rd-detail-value">
+                                @(Model.ProductMatchesPurchase.HasValue
+                                    ? Model.ProductMatchesPurchase.Value
+                                        ? "Yes"
+                                        : "No"
+                                    : "—")
+                            </span>
+                        </div>
+
+                        <div class="rd-detail">
+                            <span class="rd-detail-label">
+                                Accessories Complete
+                            </span>
+
+                            <span class="rd-detail-value">
+                                @(Model.AccessoriesComplete.HasValue
+                                    ? Model.AccessoriesComplete.Value
+                                        ? "Yes"
+                                        : "No"
+                                    : "—")
+                            </span>
+                        </div>
+
+                        <div class="rd-detail">
+                            <span class="rd-detail-label">
+                                Fault Verification
+                            </span>
+
+                            <span class="rd-detail-value">
+                                @(Model.FaultVerification ?? "—")
+                            </span>
+                        </div>
+
+                        <div class="rd-detail">
+                            <span class="rd-detail-label">
+                                Likely Cause
+                            </span>
+
+                            <span class="rd-detail-value">
+                                @(Model.FaultCause ?? "—")
+                            </span>
+                        </div>
+
+                        <div class="rd-detail">
+                            <span class="rd-detail-label">
+                                Staff Disposition
+                            </span>
+
+                            <span class="rd-detail-value">
+                                @(Model.ItemDisposition ?? "—")
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="rd-note">
+                        <strong>Inspection notes:</strong>
+                        <br />
+
+                        @(string.IsNullOrWhiteSpace(
+                            Model.StaffReviewNotes)
+                                ? "No inspection notes recorded."
+                                : Model.StaffReviewNotes)
+                    </div>
+                </div>
+            </section>
+
+            <!-- EVIDENCE -->
+            <section class="rd-card">
+                <div class="rd-card-header">
+                    <div class="rd-card-icon">
+                        <i class="fas fa-camera"></i>
+                    </div>
+
+                    <div>
+                        <h3>Inspection Evidence</h3>
+                        <p>Photograph uploaded during inspection</p>
+                    </div>
+                </div>
+
+                <div class="rd-card-body">
+                    @if (!string.IsNullOrWhiteSpace(evidencePath))
+                    {
+                        <img src="@evidencePath"
+                             class="rd-evidence"
+                             alt="Return inspection evidence" />
+                    }
+                    else
+                    {
+                        <div class="rd-no-evidence">
+                            <i class="fas fa-image"
+                               style="display:block;font-size:25px;margin-bottom:8px;">
+                            </i>
+
+                            No inspection photograph was uploaded.
+                        </div>
+                    }
+                </div>
+            </section>
+
+            <!-- FINANCIAL ASSESSMENT -->
+            <section class="rd-card">
+                <div class="rd-card-header">
+                    <div class="rd-card-icon">
+                        <i class="fas fa-calculator"></i>
+                    </div>
+
+                    <div>
+                        <h3>Financial Assessment</h3>
+                        <p>
+                            Discount-adjusted refund or exchange values
+                        </p>
+                    </div>
+                </div>
+
+                <div class="rd-card-body">
+                    <div class="rd-financial">
+                        <div class="rd-financial-row">
+                            <span>Original return credit</span>
+                            <strong>R@(returnCredit.ToString("F2"))</strong>
+                        </div>
+
+                        @if (memberRequestedExchange)
+                        {
+                            <div class="rd-financial-row">
+                                <span>Replacement product</span>
+
+                                <strong>
+                                    @(Model.ExchangeProduct != null
+                                        ? Model.ExchangeProduct.Name
+                                        : "Unavailable")
+                                </strong>
+                            </div>
+
+                            <div class="rd-financial-row">
+                                <span>Replacement quantity</span>
+
+                                <strong>
+                                    @(Model.ExchangeQuantity ?? 0)
+                                </strong>
+                            </div>
+
+                            <div class="rd-financial-row">
+                                <span>Replacement total</span>
+
+                                <strong>
+                                    R@(exchangeTotal.ToString("F2"))
+                                </strong>
+                            </div>
+
+                            <div class="rd-financial-row total">
+                                @if (exchangeDifference > 0)
+                                {
+                                    <span>Member must pay</span>
+
+                                    <strong class="rd-difference-pay">
+                                        R@(exchangeDifference.ToString("F2"))
+                                    </strong>
+                                }
+                                else if (exchangeDifference < 0)
+                                {
+                                    <span>Refund difference</span>
+
+                                    <strong class="rd-difference-refund">
+                                        R@(Math.Abs(exchangeDifference)
+                                            .ToString("F2"))
+                                    </strong>
+                                }
+                                else
+                                {
+                                    <span>Exchange difference</span>
+
+                                    <strong class="rd-difference-refund">
+                                        R0.00
+                                    </strong>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="rd-financial-row total">
+                                <span>Refund amount</span>
+
+                                <strong class="rd-difference-refund">
+                                    R@(returnCredit.ToString("F2"))
+                                </strong>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- ADMIN DECISION -->
+        <aside class="rd-sidebar">
+            <div class="rd-decision-card">
+                <div class="rd-decision-header">
+                    Admin Final Decision
+                </div>
+
+                <div class="rd-decision-body">
+                    <div class="rd-summary-row">
+                        <span>Return</span>
+                        <strong>@Model.ReferenceNumber</strong>
+                    </div>
+
+                    <div class="rd-summary-row">
+                        <span>Member requested</span>
+
+                        <strong>
+                            @(memberRequestedExchange
+                                ? "Exchange"
+                                : "Refund")
+                        </strong>
+                    </div>
+
+                    <div class="rd-summary-row">
+                        <span>Staff recommended</span>
+
+                        <strong>
+                            @(Model.StaffRecommendation ?? "—")
+                            @if (!string.IsNullOrWhiteSpace(
+                                Model.StaffRecommendedResolution))
+                            {
+                                <text>
+                                    — @Model.StaffRecommendedResolution
+                                </text>
+                            }
+                        </strong>
+                    </div>
+
+                    @using (Html.BeginForm(
+                        "ApproveReturn",
+                        "StoreAdmin",
+                        FormMethod.Post,
+                        new { id = "approveReturnForm" }))
+                    {
+                        @Html.AntiForgeryToken()
+
+                        <input type="hidden"
+                               name="returnRequestId"
+                               value="@Model.ReturnRequestId" />
+
+                        <div class="rd-field"
+                             style="margin-top:17px;">
+                            <label class="rd-label"
+                                   for="approvedResolution">
+                                Approved Resolution
+                                <span class="rd-required">*</span>
+                            </label>
+
+                            <select class="rd-select"
+                                    id="approvedResolution"
+                                    name="approvedResolution"
+                                    required>
+                                <option value="">
+                                    Select final resolution
+                                </option>
+
+                                <option value="Refund"
+                                        @(!memberRequestedExchange ? "selected" : "")>
+                                    Approve Refund
+                                </option>
+
+                                @if (Model.ExchangeProductId.HasValue)
+                                {
+                                    <option value="Exchange"
+                                            @(memberRequestedExchange || staffRecommendedExchange ? "selected" : "")>
+                                        Approve Exchange
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="rd-field">
+                            <label class="rd-label"
+                                   for="itemDisposition">
+                                Final Item Disposition
+                                <span class="rd-required">*</span>
+                            </label>
+
+                            <select class="rd-select"
+                                    id="itemDisposition"
+                                    name="itemDisposition"
+                                    required>
+                                <option value="">
+                                    Select disposition
+                                </option>
+
+                                <option value="Restock"
+                                        @(Model.ItemDisposition == "Restock" ? "selected" : "")>
+                                    Return to Sellable Stock
+                                </option>
+
+                                <option value="Quarantine"
+                                        @(Model.ItemDisposition == "Quarantine" ? "selected" : "")>
+                                    Quarantine as Damaged
+                                </option>
+
+                                <option value="ReturnToSupplier"
+                                        @(Model.ItemDisposition == "ReturnToSupplier" ? "selected" : "")>
+                                    Return to Supplier
+                                </option>
+
+                                <option value="Dispose"
+                                        @(Model.ItemDisposition == "Dispose" ? "selected" : "")>
+                                    Dispose of Item
+                                </option>
+
+                                <option value="AdminDecision"
+                                        @(Model.ItemDisposition == "AdminDecision" ? "selected" : "")>
+                                    Hold for Further Decision
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="rd-field">
+                            <label class="rd-label"
+                                   for="adminDecisionReason">
+                                Final Decision Notes
+                                <span class="rd-required">*</span>
+                            </label>
+
+                            <textarea class="rd-textarea"
+                                      id="adminDecisionReason"
+                                      name="adminDecisionReason"
+                                      minlength="10"
+                                      maxlength="500"
+                                      required
+                                      placeholder="Explain why this return or exchange is being approved."></textarea>
+
+                            <span class="rd-help">
+                                Minimum 10 characters.
+                            </span>
+                        </div>
+
+                        <div id="approvalWarning"
+                             class="rd-warning">
+                            <i class="fas fa-triangle-exclamation"></i>
+                            Confirming may process a Paystack refund or
+                            reserve replacement inventory. Review all
+                            information carefully.
+                        </div>
+
+                        <button type="submit"
+                                class="rd-button rd-approve-button"
+                                onclick="return confirmApproval();">
+                            <i class="fas fa-circle-check"></i>
+                            Confirm Approval
+                        </button>
+                    }
+
+                    <button type="button"
+                            id="showRejectButton"
+                            class="rd-button rd-reject-button">
+                        <i class="fas fa-circle-xmark"></i>
+                        Reject Request
+                    </button>
+
+                    <div id="rejectPanel"
+                         class="rd-reject-panel">
+                        @using (Html.BeginForm(
+                            "RejectReturn",
+                            "StoreAdmin",
+                            FormMethod.Post))
+                        {
+                            @Html.AntiForgeryToken()
+
+                            <input type="hidden"
+                                   name="returnRequestId"
+                                   value="@Model.ReturnRequestId" />
+
+                            <div class="rd-field">
+                                <label class="rd-label"
+                                       for="rejectionReason">
+                                    Rejection Reason
+                                    <span class="rd-required">*</span>
+                                </label>
+
+                                <textarea class="rd-textarea"
+                                          id="rejectionReason"
+                                          name="reason"
+                                          minlength="10"
+                                          maxlength="500"
+                                          required
+                                          placeholder="Explain why this request is being rejected."></textarea>
+                            </div>
+
+                            <button type="submit"
+                                    class="rd-button rd-reject-submit"
+                                    onclick="return confirm('Reject this return request?');">
+                                Confirm Rejection
+                            </button>
+
+                            <button type="button"
+                                    id="cancelRejectButton"
+                                    class="rd-button rd-cancel-reject">
+                                Cancel
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<script>(function () {
+        var showRejectButton =
+            document.getElementById("showRejectButton");
+
+        var cancelRejectButton =
+            document.getElementById("cancelRejectButton");
+
+        var rejectPanel =
+            document.getElementById("rejectPanel");
+
+        var approvedResolution =
+            document.getElementById("approvedResolution");
+
+        var approvalWarning =
+            document.getElementById("approvalWarning");
+
+        showRejectButton.addEventListener(
+            "click",
+            function () {
+                rejectPanel.classList.add("visible");
+                showRejectButton.style.display = "none";
+            }
+        );
+
+        cancelRejectButton.addEventListener(
+            "click",
+            function () {
+                rejectPanel.classList.remove("visible");
+                showRejectButton.style.display = "inline-flex";
+            }
+        );
+
+        approvedResolution.addEventListener(
+            "change",
+            function () {
+                if (approvedResolution.value === "Refund") {
+                    approvalWarning.innerHTML =
+                        '<i class="fas fa-triangle-exclamation"></i> ' +
+                        'Confirming will submit a refund through ' +
+                        'Paystack and cannot be reversed automatically.';
+                } else if (
+                    approvedResolution.value === "Exchange"
+                ) {
+                    approvalWarning.innerHTML =
+                        '<i class="fas fa-box"></i> ' +
+                        'Confirming will reserve replacement stock. ' +
+                        'The exchange is completed later at the store.';
+                } else {
+                    approvalWarning.innerHTML =
+                        '<i class="fas fa-triangle-exclamation"></i> ' +
+                        'Select the final resolution before approving.';
+                }
+            }
+        );
+
+        approvedResolution.dispatchEvent(
+            new Event("change")
+        );
+    })();
+
+    function confirmApproval() {
+        var resolution =
+            document.getElementById(
+                "approvedResolution"
+            ).value;
+
+        if (!resolution) {
+            alert("Please select the final resolution.");
+            return false;
+        }
+
+        if (resolution === "Refund") {
+            return confirm(
+                "Approve this return and process the Paystack refund?"
+            );
+        }
+
+        return confirm(
+            "Approve this exchange and reserve the replacement stock?"
+        );
+    }</script>

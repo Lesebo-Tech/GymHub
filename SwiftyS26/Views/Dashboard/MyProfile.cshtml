@@ -1,0 +1,15 @@
+﻿@model SwiftyS26.Models.MemberForm
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.Active = "Profile";
+}
+
+<h2>Profile</h2>
+
+<div class="dash-card">
+    <input value="@Model.FirstName" />
+    <input value="@Model.LastName" />
+    <input value="@Model.Email" />
+
+    <button onclick="saveProfile()">Save</button>
+</div>

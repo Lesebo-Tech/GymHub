@@ -1,0 +1,959 @@
+﻿@model SwiftyS26.Models.TrainerDashboardViewModel
+@{
+    Layout = "~/Views/Shared/_TrainerLayout.cshtml";
+    ViewBag.Title = "Dashboard";
+
+    string trainerName = ViewBag.TrainerName as string ?? "";
+    string trainerRole = ViewBag.TrainerRole as string ?? "Trainer";
+    string trainerCode = ViewBag.TrainerCode as string ?? "";
+    string specialization = ViewBag.Specialization as string ?? "Fitness";
+    string experienceLevel = ViewBag.ExperienceLevel as string ?? "";
+    string employmentType = ViewBag.EmploymentType as string ?? "";
+    int totalSessions = ViewBag.TotalSessions ?? 0;
+    int totalPrograms = ViewBag.TotalPrograms ?? 0;
+
+    // Greeting
+    int hour = DateTime.Now.Hour;
+    string greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <style>
+        /* ── Base ── */
+        .db-wrap {
+            max-width: 1140px;
+        }
+
+        /* ── Page header ── */
+        .db-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .db-header-left h1 {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin: 0 0 2px;
+        }
+
+        .db-header-left p {
+            font-size: 13px;
+            color: var(--muted);
+            margin: 0;
+        }
+
+        .db-header-right {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+            .db-header-right strong {
+                color: var(--text-primary);
+                font-weight: 700;
+            }
+
+        /* ── Stat cards ── */
+        .stat-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .sc {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px 20px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+
+            .sc:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+            }
+
+        .sc-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 17px;
+        }
+
+            .sc-icon.blue {
+                background: #eff6ff;
+                color: #2563eb;
+            }
+
+            .sc-icon.green {
+                background: #f0fdf4;
+                color: #16a34a;
+            }
+
+            .sc-icon.orange {
+                background: #fff7ed;
+                color: #ea580c;
+            }
+
+            .sc-icon.purple {
+                background: #faf5ff;
+                color: #7c3aed;
+            }
+
+        .sc-label {
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .sc-value {
+            font-size: 30px;
+            font-weight: 800;
+            color: var(--text-primary);
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+            .sc-value.text-val {
+                font-size: 15px;
+                font-weight: 700;
+            }
+
+        .sc-sub {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        /* ── Tabs ── */
+        .tab-bar {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            border-bottom: 1.5px solid var(--border);
+            padding-bottom: 0;
+        }
+
+        .tb {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 10px 18px 11px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--muted);
+            background: none;
+            border: none;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1.5px;
+            transition: color 0.2s, border-color 0.2s;
+            white-space: nowrap;
+        }
+
+            .tb:hover {
+                color: var(--text-primary);
+            }
+
+            .tb.active {
+                color: #2563eb;
+                border-bottom-color: #2563eb;
+            }
+
+            .tb i {
+                font-size: 12px;
+            }
+
+        .tab-panel {
+            display: none;
+        }
+
+            .tab-panel.active {
+                display: block;
+                animation: fadeUp 0.25s ease;
+            }
+
+        @@keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── Section card ── */
+        .sec-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .sec-card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sec-card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+            .sec-card-title i {
+                color: var(--muted);
+                font-size: 13px;
+            }
+
+        /* ── Action link / button ── */
+        .act-link {
+            font-size: 12px;
+            font-weight: 600;
+            color: #2563eb;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+            .act-link:hover {
+                text-decoration: underline;
+            }
+
+        .btn-sm {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s, transform 0.15s;
+        }
+
+            .btn-sm:hover {
+                background: #1d4ed8;
+                transform: translateY(-1px);
+            }
+
+        /* ── Table ── */
+        .dt {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+            .dt th {
+                padding: 11px 16px;
+                text-align: left;
+                font-size: 10.5px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                color: var(--muted);
+                background: var(--bg3);
+                border-bottom: 1px solid var(--border);
+            }
+
+            .dt td {
+                padding: 13px 16px;
+                border-bottom: 1px solid var(--border);
+                font-size: 13px;
+                color: var(--text-primary);
+                vertical-align: middle;
+            }
+
+            .dt tr:last-child td {
+                border-bottom: none;
+            }
+
+            .dt tbody tr:hover td {
+                background: #f8faff;
+            }
+
+            .dt .muted {
+                color: var(--muted);
+            }
+
+        /* ── Badge ── */
+        .bdg {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+            .bdg.blue {
+                background: #eff6ff;
+                color: #2563eb;
+            }
+
+            .bdg.green {
+                background: #f0fdf4;
+                color: #16a34a;
+            }
+
+            .bdg.red {
+                background: #fff1f2;
+                color: #e11d48;
+            }
+
+            .bdg.gold {
+                background: #fefce8;
+                color: #ca8a04;
+            }
+
+            .bdg.purple {
+                background: #faf5ff;
+                color: #7c3aed;
+            }
+
+            .bdg.slate {
+                background: #f1f5f9;
+                color: #64748b;
+            }
+
+        /* ── Inline action buttons (status) ── */
+        .inline-form {
+            display: inline;
+        }
+
+        .act-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg3);
+            cursor: pointer;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+            .act-btn.ok {
+                color: #16a34a;
+            }
+
+                .act-btn.ok:hover {
+                    background: #f0fdf4;
+                    border-color: #bbf7d0;
+                }
+
+            .act-btn.del {
+                color: #e11d48;
+            }
+
+                .act-btn.del:hover {
+                    background: #fff1f2;
+                    border-color: #fecdd3;
+                }
+
+        /* ── Action text links ── */
+        .lnk {
+            font-size: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+            .lnk.green {
+                color: #16a34a;
+            }
+
+                .lnk.green:hover {
+                    text-decoration: underline;
+                }
+
+            .lnk.blue {
+                color: #2563eb;
+            }
+
+                .lnk.blue:hover {
+                    text-decoration: underline;
+                }
+
+        /* ── Programs grid ── */
+        .prog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+            padding: 20px;
+        }
+
+        .prog-card {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+            background: var(--bg2);
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+
+            .prog-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+            }
+
+        .prog-card-head {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .prog-card-icon {
+            font-size: 14px;
+            color: var(--muted);
+            margin-right: 8px;
+        }
+
+        .prog-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .prog-desc {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .prog-dates {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 12px;
+        }
+
+        .prog-ex-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .prog-ex-count {
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .prog-bar {
+            height: 4px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .prog-bar-fill {
+            height: 100%;
+            background: #2563eb;
+            border-radius: 4px;
+        }
+
+        .prog-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        .ptag {
+            padding: 3px 10px;
+            background: #eff6ff;
+            color: #2563eb;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .prog-edit {
+            font-size: 12px;
+            font-weight: 600;
+            color: #2563eb;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+            .prog-edit:hover {
+                text-decoration: underline;
+            }
+
+        /* ── Availability grid ── */
+        .av-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            padding: 20px;
+        }
+
+        .av-day {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 8px;
+            text-align: center;
+            background: var(--bg3);
+        }
+
+            .av-day.on {
+                background: #eff6ff;
+                border-color: #bfdbfe;
+            }
+
+        .av-day-name {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .av-day.on .av-day-name {
+            color: #2563eb;
+        }
+
+        .av-time {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .av-off {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        /* ── Empty state ── */
+        .empty {
+            text-align: center;
+            padding: 48px 20px;
+            color: var(--muted);
+        }
+
+            .empty i {
+                font-size: 32px;
+                margin-bottom: 12px;
+                opacity: 0.35;
+                display: block;
+            }
+
+            .empty p {
+                font-size: 13px;
+                margin: 0 0 16px;
+            }
+
+        .empty-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 18px;
+            background: #eff6ff;
+            color: #2563eb;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+            .empty-btn:hover {
+                background: #dbeafe;
+            }
+
+        /* ── Responsive ── */
+        @@media (max-width: 1000px) {
+            .stat-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .av-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @@media (max-width: 640px) {
+            .stat-row {
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+
+            .tab-bar {
+                overflow-x: auto;
+                padding-bottom: 0;
+            }
+
+            .av-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .prog-grid {
+                grid-template-columns: 1fr;
+                padding: 14px;
+            }
+        }
+
+        @@media (max-width: 420px) {
+            .stat-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+}
+
+<div class="db-wrap">
+
+    <!-- Header -->
+    <div class="db-header">
+        <div class="db-header-left">
+            <h1>Dashboard</h1>
+        </div>
+        <div class="db-header-right">
+            @greeting, <strong>@trainerName</strong> — @DateTime.Now.ToString("dddd, dd MMMM yyyy")
+        </div>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="stat-row">
+        <div class="sc">
+            <div class="sc-icon blue"><i class="fas fa-users"></i></div>
+            <div>
+                <div class="sc-label">Assigned Members</div>
+                <div class="sc-value">@(Model.AssignedMembers?.Count ?? 0)</div>
+                <div class="sc-sub">Active clients</div>
+            </div>
+        </div>
+        <div class="sc">
+            <div class="sc-icon green"><i class="fas fa-calendar-check"></i></div>
+            <div>
+                <div class="sc-label">Upcoming Sessions</div>
+                <div class="sc-value">@totalSessions</div>
+                <div class="sc-sub">Scheduled ahead</div>
+            </div>
+        </div>
+        <div class="sc">
+            <div class="sc-icon orange"><i class="fas fa-dumbbell"></i></div>
+            <div>
+                <div class="sc-label">Workout Programs</div>
+                <div class="sc-value">@totalPrograms</div>
+                <div class="sc-sub">Active programs</div>
+            </div>
+        </div>
+        <div class="sc">
+            <div class="sc-icon purple"><i class="fas fa-user-graduate"></i></div>
+            <div>
+                <div class="sc-label">Specialization</div>
+                <div class="sc-value text-val">@specialization</div>
+                <div class="sc-sub">@experienceLevel@(!string.IsNullOrEmpty(employmentType) ? " · " + employmentType : "")</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+        <button class="tb active" data-tab="members">   <i class="fas fa-users"></i>        Members</button>
+        <button class="tb" data-tab="schedule">  <i class="fas fa-calendar-alt"></i> Schedule</button>
+        <button class="tb" data-tab="programs">  <i class="fas fa-dumbbell"></i>     Programs</button>
+        <button class="tb" data-tab="progress">  <i class="fas fa-chart-line"></i>   Progress</button>
+        <button class="tb" data-tab="avail">     <i class="fas fa-clock"></i>        Availability</button>
+    </div>
+
+    <!-- ══ Members ══ -->
+    <div class="tab-panel active" id="tab-members">
+        <div class="sec-card">
+            <div class="sec-card-head">
+                <div class="sec-card-title"><i class="fas fa-users"></i> Assigned Members</div>
+                <a href="@Url.Action("MyMembers","Trainer")" class="act-link">View all <i class="fas fa-arrow-right"></i></a>
+            </div>
+            @if (Model.AssignedMembers != null && Model.AssignedMembers.Any())
+            {
+                <table class="dt">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Plan</th>
+                            <th>Phone</th>
+                            <th>Assigned</th>
+                            
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var mt in Model.AssignedMembers)
+                        {
+                            var m = mt.Member;
+                            <tr>
+                                <td style="font-weight:600;">@(m?.FullName ?? "—")</td>
+                                <td><span class="bdg gold">@(m?.Plan ?? "—")</span></td>
+                                <td class="muted">@(m?.Phone ?? "—")</td>
+                                <td class="muted">@mt.AssignedDate.ToString("dd MMM yyyy")</td>
+                                
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="empty">
+                    <i class="fas fa-users"></i>
+                    <p>No members assigned yet</p>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ══ Schedule ══ -->
+    <div class="tab-panel" id="tab-schedule">
+        <div class="sec-card">
+            <div class="sec-card-head">
+                <div class="sec-card-title"><i class="fas fa-calendar-alt"></i> Upcoming Sessions</div>
+               
+            </div>
+            @if (Model.UpcomingSessions != null && Model.UpcomingSessions.Any())
+            {
+                <table class="dt">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Member</th>
+                            <th>Type</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in Model.UpcomingSessions)
+                        {
+                            string sc = s.Status == "Completed" ? "green" : s.Status == "Cancelled" ? "red" : "blue";
+                            <tr>
+                                <td>@s.SessionDate.ToString("dd MMM yyyy")</td>
+                                <td class="muted">@s.TimeSlot</td>
+                                <td style="font-weight:600;">@(s.MemberForm?.FullName ?? "—")</td>
+                                <td><span class="bdg slate">@s.SessionType</span></td>
+                                <td class="muted">@s.Duration</td>
+                                <td><span class="bdg @sc">@s.Status</span></td>
+                                <td>
+                                    @using (Html.BeginForm("UpdateSessionStatus", "Trainer", FormMethod.Post, new { @class = "inline-form" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="sessionId" value="@s.SessionId" />
+                                        <input type="hidden" name="status" value="Completed" />
+                                        <button type="submit" class="act-btn ok" title="Mark complete"><i class="fas fa-check"></i></button>
+                                    }
+                                    @using (Html.BeginForm("UpdateSessionStatus", "Trainer", FormMethod.Post, new { @class = "inline-form" }))
+                                    {
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="sessionId" value="@s.SessionId" />
+                                        <input type="hidden" name="status" value="Cancelled" />
+                                        <button type="submit" class="act-btn del" title="Cancel"><i class="fas fa-times"></i></button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="empty">
+                    <i class="fas fa-calendar-alt"></i>
+                    <p>No upcoming sessions scheduled</p>
+                    
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ══ Programs ══ -->
+    <div class="tab-panel" id="tab-programs">
+        <div class="sec-card">
+            <div class="sec-card-head">
+                <div class="sec-card-title"><i class="fas fa-dumbbell"></i> Workout Programs</div>
+                <a href="@Url.Action("CreateWorkoutProgram","Trainer")" class="btn-sm"><i class="fas fa-plus"></i> New Program</a>
+            </div>
+            @if (Model.WorkoutPrograms != null && Model.WorkoutPrograms.Any())
+            {
+                <div class="prog-grid">
+                    @foreach (var wp in Model.WorkoutPrograms)
+                    {
+                        int exCount = wp.ProgramExercises?.Count ?? 0;
+                        int pct = Math.Min(exCount * 12, 100);
+                        <div class="prog-card">
+                            <div class="prog-card-head">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <i class="fas fa-dumbbell prog-card-icon"></i>
+                                    <div class="prog-name">@wp.ProgramName</div>
+                                </div>
+                                <a href="@Url.Action("AddExercises","Trainer",new{programId=wp.WorkoutProgramId})" class="prog-edit">Edit <i class="fas fa-arrow-right"></i></a>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(wp.Description))
+                            {
+                                <div class="prog-desc">@wp.Description</div>
+                            }
+                            <div class="prog-dates">
+                                @wp.StartDate.ToString("dd MMM yyyy")
+                                @if (wp.EndDate.HasValue)
+                                {<text> – @wp.EndDate.Value.ToString("dd MMM yyyy")</text>}
+                            </div>
+                            <div class="prog-ex-row">
+                                <span>Exercises</span>
+                                <span class="prog-ex-count">@exCount</span>
+                            </div>
+                            <div class="prog-bar"><div class="prog-bar-fill" style="width:@pct%"></div></div>
+                            @if (exCount > 0)
+                            {
+                                <div class="prog-tags">
+                                    @foreach (var ex in wp.ProgramExercises.Take(4))
+                                    {
+                                        <span class="ptag">@ex.ExerciseName</span>
+                                    }
+                                    @if (exCount > 4)
+                                    {
+                                        <span class="ptag">+@(exCount - 4) more</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="empty">
+                    <i class="fas fa-dumbbell"></i>
+                    <p>No workout programs yet</p>
+                    <a href="@Url.Action("CreateWorkoutProgram","Trainer")" class="empty-btn"><i class="fas fa-plus"></i> Create a Program</a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ══ Progress ══ -->
+    <div class="tab-panel" id="tab-progress">
+        <div class="sec-card">
+            <div class="sec-card-head">
+                <div class="sec-card-title"><i class="fas fa-chart-line"></i> Recent Progress Logs</div>
+                <a href="@Url.Action("MemberProgress","Trainer")" class="act-link">View all <i class="fas fa-arrow-right"></i></a>
+            </div>
+            @if (Model.ProgressLogs != null && Model.ProgressLogs.Any())
+            {
+                <table class="dt">
+                    <thead>
+                        <tr><th>Date</th><th>Member</th><th>Weight</th><th>Notes</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model.ProgressLogs)
+                        {
+                            <tr>
+                                <td>@p.RecordedDate.ToString("dd MMM yyyy")</td>
+                                <td style="font-weight:600;">@(p.MemberForm?.FullName ?? "—")</td>
+                                <td class="muted">@p.Weight kg</td>
+                                <td class="muted">@((p.Notes?.Length > 60 ? p.Notes.Substring(0,60)+"…" : p.Notes) ?? "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="empty">
+                    <i class="fas fa-chart-line"></i>
+                    <p>No progress logs yet</p>
+                    
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ══ Availability ══ -->
+    <div class="tab-panel" id="tab-avail">
+        <div class="sec-card">
+            <div class="sec-card-head">
+                <div class="sec-card-title"><i class="fas fa-clock"></i> Weekly Availability</div>
+                <a href="@Url.Action("Availability","Trainer")" class="btn-sm"><i class="fas fa-edit"></i> Manage</a>
+            </div>
+            <div class="av-grid">
+                @{
+                    var days = new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+                    var dayAbbr = new[] { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
+                    var availMap = Model.Availability?.ToDictionary(a => a.DayOfWeek, a => a)
+                                   ?? new Dictionary<string, SwiftyS26.Models.TrainerAvailability>();
+                }
+                @for (int di = 0; di < days.Length; di++)
+                {
+                    bool on = availMap.ContainsKey(days[di]) && availMap[days[di]].IsAvailable;
+                    <div class="av-day @(on?"on":"")">
+                        <div class="av-day-name">@dayAbbr[di]</div>
+                        @if (on)
+                        {
+                            <div class="av-time">@availMap[days[di]].StartTime<br />@availMap[days[di]].EndTime</div>
+                        }
+                        else
+                        {
+                            <div class="av-off"><i class="fas fa-ban"></i> Off</div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.tb').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var id = this.dataset.tab;
+                document.querySelectorAll('.tb').forEach(function (b) { b.classList.remove('active'); });
+                document.querySelectorAll('.tab-panel').forEach(function (p) { p.classList.remove('active'); });
+                this.classList.add('active');
+                document.getElementById('tab-' + id).classList.add('active');
+            });
+        });
+    </script>
+}

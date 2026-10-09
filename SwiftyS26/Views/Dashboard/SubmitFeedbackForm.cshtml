@@ -1,0 +1,434 @@
+﻿@model SwiftyS26.Models.Feedback
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.ActivePage = "feedback";
+    ViewBag.PageTitle = "Submit Feedback";
+    var categories = ViewBag.Categories as string[] ?? new string[0];
+}
+
+@section head {
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <style>
+        :root {
+            --blue: #2563eb;
+            --blue-dark: #1d4ed8;
+            --blue-light: #eff6ff;
+            --blue-mid: #dbeafe;
+            --green: #16a34a;
+            --green-light: #f0fdf4;
+            --red: #dc2626;
+            --red-light: #fef2f2;
+            --gold: #d97706;
+            --gold-light: #fffbeb;
+            --text: #0f172a;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --bg2: #ffffff;
+            --bg3: #f1f5f9;
+            --radius: 14px;
+            --radius-sm: 10px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,.06);
+            --shadow-md: 0 4px 16px rgba(0,0,0,.08);
+        }
+
+        /* ── Override global section-header / dash-card locally ── */
+        .section-header {
+            margin-bottom: 26px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .section-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 28px;
+            letter-spacing: 1.5px;
+            color: var(--text);
+        }
+
+        .section-sub {
+            font-size: 13.5px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .dash-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            padding: 24px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+            .card-title i {
+                color: var(--blue);
+            }
+
+        .feedback-card {
+            max-width: 620px;
+        }
+
+        .form-group {
+            margin-bottom: 22px;
+        }
+
+            .form-group label {
+                display: block;
+                font-size: 11px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.6px;
+                color: var(--muted);
+                margin-bottom: 8px;
+            }
+
+            .form-group select,
+            .form-group textarea {
+                width: 100%;
+                font-family: 'DM Sans', sans-serif;
+                font-size: 14px;
+                padding: 12px 14px;
+                border-radius: var(--radius-sm);
+                border: 1.5px solid var(--border);
+                background: var(--bg3);
+                color: var(--text);
+                outline: none;
+                transition: all 0.18s ease;
+            }
+
+                .form-group select:focus,
+                .form-group textarea:focus {
+                    border-color: var(--blue);
+                    box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+                    background: #fff;
+                }
+
+            .form-group textarea {
+                min-height: 120px;
+                resize: vertical;
+                line-height: 1.55;
+            }
+
+        .char-count {
+            text-align: right;
+            font-size: 11.5px;
+            color: #94a3b8;
+            margin-top: 6px;
+        }
+
+        /* Star rating */
+        .star-rating {
+            display: flex;
+            gap: 10px;
+            font-size: 30px;
+            cursor: pointer;
+        }
+
+            .star-rating .fa-star {
+                color: var(--gold);
+                transition: transform 0.15s ease;
+            }
+
+                .star-rating .fa-star:hover {
+                    transform: scale(1.15);
+                }
+
+        .rating-hint {
+            font-size: 12.5px;
+            color: var(--muted);
+            margin-top: 10px;
+            font-weight: 600;
+        }
+
+        .btn-submit-feedback {
+            width: 100%;
+            font-weight: 700;
+            font-size: 14px;
+            padding: 14px;
+            border-radius: var(--radius-sm);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: var(--blue);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(37,99,235,.25);
+            transition: all 0.18s ease;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+            .btn-submit-feedback:hover {
+                background: var(--blue-dark);
+                transform: translateY(-1px);
+            }
+
+            .btn-submit-feedback:disabled {
+                opacity: .6;
+                cursor: not-allowed;
+                transform: none;
+            }
+
+        .modal-error {
+            display: none;
+            background: var(--red-light);
+            border: 1px solid rgba(220,38,38,.2);
+            color: var(--red);
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        /* Success modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15,23,42,.55);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+            .modal-overlay.open {
+                display: flex;
+            }
+
+        .modal-card {
+            background: #fff;
+            border-radius: 20px;
+            padding: 36px 32px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,.15);
+            text-align: center;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .modal-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            margin: 0 auto 16px;
+        }
+
+            .modal-icon.success {
+                background: var(--green-light);
+                color: var(--green);
+            }
+
+        .modal-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 22px;
+            letter-spacing: 1.5px;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .modal-body {
+            font-size: 13.5px;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .modal-btn-row {
+            margin-top: 22px;
+        }
+
+        .modal-btn-confirm {
+            width: 100%;
+            padding: 12px 20px;
+            border-radius: var(--radius-sm);
+            border: none;
+            background: var(--blue);
+            color: #fff;
+            font-size: 13.5px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+            .modal-btn-confirm:hover {
+                background: var(--blue-dark);
+            }
+    </style>
+}
+
+<div class="section-header">
+    <div class="section-title">SUBMIT FEEDBACK</div>
+    <div class="section-sub">Tell us how we're doing — trainers, equipment, facilities, or classes</div>
+</div>
+
+<div class="dash-card feedback-card">
+    <div class="card-title"><i class="fas fa-comment-dots"></i> Your Feedback</div>
+
+    <div id="feedback-form-error" class="modal-error"></div>
+
+    <form id="feedback-form">
+        <div class="form-group">
+            <label for="Category">Category</label>
+            <select name="category" id="Category" required>
+                <option value="" disabled selected>Select a category…</option>
+                @foreach (var cat in categories)
+                {
+                    <option value="@cat">@cat</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Rating</label>
+            <div class="star-rating" id="star-rating">
+                <i class="fa-star far" data-value="1"></i>
+                <i class="fa-star far" data-value="2"></i>
+                <i class="fa-star far" data-value="3"></i>
+                <i class="fa-star far" data-value="4"></i>
+                <i class="fa-star far" data-value="5"></i>
+            </div>
+            <div class="rating-hint" id="rating-hint">Tap a star to rate</div>
+            <input type="hidden" name="rating" id="rating-input" value="0" />
+        </div>
+
+        <div class="form-group">
+            <label for="comments">Comments</label>
+            <textarea name="comments" id="comments" maxlength="1000" required
+                      placeholder="What went well, or what could be better?"></textarea>
+            <div class="char-count"><span id="char-count">0</span>/1000</div>
+        </div>
+
+        <button type="submit" class="btn-submit-feedback" id="feedback-submit-btn">
+            <i class="fas fa-paper-plane"></i> Submit Feedback
+        </button>
+    </form>
+</div>
+
+<!-- Success Modal -->
+<div class="modal-overlay" id="feedbackSuccessModal">
+    <div class="modal-card">
+        <div class="modal-icon success"><i class="fas fa-check-circle"></i></div>
+        <div class="modal-title">Feedback Submitted</div>
+        <div class="modal-body">
+            Thank you — your feedback helps us improve GymHub for everyone.
+        </div>
+        <div class="modal-btn-row">
+            <button class="modal-btn-confirm" onclick="closeFeedbackSuccessModal()">Done</button>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        var commentsEl = document.getElementById('comments');
+        var charCountEl = document.getElementById('char-count');
+        commentsEl.addEventListener('input', function () {
+            charCountEl.textContent = commentsEl.value.length;
+        });
+
+        var stars = document.querySelectorAll('#star-rating .fa-star');
+        var ratingInput = document.getElementById('rating-input');
+        var ratingHint = document.getElementById('rating-hint');
+        var ratingLabels = ['Tap a star to rate', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+        var selectedRating = 0;
+
+        function paintStars(value) {
+            stars.forEach(function (star) {
+                var starValue = parseInt(star.getAttribute('data-value'), 10);
+                if (starValue <= value) {
+                    star.classList.remove('far');
+                    star.classList.add('fas');
+                } else {
+                    star.classList.remove('fas');
+                    star.classList.add('far');
+                }
+            });
+        }
+
+        stars.forEach(function (star) {
+            star.addEventListener('mouseenter', function () {
+                paintStars(parseInt(star.getAttribute('data-value'), 10));
+            });
+            star.addEventListener('click', function () {
+                selectedRating = parseInt(star.getAttribute('data-value'), 10);
+                ratingInput.value = selectedRating;
+                ratingHint.textContent = ratingLabels[selectedRating];
+                paintStars(selectedRating);
+            });
+        });
+
+        document.getElementById('star-rating').addEventListener('mouseleave', function () {
+            paintStars(selectedRating);
+        });
+
+        var form = document.getElementById('feedback-form');
+        var errorBox = document.getElementById('feedback-form-error');
+        var submitBtn = document.getElementById('feedback-submit-btn');
+
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            errorBox.style.display = 'none';
+
+            if (selectedRating < 1) {
+                errorBox.textContent = 'Please select a star rating.';
+                errorBox.style.display = 'block';
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting…';
+
+            var formData = new FormData(form);
+
+            fetch('@Url.Action("SubmitFeedback", "Dashboard")', { method: 'POST', body: formData })
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Feedback';
+
+                    if (data.success) {
+                        openFeedbackSuccessModal();
+                        form.reset();
+                        selectedRating = 0;
+                        ratingInput.value = 0;
+                        ratingHint.textContent = ratingLabels[0];
+                        paintStars(0);
+                        charCountEl.textContent = '0';
+                    } else {
+                        errorBox.textContent = data.message || 'Something went wrong. Please try again.';
+                        errorBox.style.display = 'block';
+                    }
+                })
+                .catch(function () {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Feedback';
+                    errorBox.textContent = 'Network error. Please check your connection and try again.';
+                    errorBox.style.display = 'block';
+                });
+        });
+
+        function openFeedbackSuccessModal() {
+            document.getElementById('feedbackSuccessModal').classList.add('open');
+        }
+        function closeFeedbackSuccessModal() {
+            document.getElementById('feedbackSuccessModal').classList.remove('open');
+        }
+    </script>
+}

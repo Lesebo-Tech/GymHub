@@ -1,0 +1,416 @@
+﻿/* ===================== WALLET PAGE ===================== */
+
+.section-header {
+    margin-bottom: 28px;
+}
+
+.section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 30px;
+    letter-spacing: 1.5px;
+    color: #0F172A;
+    margin-bottom: 4px;
+}
+
+.section-sub {
+    font-size: 13px;
+    color: #64748B;
+    font-weight: 500;
+}
+
+/* ── Balance cards ── */
+.stats-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.stat-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    background: #F1F5F9;
+    color: #2563EB;
+}
+
+.stat-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #94A3B8;
+    margin-bottom: 2px;
+}
+
+.stat-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+
+    .stat-value.orange {
+        color: #B45309;
+    }
+
+    .stat-value.green {
+        color: #166534;
+    }
+
+.stat-sub {
+    font-size: 11px;
+    color: #94A3B8;
+}
+
+/* ── Dash cards ── */
+.dash-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+}
+
+    .dash-card:last-child {
+        margin-bottom: 0;
+    }
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.card-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0F172A;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+    .card-title i {
+        color: #2563EB;
+        font-size: 16px;
+    }
+
+.card-desc {
+    font-size: 13px;
+    color: #475569;
+    line-height: 1.55;
+    margin-bottom: 14px;
+}
+
+.highlight {
+    color: #1D4ED8;
+    font-weight: 700;
+}
+
+.badge {
+    display: inline-flex;
+    background: #EFF6FF;
+    color: #1D4ED8;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 20px;
+    margin-left: 6px;
+}
+
+.btn-link {
+    color: #2563EB;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: gap 0.15s;
+}
+
+    .btn-link:hover {
+        gap: 8px;
+    }
+
+/* ── Quick buttons ── */
+.quick-btns {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+
+.topup-quick-btn {
+    padding: 7px 16px;
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: #1D4ED8;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+    .topup-quick-btn:hover {
+        background: #2563EB;
+        color: #FFFFFF;
+        border-color: #2563EB;
+    }
+
+/* ── Inputs ── */
+.input-wrap {
+    margin-bottom: 14px;
+}
+
+    .input-wrap label {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #94A3B8;
+        margin-bottom: 6px;
+    }
+
+    .input-wrap input {
+        width: 100%;
+        padding: 10px 13px;
+        background: #F8FAFC;
+        border: 1.5px solid #E2E8F0;
+        border-radius: 10px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 14px;
+        color: #0F172A;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+        .input-wrap input:focus {
+            border-color: #2563EB;
+            background: #FFFFFF;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+        }
+
+/* ── Convert row ── */
+.convert-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 14px;
+    align-items: end;
+    margin-bottom: 14px;
+}
+
+.preview {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 10px;
+    padding: 10px 16px;
+    text-align: center;
+    min-width: 130px;
+}
+
+.preview-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #94A3B8;
+    margin-bottom: 3px;
+}
+
+.preview-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 1px;
+    color: #B45309;
+}
+
+/* ── Buttons ── */
+.btn-primary,
+.btn-warning {
+    width: 100%;
+    padding: 11px;
+    border: none;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    transition: opacity 0.15s;
+}
+
+.btn-primary {
+    background: #2563EB;
+    color: #FFFFFF;
+}
+
+.btn-warning {
+    background: #B45309;
+    color: #FFFFFF;
+}
+
+    .btn-primary:hover,
+    .btn-warning:hover {
+        opacity: 0.88;
+    }
+
+/* ── Feedback boxes ── */
+.error-box,
+.success-box {
+    padding: 10px 14px;
+    border-radius: 0;
+    border-left: 3px solid;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 14px;
+}
+
+.error-box {
+    background: #FEF2F2;
+    border-color: #EF4444;
+    color: #B91C1C;
+}
+
+.success-box {
+    background: #F0FDF4;
+    border-color: #22C55E;
+    color: #15803D;
+}
+
+/* ── History grid ── */
+.history-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+/* ── Card action button ── */
+.card-action-btn {
+    background: #F1F5F9;
+    border: none;
+    color: #64748B;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 7px;
+    transition: background 0.15s, color 0.15s;
+}
+
+    .card-action-btn:hover {
+        background: #E2E8F0;
+        color: #1D4ED8;
+    }
+
+/* ── Loading ── */
+.loading {
+    text-align: center;
+    padding: 20px;
+    color: #94A3B8;
+    font-size: 13px;
+}
+
+    .loading i {
+        margin-right: 7px;
+    }
+
+/* ── Products grid ── */
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.product-card {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 12px;
+    padding: 14px 16px;
+    transition: border-color 0.15s;
+}
+
+    .product-card:hover {
+        border-color: #93C5FD;
+    }
+
+.product-name {
+    font-weight: 700;
+    color: #0F172A;
+    margin-bottom: 4px;
+    font-size: 13px;
+}
+
+.product-points {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    color: #B45309;
+    margin-bottom: 10px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+    .stats-grid-2,
+    .history-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .convert-row {
+        grid-template-columns: 1fr;
+    }
+
+    .preview {
+        min-width: auto;
+    }
+}
+
+@media (max-width: 600px) {
+    .dash-card {
+        padding: 16px;
+    }
+
+    .stat-card {
+        padding: 14px 16px;
+    }
+
+    .stat-value {
+        font-size: 24px;
+    }
+
+    .section-title {
+        font-size: 26px;
+    }
+
+    .products-grid {
+        grid-template-columns: 1fr;
+    }
+}

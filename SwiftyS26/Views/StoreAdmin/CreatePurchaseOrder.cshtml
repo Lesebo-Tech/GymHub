@@ -1,0 +1,404 @@
+﻿@model SwiftyS26.Models.PurchaseOrderCreateViewModel
+
+@{
+    Layout = Session["LoggedInAdmin"] != null
+        ? "~/Views/Shared/_AdminLayout.cshtml"
+        : "~/Views/Shared/_StoreStaffLayout.cshtml";
+
+    ViewBag.Title = "Create Purchase Order";
+    ViewBag.PageTitle = "STOCK PROCUREMENT";
+}
+
+<style>
+    .form-shell {
+        max-width: 1100px;
+        margin: auto;
+        color: #0f172a;
+    }
+
+    .doc-head,
+    .section {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 18px;
+    }
+
+    .doc-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        border-top: 5px solid #2563eb;
+    }
+
+    .eyebrow {
+        font-size: 11px;
+        letter-spacing: 1.5px;
+        color: #2563eb;
+        font-weight: 800;
+    }
+
+    .doc-head h2 {
+        margin: 4px 0;
+        font-size: 28px;
+    }
+
+    .section h3 {
+        font-size: 14px;
+        margin: 0 0 18px;
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+    }
+
+    .full {
+        grid-column: 1 / -1;
+    }
+
+    label {
+        display: block;
+        font-size: 11px;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: #64748b;
+        margin-bottom: 6px;
+    }
+
+    input,
+    select,
+    textarea {
+        width: 100%;
+        padding: 11px;
+        border: 1px solid #cbd5e1;
+        border-radius: 9px;
+        box-sizing: border-box;
+    }
+
+    .item {
+        display: grid;
+        grid-template-columns: 2.2fr .75fr .8fr .8fr .9fr auto;
+        gap: 10px;
+        align-items: end;
+        padding: 12px 0;
+        border-bottom: 1px solid #eef2f7;
+    }
+
+    .metric {
+        padding: 11px;
+        background: #f8fafc;
+        border-radius: 9px;
+        font-size: 13px;
+    }
+
+    .remove {
+        border: 0;
+        background: #fee2e2;
+        color: #b91c1c;
+        padding: 11px;
+        border-radius: 9px;
+    }
+
+    .totals {
+        margin: 18px 0 0 auto;
+        max-width: 330px;
+    }
+
+    .total-line {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px;
+    }
+
+    .grand {
+        font-size: 19px;
+        font-weight: 800;
+        border-top: 1px solid #cbd5e1;
+    }
+
+    .authority {
+        padding: 14px;
+        border-radius: 10px;
+        background: #eff6ff;
+        color: #1d4ed8;
+        margin-top: 18px;
+    }
+
+    .actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+    }
+
+    .btn {
+        border: 0;
+        border-radius: 10px;
+        padding: 12px 20px;
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .primary {
+        background: #2563eb;
+        color: white;
+    }
+
+    .secondary {
+        background: white;
+        border: 1px solid #cbd5e1;
+        color: #334155;
+    }
+
+    .validation-summary-errors {
+        background: #fef2f2;
+        color: #b91c1c;
+        padding: 12px;
+        border-radius: 10px;
+        margin-bottom: 16px;
+    }
+
+    @@media (max-width: 800px) {
+        .grid,
+        .item {
+            grid-template-columns: 1fr;
+        }
+
+        .full {
+            grid-column: auto;
+        }
+    }
+</style>
+
+<div class="form-shell">
+
+    <div class="doc-head">
+        <div>
+            <div class="eyebrow">GYMHUB • PROCUREMENT</div>
+            <h2>Purchase Order</h2>
+            <div style="color:#64748b">Formal request to replenish gym-store inventory</div>
+        </div>
+        <div>
+            <strong>@DateTime.Now.ToString("dd MMM yyyy")</strong><br />
+            <small>Reference generated on submission</small>
+        </div>
+    </div>
+
+    @using (Html.BeginForm("CreatePurchaseOrder", "StoreAdmin", FormMethod.Post, new { id = "poForm" }))
+    {
+        @Html.AntiForgeryToken()
+        @Html.ValidationSummary(false)
+
+        <div class="section">
+            <h3>SUPPLIER & ORDER INFORMATION</h3>
+            <div class="grid">
+                <div>
+                    <label>Supplier *</label>
+                    @Html.DropDownListFor(x => x.SupplierId, Model.Suppliers, "Select supplier", new { @required = "required" })
+                </div>
+                <div>
+                    <label>Purpose *</label>
+                    @Html.DropDownListFor(x => x.OrderPurpose, new[]
+                    {
+                        new SelectListItem { Text = "Low stock replenishment", Value = "Low stock replenishment" },
+                        new SelectListItem { Text = "Planned stock replenishment", Value = "Planned stock replenishment" },
+                        new SelectListItem { Text = "New product launch", Value = "New product launch" },
+                        new SelectListItem { Text = "Seasonal demand", Value = "Seasonal demand" }
+                    }, "Select purpose", new { @required = "required" })
+                </div>
+                <div>
+                    <label>Requested Delivery *</label>
+                    @Html.TextBoxFor(x => x.RequestedDeliveryDate, "{0:yyyy-MM-dd}", new
+                    {
+                        type = "date",
+                        min = DateTime.Today.ToString("yyyy-MM-dd"),
+                        required = "required"
+                    })
+                </div>
+                <div>
+                    <label>Priority *</label>
+                    @Html.DropDownListFor(x => x.Priority, new[]
+                    {
+                        new SelectListItem { Text = "Normal", Value = "Normal" },
+                        new SelectListItem { Text = "Urgent", Value = "Urgent" }
+                    })
+                </div>
+                <div class="full">
+                    <label>Internal Notes</label>
+                    @Html.TextAreaFor(model => model.InternalNotes, new
+                    {
+                        rows = "3",
+                        placeholder = "Reason, timing or instructions for this procurement..."
+                    })
+                    @Html.ValidationMessageFor(model => model.InternalNotes)
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>ITEMS TO ORDER</h3>
+
+            <div id="items"></div>
+
+            <button class="btn secondary" type="button" id="addItem">
+                <i class="fas fa-plus"></i> Add Product
+            </button>
+
+            <div class="totals">
+                <div class="total-line grand">
+                    <span>Total</span>
+                    <span id="grandTotal">R0.00</span>
+                </div>
+            </div>
+
+            <div class="authority" id="authority">Add items to calculate the approval requirement.</div>
+        </div>
+
+        <div class="actions">
+            <a class="btn secondary" href="@Url.Action("PurchaseOrders")">Cancel</a>
+            <button class="btn primary" type="submit">Submit Purchase Order</button>
+        </div>
+    }
+</div>
+
+<script>
+    (function () {
+        var products = [];
+        var threshold = 2000;
+        var supplierSelect = document.getElementById('SupplierId');
+        var itemsContainer = document.getElementById('items');
+        var addButton = document.getElementById('addItem');
+
+        function productOptions() {
+            var html = '<option value="">Select product</option>';
+            products.forEach(function (product) {
+                html += '<option value="' + product.id + '">' +
+                    product.name + (product.preferred ? ' ★' : '') + '</option>';
+            });
+            return html;
+        }
+
+        function reindexRows() {
+            var rows = itemsContainer.querySelectorAll('.item');
+            rows.forEach(function (row, index) {
+                row.querySelector('.product').name = 'Items[' + index + '].ProductId';
+                row.querySelector('.qty').name = 'Items[' + index + '].Quantity';
+                row.querySelector('.cost').name = 'Items[' + index + '].UnitCost';
+            });
+        }
+
+        function addRow() {
+            if (!supplierSelect.value) {
+                alert('Please select a supplier first.');
+                return;
+            }
+            if (!products.length) {
+                alert('This supplier has no active products in its catalogue.');
+                return;
+            }
+
+            var row = document.createElement('div');
+            row.className = 'item';
+            row.innerHTML =
+                '<div><label>Product *</label><select class="product" required>' + productOptions() + '</select></div>' +
+                '<div><label>Current</label><div class="metric current">—</div></div>' +
+                '<div><label>Reorder</label><div class="metric reorder">—</div></div>' +
+                '<div><label>Quantity *</label><input class="qty" type="number" min="1" value="1" required></div>' +
+                '<div><label>Unit Cost *</label><input class="cost" type="number" min="0.01" step="0.01" required>' +
+                '<small class="price-note" style="display:block;color:#64748b;margin-top:4px"></small></div>' +
+                '<button type="button" class="remove">×</button>';
+
+            itemsContainer.appendChild(row);
+            wireRow(row);
+            reindexRows();
+            calculateTotals();
+        }
+
+        function wireRow(row) {
+            var productSelect = row.querySelector('.product');
+            var costInput = row.querySelector('.cost');
+
+            productSelect.addEventListener('change', function () {
+                var selected = products.find(function (p) {
+                    return String(p.id) === String(productSelect.value);
+                });
+
+                if (!selected) return;
+                row.querySelector('.current').textContent = selected.stock;
+                row.querySelector('.reorder').textContent = selected.reorder;
+                row.querySelector('.qty').value = Math.max(selected.reorder - selected.stock, 1);
+                costInput.value = Number(selected.unitCost).toFixed(2);
+                costInput.setAttribute('data-catalogue-cost', selected.unitCost);
+                row.querySelector('.price-note').textContent =
+                    'Saved supplier price • ' + selected.deliveryDays + ' delivery day(s)';
+                calculateTotals();
+            });
+
+            row.querySelectorAll('input').forEach(function (input) {
+                input.addEventListener('input', calculateTotals);
+            });
+
+            row.querySelector('.remove').addEventListener('click', function () {
+                row.remove();
+                reindexRows();
+                calculateTotals();
+            });
+        }
+
+        function calculateTotals() {
+            var total = 0;
+            var unusualPrice = false;
+
+            itemsContainer.querySelectorAll('.item').forEach(function (row) {
+                var quantity = Number(row.querySelector('.qty').value) || 0;
+                var costInput = row.querySelector('.cost');
+                var cost = Number(costInput.value) || 0;
+                var savedCost = Number(costInput.getAttribute('data-catalogue-cost')) || 0;
+                total += quantity * cost;
+
+                if (savedCost > 0 && cost > savedCost * 1.15) {
+                    unusualPrice = true;
+                    row.querySelector('.price-note').innerHTML =
+                        '<span style="color:#D97706;font-weight:700">⚠ More than 15% above saved price</span>';
+                }
+            });
+
+            document.getElementById('grandTotal').textContent = 'R' + total.toFixed(2);
+            var urgent = document.getElementById('Priority').value === 'Urgent';
+            var requiresApproval = total > threshold || unusualPrice || urgent;
+            document.getElementById('authority').innerHTML = requiresApproval
+                ? '⚠ <strong>Admin approval required.</strong> High order value, urgent priority or unusual pricing detected.'
+                : '✓ <strong>Routine procurement.</strong> This order is within staff authority.';
+        }
+
+        function loadSupplierProducts() {
+            products = [];
+            itemsContainer.innerHTML = '';
+            calculateTotals();
+            if (!supplierSelect.value) return;
+
+            fetch('@Url.Action("GetSupplierProducts", "StoreAdmin")?supplierId=' + supplierSelect.value,
+                { credentials: 'same-origin' })
+                .then(function (response) { return response.json(); })
+                .then(function (result) {
+                    if (!result.success) throw new Error(result.message || 'Unable to load products.');
+                    products = result.products || [];
+                    if (products.length) addRow();
+                    else alert('No products are linked to this supplier. Ask an admin to update the supplier catalogue.');
+                })
+                .catch(function (error) { alert(error.message); });
+        }
+
+        supplierSelect.addEventListener('change', loadSupplierProducts);
+        document.getElementById('Priority').addEventListener('change', calculateTotals);
+        addButton.addEventListener('click', addRow);
+        addButton.disabled = !supplierSelect.value;
+        supplierSelect.addEventListener('change', function () {
+            addButton.disabled = !supplierSelect.value;
+        });
+
+        if (supplierSelect.value) loadSupplierProducts();
+    })();
+</script>

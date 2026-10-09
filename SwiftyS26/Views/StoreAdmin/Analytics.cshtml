@@ -1,0 +1,458 @@
+﻿@{
+    Layout = Session["LoggedInAdmin"] != null ? "~/Views/Shared/_AdminLayout.cshtml" : "~/Views/Shared/_StoreStaffLayout.cshtml";
+    ViewBag.Title = "Store Analytics";
+    ViewBag.PageTitle = "STORE ANALYTICS";
+
+    decimal totalRevenue = ViewBag.TotalRevenue;
+    decimal avgOrderValue = ViewBag.AverageOrderValue;
+    decimal revenueChange = ViewBag.RevenueChangePercent;
+    decimal ordersChange = ViewBag.OrdersChangePercent;
+    decimal customersChange = ViewBag.CustomersChangePercent;
+    var monthLabels = ViewBag.MonthLabels as List<string>;
+    var monthRevenue = ViewBag.MonthRevenue as List<decimal>;
+    var sparkDays = ViewBag.SparkDays as List<string>;
+    var revenueSparkline = ViewBag.RevenueSparkline as List<decimal>;
+    var ordersSparkline = ViewBag.OrdersSparkline as List<int>;
+    var statusBreakdown = ViewBag.StatusBreakdown as List<SwiftyS26.Models.StatusBreakdownViewModel>;
+    var topProducts = ViewBag.TopProducts as List<SwiftyS26.Models.TopProductViewModel>;
+    var categoryBreakdown = ViewBag.CategoryBreakdown as List<SwiftyS26.Models.CategoryRevenueViewModel>;
+    var recentOrders = ViewBag.RecentOrders as List<SwiftyS26.Models.StoreOrder>;
+    var recentOrderMembers = ViewBag.RecentOrderMembers as Dictionary<int, string>;
+    string selectedRange = ViewBag.SelectedRange;
+
+    int totalAlerts = (int)ViewBag.LowStockCount + (int)ViewBag.OutOfStockCount + (int)ViewBag.NearExpiryCount + (int)ViewBag.PendingReturnsCount + (int)ViewBag.PendingPurchaseOrdersCount;
+}
+
+<style>
+    @@keyframes an-fadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .an-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+        .an-header h2 {
+            font-family: 'Bebas Neue',sans-serif;
+            font-size: 26px;
+            letter-spacing: 1px;
+        }
+
+    .an-range-tabs {
+        display: flex;
+        gap: 4px;
+        background: #F1F5F9;
+        border-radius: 10px;
+        padding: 4px;
+    }
+
+    .an-range-tab {
+        padding: 7px 14px;
+        border-radius: 7px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #64748b;
+        text-decoration: none;
+    }
+
+        .an-range-tab.active {
+            background: #fff;
+            color: #2563EB;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08);
+        }
+
+    .an-alert-bar {
+        background: #FFFBEB;
+        border: 1px solid #FCD34D;
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+        animation: an-fadeUp .3s ease both;
+    }
+
+        .an-alert-bar.clear {
+            background: #F0FDF4;
+            border-color: #BBF7D0;
+        }
+
+    .an-alert-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12.5px;
+        font-weight: 700;
+        color: #92400E;
+    }
+
+        .an-alert-pill a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .an-alert-pill .num {
+            background: #D97706;
+            color: #fff;
+            font-size: 11px;
+            padding: 1px 7px;
+            border-radius: 20px;
+        }
+
+    .an-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit,minmax(230px,1fr));
+        gap: 14px;
+        margin-bottom: 22px;
+    }
+
+    .an-stat {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 20px;
+        animation: an-fadeUp .35s ease both;
+    }
+
+    .an-stat-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .an-stat-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 9px;
+        background: #EFF6FF;
+        color: #2563EB;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+        font-size: 14px;
+    }
+
+    .an-stat-label {
+        font-size: 11.5px;
+        color: #64748b;
+        margin-bottom: 4px;
+    }
+
+    .an-stat-value {
+        font-family: 'Bebas Neue',sans-serif;
+        font-size: 26px;
+    }
+
+    .an-stat-change {
+        font-size: 11.5px;
+        font-weight: 700;
+        margin-top: 4px;
+    }
+
+        .an-stat-change.up {
+            color: #16A34A;
+        }
+
+        .an-stat-change.down {
+            color: #DC2626;
+        }
+
+        .an-stat-change.flat {
+            color: #94A3B8;
+        }
+
+    .an-sparkline {
+        width: 80px;
+        height: 36px;
+    }
+
+    .an-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 16px;
+        margin-bottom: 20px;
+    }
+
+    @@media (max-width: 900px) {
+        .an-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .an-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 22px;
+        animation: an-fadeUp .4s ease both;
+    }
+
+    .an-card-title {
+        font-weight: 700;
+        font-size: 14px;
+        margin-bottom: 16px;
+    }
+
+    .an-table-wrap table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+    .an-table-wrap th {
+        text-align: left;
+        padding: 8px 10px;
+        font-size: 10px;
+        text-transform: uppercase;
+        color: #94A3B8;
+        font-weight: 700;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .an-table-wrap td {
+        padding: 10px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .an-order-badge {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        padding: 3px 9px;
+        border-radius: 20px;
+    }
+
+        .an-order-badge.Collected {
+            background: #F0FDF4;
+            color: #16A34A;
+        }
+
+        .an-order-badge.ReadyForPickup {
+            background: #EFF6FF;
+            color: #2563EB;
+        }
+
+        .an-order-badge.Uncollected {
+            background: #F1F5F9;
+            color: #64748B;
+        }
+
+        .an-order-badge.Paid, .an-order-badge.Preparing {
+            background: #FFFBEB;
+            color: #D97706;
+        }
+</style>
+
+<div class="an-header">
+    <h2><i class="fas fa-chart-line" style="color:#2563EB;"></i> Store Analytics</h2>
+    <div class="an-range-tabs">
+        <a href="@Url.Action("Analytics", new { range = "7d" })" class="an-range-tab @(selectedRange == "7d" ? "active" : "")">7D</a>
+        <a href="@Url.Action("Analytics", new { range = "30d" })" class="an-range-tab @(selectedRange == "30d" ? "active" : "")">30D</a>
+        <a href="@Url.Action("Analytics", new { range = "90d" })" class="an-range-tab @(selectedRange == "90d" ? "active" : "")">90D</a>
+        <a href="@Url.Action("Analytics", new { range = "6m" })" class="an-range-tab @(selectedRange == "6m" ? "active" : "")">6M</a>
+        <a href="@Url.Action("Analytics", new { range = "all" })" class="an-range-tab @(selectedRange == "all" ? "active" : "")">All</a>
+    </div>
+</div>
+
+@if (totalAlerts > 0)
+{
+    <div class="an-alert-bar">
+        <strong style="font-size:12.5px;color:#92400E;"><i class="fas fa-triangle-exclamation"></i> Needs attention:</strong>
+        @if ((int)ViewBag.OutOfStockCount > 0)
+        {
+            <span class="an-alert-pill"><a href="@Url.Action("Index", "StoreAdmin")">Out of Stock <span class="num">@ViewBag.OutOfStockCount</span></a></span>
+        }
+        @if ((int)ViewBag.LowStockCount > 0)
+        {
+            <span class="an-alert-pill"><a href="@Url.Action("Index", "StoreAdmin")">Low Stock <span class="num">@ViewBag.LowStockCount</span></a></span>
+        }
+        @if ((int)ViewBag.NearExpiryCount > 0)
+        {
+            <span class="an-alert-pill"><a href="@Url.Action("Promotions", "StoreAdmin")">Near Expiry <span class="num">@ViewBag.NearExpiryCount</span></a></span>
+        }
+        @if ((int)ViewBag.PendingReturnsCount > 0)
+        {
+            <span class="an-alert-pill"><a href="@Url.Action("Returns", "StoreAdmin")">Returns Awaiting Decision <span class="num">@ViewBag.PendingReturnsCount</span></a></span>
+        }
+        @if ((int)ViewBag.PendingPurchaseOrdersCount > 0)
+        {
+            <span class="an-alert-pill"><a href="@Url.Action("PurchaseOrders", "StoreAdmin")">POs Awaiting Approval <span class="num">@ViewBag.PendingPurchaseOrdersCount</span></a></span>
+        }
+    </div>
+}
+else
+{
+    <div class="an-alert-bar clear"><strong style="font-size:12.5px;color:#166534;"><i class="fas fa-circle-check"></i> Nothing needs your attention right now.</strong></div>
+}
+
+<div class="an-stats">
+    <div class="an-stat">
+        <div class="an-stat-top">
+            <div>
+                <div class="an-stat-icon"><i class="fas fa-sack-dollar"></i></div>
+                <div class="an-stat-label">Total Revenue</div>
+                <div class="an-stat-value">R@(totalRevenue.ToString("N0"))</div>
+                <div class="an-stat-change @(revenueChange > 0 ? "up" : revenueChange < 0 ? "down" : "flat")">
+                    <i class="fas fa-arrow-@(revenueChange >= 0 ? "up" : "down")"></i> @(Math.Abs(revenueChange))% vs last month
+                </div>
+            </div>
+            <canvas class="an-sparkline" id="sparkRevenue"></canvas>
+        </div>
+    </div>
+    <div class="an-stat" style="animation-delay:.05s;">
+        <div class="an-stat-top">
+            <div>
+                <div class="an-stat-icon" style="background:#F5F3FF;color:#7C3AED;"><i class="fas fa-receipt"></i></div>
+                <div class="an-stat-label">Total Orders</div>
+                <div class="an-stat-value">@ViewBag.TotalOrders</div>
+                <div class="an-stat-change @(ordersChange > 0 ? "up" : ordersChange < 0 ? "down" : "flat")">
+                    <i class="fas fa-arrow-@(ordersChange >= 0 ? "up" : "down")"></i> @(Math.Abs(ordersChange))% vs last month
+                </div>
+            </div>
+            <canvas class="an-sparkline" id="sparkOrders"></canvas>
+        </div>
+    </div>
+    <div class="an-stat" style="animation-delay:.1s;">
+        <div class="an-stat-icon" style="background:#F0FDF4;color:#16A34A;"><i class="fas fa-users"></i></div>
+        <div class="an-stat-label">Total Customers</div>
+        <div class="an-stat-value">@ViewBag.TotalCustomers</div>
+        <div class="an-stat-change @(customersChange > 0 ? "up" : customersChange < 0 ? "down" : "flat")">
+            <i class="fas fa-arrow-@(customersChange >= 0 ? "up" : "down")"></i> @(Math.Abs(customersChange))% vs last month
+        </div>
+    </div>
+    <div class="an-stat" style="animation-delay:.15s;">
+        <div class="an-stat-icon" style="background:#FFFBEB;color:#D97706;"><i class="fas fa-calculator"></i></div>
+        <div class="an-stat-label">Average Order Value</div>
+        <div class="an-stat-value">R@(avgOrderValue.ToString("N2"))</div>
+    </div>
+</div>
+
+<div class="an-grid">
+    <div class="an-card">
+        <div class="an-card-title">Revenue Trend</div>
+        <canvas id="revenueChart" height="90"></canvas>
+    </div>
+    <div class="an-card">
+        <div class="an-card-title">Order Status Breakdown</div>
+        <canvas id="statusChart" height="200"></canvas>
+    </div>
+</div>
+
+<div class="an-grid">
+    <div class="an-card">
+        <div class="an-card-title">Top Selling Products</div>
+        <div class="an-table-wrap">
+            <table>
+                <thead><tr><th>Product</th><th>Qty Sold</th><th>Earning</th></tr></thead>
+                <tbody>
+                    @foreach (var p in topProducts)
+                    {
+                        <tr>
+                            <td><strong>@(p.Product?.Name)</strong></td>
+                            <td>@p.TotalQuantity</td>
+                            <td>R@(p.TotalEarning.ToString("F2"))</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            @if (!topProducts.Any())
+            {
+                <div style="text-align:center;padding:30px;color:#64748b;">No sales yet.</div>
+            }
+        </div>
+    </div>
+    <div class="an-card">
+        <div class="an-card-title">Revenue by Category</div>
+        <canvas id="categoryChart" height="200"></canvas>
+    </div>
+</div>
+
+<div class="an-card">
+    <div class="an-card-title">Recent Orders</div>
+    <div class="an-table-wrap">
+        <table>
+            <thead><tr><th>Reference</th><th>Customer</th><th>Date</th><th>Status</th><th>Total</th></tr></thead>
+            <tbody>
+                @foreach (var o in recentOrders)
+                {
+                    <tr>
+                        <td><strong>@o.ReferenceNumber</strong></td>
+                        <td>@(recentOrderMembers.ContainsKey(o.MemberId) ? recentOrderMembers[o.MemberId] : "—")</td>
+                        <td>@o.CreatedAt.ToString("dd MMM, HH:mm")</td>
+                        <td><span class="an-order-badge @o.Status">@o.Status</span></td>
+                        <td>R@(o.FinalTotal.ToString("F2"))</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        @if (!recentOrders.Any())
+        {
+            <div style="text-align:center;padding:30px;color:#64748b;">No orders yet.</div>
+        }
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    var monthLabels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(monthLabels));
+    var monthRevenue = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(monthRevenue));
+    var sparkDays = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(sparkDays));
+    var revenueSparkline = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(revenueSparkline));
+    var ordersSparkline = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ordersSparkline));
+    var statusLabels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(statusBreakdown.Select(s => s.Status)));
+    var statusCounts = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(statusBreakdown.Select(s => s.Count)));
+    var categoryLabels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(categoryBreakdown.Select(c => c.Category)));
+    var categoryRevenue = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(categoryBreakdown.Select(c => c.Revenue)));
+
+    function sparkline(id, data, color) {
+        new Chart(document.getElementById(id), {
+            type: 'line',
+            data: { labels: sparkDays, datasets: [{ data: data, borderColor: color, borderWidth: 2, pointRadius: 0, fill: false, tension: 0.4 }] },
+            options: {
+                responsive: false,
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                scales: { x: { display: false }, y: { display: false } },
+                elements: { line: { borderJoinStyle: 'round' } }
+            }
+        });
+    }
+    sparkline('sparkRevenue', revenueSparkline, '#2563EB');
+    sparkline('sparkOrders', ordersSparkline, '#7C3AED');
+
+    new Chart(document.getElementById('revenueChart'), {
+        type: 'line',
+        data: {
+            labels: monthLabels,
+            datasets: [{ data: monthRevenue, borderColor: '#2563EB', backgroundColor: 'rgba(37,99,235,.08)', fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: '#2563EB' }]
+        },
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+
+    new Chart(document.getElementById('statusChart'), {
+        type: 'doughnut',
+        data: { labels: statusLabels, datasets: [{ data: statusCounts, backgroundColor: ['#2563EB', '#7C3AED', '#16A34A', '#D97706', '#DC2626', '#64748B'] }] },
+        options: { plugins: { legend: { position: 'bottom' } } }
+    });
+
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'bar',
+        data: { labels: categoryLabels, datasets: [{ data: categoryRevenue, backgroundColor: '#7C3AED', borderRadius: 6 }] },
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+</script>

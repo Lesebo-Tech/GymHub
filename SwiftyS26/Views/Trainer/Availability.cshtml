@@ -1,0 +1,536 @@
+﻿@model List<SwiftyS26.Models.TrainerAvailability>
+@{
+    Layout = "~/Views/Shared/_TrainerLayout.cshtml";
+    ViewBag.Title = "Manage Availability";
+
+    var days = new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+    var dayAbbr = new[] { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
+    var availMap = Model?.ToDictionary(a => a.DayOfWeek, a => a) ?? new Dictionary<string, SwiftyS26.Models.TrainerAvailability>();
+    var timeSlots = new[] {
+        "05:00","06:00","07:00","08:00","09:00","10:00","11:00","12:00",
+        "13:00","14:00","15:00","16:00","17:00","18:00","19:00","20:00","21:00","22:00"
+    };
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <style>
+        /* ── Page wrapper ── */
+        .avail-page {
+            max-width: 1100px;
+        }
+
+        /* ── Alerts ── */
+        .alert {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 13px 18px;
+            border-radius: 10px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            font-weight: 600;
+            animation: slideDown 0.3s ease;
+        }
+
+        .alert-success {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #bbf7d0;
+        }
+
+        .alert-danger {
+            background: #fff1f2;
+            color: #e11d48;
+            border: 1px solid #fecdd3;
+        }
+
+        @@keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ── Page header ── */
+        .page-header {
+            margin-bottom: 28px;
+        }
+
+            .page-header h1 {
+                font-size: 22px;
+                font-weight: 800;
+                color: var(--text-primary);
+                margin: 0 0 4px;
+            }
+
+            .page-header p {
+                font-size: 13px;
+                color: var(--muted);
+                margin: 0;
+            }
+
+        /* ── Summary strip ── */
+        .summary-strip {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px 20px;
+            margin-bottom: 28px;
+        }
+
+        .summary-strip-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--muted);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+            .summary-strip-label i {
+                color: var(--blue);
+            }
+
+        .summary-pills {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .spill {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 90px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg3);
+            gap: 5px;
+            flex: 1;
+        }
+
+            .spill.on {
+                background: #eff6ff;
+                border-color: #bfdbfe;
+            }
+
+        .spill-day {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            color: var(--muted);
+        }
+
+        .spill.on .spill-day {
+            color: #2563eb;
+        }
+
+        .spill-time {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .spill-off {
+            font-size: 11px;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* ── Grid of day cards ── */
+        .day-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 14px;
+            margin-bottom: 28px;
+        }
+
+        /* ── Day card ── */
+        .dc {
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            background: var(--bg2);
+            overflow: hidden;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+            .dc.on {
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 3px rgba(59,130,246,0.10);
+            }
+
+        .dc-head {
+            padding: 11px 13px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg3);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .dc.on .dc-head {
+            background: #eff6ff;
+            border-bottom-color: #bfdbfe;
+        }
+
+        .dc-name {
+            font-size: 12px;
+            font-weight: 800;
+            color: var(--text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .dc.on .dc-name {
+            color: #2563eb;
+        }
+
+        /* Toggle */
+        .tog {
+            position: relative;
+            width: 38px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+
+            .tog input {
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+
+        .tog-track {
+            position: absolute;
+            inset: 0;
+            background: #cbd5e1;
+            border-radius: 22px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+            .tog-track::before {
+                content: '';
+                position: absolute;
+                width: 16px;
+                height: 16px;
+                left: 3px;
+                top: 3px;
+                background: #fff;
+                border-radius: 50%;
+                transition: transform 0.2s;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            }
+
+        .tog input:checked + .tog-track {
+            background: #3b82f6;
+        }
+
+            .tog input:checked + .tog-track::before {
+                transform: translateX(16px);
+            }
+
+        /* Card body */
+        .dc-body {
+            padding: 13px 13px 14px;
+        }
+
+        .dc-off {
+            text-align: center;
+            padding: 18px 0;
+            color: var(--muted);
+            font-size: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+
+            .dc-off i {
+                font-size: 18px;
+                opacity: 0.4;
+            }
+
+        .dc-fields {
+            display: flex;
+            flex-direction: column;
+            gap: 11px;
+        }
+
+        .tf label {
+            display: block;
+            font-size: 9.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--muted);
+            margin-bottom: 5px;
+        }
+
+        .tf select {
+            width: 100%;
+            padding: 8px 10px;
+            background: var(--bg3);
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            appearance: auto;
+        }
+
+            .tf select:focus {
+                border-color: #3b82f6;
+                box-shadow: 0 0 0 2px rgba(59,130,246,0.12);
+            }
+
+            .tf select:disabled {
+                opacity: 0.45;
+                cursor: not-allowed;
+            }
+
+        /* ── Actions ── */
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn-save {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+        }
+
+            .btn-save:hover {
+                background: #1d4ed8;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 14px rgba(37,99,235,0.28);
+            }
+
+        .btn-cancel {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 22px;
+            background: transparent;
+            border: 1.5px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--muted);
+            text-decoration: none;
+            transition: background 0.2s, border-color 0.2s, color 0.2s;
+        }
+
+            .btn-cancel:hover {
+                background: var(--bg3);
+                border-color: var(--text-primary);
+                color: var(--text-primary);
+            }
+
+        /* ── Responsive ── */
+        @@media (max-width: 1050px) {
+            .day-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .summary-pills {
+                gap: 8px;
+            }
+        }
+
+        @@media (max-width: 700px) {
+            .day-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .summary-pills {
+                gap: 6px;
+            }
+
+            .spill {
+                min-width: 70px;
+            }
+        }
+
+        @@media (max-width: 440px) {
+            .day-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .btn-save, .btn-cancel {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+}
+
+<div class="avail-page">
+
+    <!-- Page header -->
+    <div class="page-header">
+        <h1>Manage Availability</h1>
+        <p>Set your weekly working hours for member sessions</p>
+    </div>
+
+    <!-- Alerts — shown only once, from TempData -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i> @TempData["Success"]
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-circle"></i> @TempData["Error"]
+        </div>
+    }
+
+    <!-- Summary strip -->
+    <div class="summary-strip">
+        <div class="summary-strip-label">
+            <i class="fas fa-calendar-week"></i> Current Schedule at a Glance
+        </div>
+        <div class="summary-pills">
+            @for (int di = 0; di < days.Length; di++)
+            {
+                var d = days[di];
+                bool active = availMap.ContainsKey(d) && availMap[d].IsAvailable;
+                <div class="spill @(active ? "on" : "")">
+                    <div class="spill-day">@dayAbbr[di]</div>
+                    @if (active)
+                    {
+                        <div class="spill-time">@availMap[d].StartTime<br />–<br />@availMap[d].EndTime</div>
+                    }
+                    else
+                    {
+                        <div class="spill-off"><i class="fas fa-ban"></i> Off</div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Edit form -->
+    @using (Html.BeginForm("SaveAvailability", "Trainer", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+
+        <div class="day-grid">
+            @for (int i = 0; i < days.Length; i++)
+            {
+                var day = days[i];
+                bool has = availMap.ContainsKey(day) && availMap[day].IsAvailable;
+                string start = has ? availMap[day].StartTime : "08:00";
+                string end = has ? availMap[day].EndTime : "17:00";
+
+                <div class="dc @(has ? "on" : "")" id="dc-@i">
+                    <div class="dc-head">
+                        <div class="dc-name">@dayAbbr[i]</div>
+                        <label class="tog">
+                            <input type="checkbox" id="tog-@i" @(has ? "checked" : "") onchange="toggleDay(@i)" />
+                            <span class="tog-track"></span>
+                        </label>
+                    </div>
+                    <div class="dc-body">
+
+                        <!-- Off state -->
+                        <div class="dc-off" id="dc-off-@i" style="display:@(has ? "none" : "flex")">
+                            <i class="fas fa-moon"></i>
+                            <span>Not available</span>
+                        </div>
+
+                        <!-- On state -->
+                        <div class="dc-fields" id="dc-fields-@i" style="display:@(has ? "flex" : "none")">
+                            <div class="tf">
+                                <label>Start</label>
+                                <select name="availabilities[@i].StartTime" id="start-@i" @(!has ? "disabled" : "")>
+                                    @foreach (var ts in timeSlots)
+                                    {
+                                        <option value="@ts" @(ts == start ? "selected" : "")>@ts</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="tf">
+                                <label>End</label>
+                                <select name="availabilities[@i].EndTime" id="end-@i" @(!has ? "disabled" : "")>
+                                    @foreach (var ts in timeSlots)
+                                    {
+                                        <option value="@ts" @(ts == end ? "selected" : "")>@ts</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+
+                    </div>
+                    <input type="hidden" name="availabilities[@i].DayOfWeek" value="@day" />
+                    <input type="hidden" name="availabilities[@i].IsAvailable" id="isavail-@i" value="@(has ? "true" : "false")" />
+                </div>
+            }
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn-save">
+                <i class="fas fa-save"></i> Save Availability
+            </button>
+            <a href="@Url.Action("Dashboard", "Trainer")" class="btn-cancel">
+                <i class="fas fa-times"></i> Cancel
+            </a>
+        </div>
+    }
+
+</div>
+
+@section Scripts {
+    <script>
+        function toggleDay(i) {
+            const on = document.getElementById('tog-' + i).checked;
+            const card = document.getElementById('dc-' + i);
+            const fields = document.getElementById('dc-fields-' + i);
+            const off = document.getElementById('dc-off-' + i);
+            const hidden = document.getElementById('isavail-' + i);
+            const start = document.getElementById('start-' + i);
+            const end = document.getElementById('end-' + i);
+
+            card.classList.toggle('on', on);
+            fields.style.display = on ? 'flex' : 'none';
+            off.style.display = on ? 'none' : 'flex';
+            start.disabled = !on;
+            end.disabled = !on;
+            hidden.value = on ? 'true' : 'false';
+        }
+    </script>
+}

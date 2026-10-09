@@ -1,0 +1,1132 @@
+﻿@model SwiftyS26.Models.ProgramExercise
+@using SwiftyS26.Models
+
+@{
+    Layout = "~/Views/Shared/_TrainerLayout.cshtml";
+    ViewBag.Title = "Add Exercises";
+
+    var program = (SwiftyS26.Models.WorkoutProgram)ViewBag.Program;
+    var fp = ViewBag.FitnessProfile as SwiftyS26.Models.FitnessProfile;
+    var todayLog = ViewBag.TodayLog as SwiftyS26.Models.WorkoutSessionLog;
+
+    bool alreadyDoneToday = todayLog != null;
+    bool isAbsentToday = todayLog?.Status == "Absent";
+    bool isCompletedToday = todayLog?.Status == "Completed";
+
+    var programStart = program.StartDate.Date;
+    var programExpiry = programStart.AddDays(7);
+    bool isActive = DateTime.Today >= programStart && DateTime.Today < programExpiry;
+
+    string memberName = (program.MemberForm != null && !string.IsNullOrWhiteSpace(program.MemberForm.FullName))
+                          ? program.MemberForm.FullName
+                          : "Member";
+    int programId = program.WorkoutProgramId;
+    string rangeStr = program.StartDate.ToString("dd MMM") + " – " +
+                          (program.EndDate.HasValue
+                              ? program.EndDate.Value.ToString("dd MMM yyyy")
+                              : programExpiry.AddDays(-1).ToString("dd MMM yyyy"));
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+    <style>
+        /* ── Page Header ── */
+        .page-header {
+            max-width: 1060px;
+            margin: 0 auto 2rem;
+        }
+
+        .breadcrumb-trail {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            font-weight: 500;
+            letter-spacing: 0.01em;
+            list-style: none;
+            padding: 0;
+        }
+
+            .breadcrumb-trail i {
+                font-size: 11px;
+            }
+
+            .breadcrumb-trail .crumb-link {
+                color: var(--text-secondary);
+                text-decoration: none;
+            }
+
+                .breadcrumb-trail .crumb-link:hover {
+                    text-decoration: underline;
+                }
+
+            .breadcrumb-trail .crumb-current {
+                color: var(--text-primary);
+                font-weight: 600;
+            }
+
+        .page-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 28px;
+            color: var(--text-primary);
+            font-weight: 400;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+
+        .page-sub {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        /* ── Program Banner ── */
+        .program-banner {
+            background: var(--surface, #fff);
+            border: 0.5px solid rgba(0,0,0,0.12);
+            border-radius: 12px;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+            max-width: 1060px;
+            margin-left: auto;
+            margin-right: auto;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            flex-wrap: wrap;
+        }
+
+        .program-banner-icon {
+            width: 44px;
+            height: 44px;
+            background: var(--blue-light);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--blue);
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .program-banner-info {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .program-banner-name {
+            font-family: 'DM Serif Display', serif;
+            font-size: 18px;
+            font-weight: 400;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .program-banner-meta {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+            .program-banner-meta span {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+            }
+
+            .program-banner-meta i {
+                font-size: 12px;
+                color: var(--blue);
+            }
+
+        .program-status {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11.5px;
+            font-weight: 600;
+        }
+
+        .badge-active {
+            background: #DCFCE7;
+            color: #15803D;
+        }
+
+        .badge-expired {
+            background: #FEE2E2;
+            color: #B91C1C;
+        }
+
+        .badge-pending {
+            background: #FEF3C7;
+            color: #92400E;
+        }
+
+        .badge-blue {
+            background: var(--blue-light);
+            color: var(--blue);
+        }
+
+        /* ── Two Column ── */
+        .two-column {
+            display: grid;
+            grid-template-columns: 260px 1fr;
+            gap: 20px;
+            align-items: start;
+            max-width: 1060px;
+            margin: 0 auto;
+        }
+
+        /* ── Card Base ── */
+        .cp-card {
+            background: var(--surface, #fff);
+            border: 0.5px solid rgba(0,0,0,0.12);
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+            .cp-card + .cp-card {
+                margin-top: 16px;
+            }
+
+        .cp-card-header {
+            padding: 14px 18px;
+            border-bottom: 0.5px solid rgba(0,0,0,0.07);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .cp-card-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+            .cp-card-title i {
+                font-size: 13px;
+                color: var(--blue);
+            }
+
+        .cp-card-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .cp-card-body {
+            padding: 16px 18px;
+        }
+
+        /* ── Fitness Profile List ── */
+        .fitness-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+            .fitness-list li {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 9px 0;
+                border-bottom: 0.5px solid rgba(0,0,0,0.06);
+                font-size: 13px;
+            }
+
+                .fitness-list li:last-child {
+                    border-bottom: none;
+                }
+
+            .fitness-list .lbl {
+                color: var(--text-muted);
+                display: flex;
+                align-items: center;
+                gap: 6px;
+            }
+
+                .fitness-list .lbl i {
+                    font-size: 11px;
+                    color: var(--blue);
+                    width: 14px;
+                }
+
+            .fitness-list .val {
+                font-weight: 600;
+                color: var(--text-primary);
+                font-size: 13px;
+            }
+
+        .goal-badge {
+            background: #FEF3C7;
+            color: #92400E;
+            border-radius: 20px;
+            padding: 3px 10px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        /* ── Status Banner ── */
+        .status-banner {
+            border-radius: 8px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+            .status-banner.completed {
+                background: #F0FDF4;
+                border: 0.5px solid rgba(34, 197, 94, 0.25);
+            }
+
+            .status-banner.absent {
+                background: #FEF2F2;
+                border: 0.5px solid rgba(239, 68, 68, 0.2);
+            }
+
+            .status-banner i {
+                font-size: 20px;
+                flex-shrink: 0;
+                margin-top: 1px;
+            }
+
+            .status-banner.completed i {
+                color: #16A34A;
+            }
+
+            .status-banner.absent i {
+                color: #DC2626;
+            }
+
+            .status-banner .status-title {
+                font-size: 13.5px;
+                font-weight: 600;
+                color: var(--text-primary);
+            }
+
+            .status-banner .status-sub {
+                font-size: 12px;
+                color: var(--text-muted);
+                margin-top: 3px;
+            }
+
+        /* ── Inactive Notice ── */
+        .inactive-notice {
+            background: #FFFBEB;
+            border: 0.5px solid rgba(217, 119, 6, 0.3);
+            border-radius: 8px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #92400E;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 16px;
+        }
+
+            .inactive-notice i {
+                font-size: 15px;
+                flex-shrink: 0;
+            }
+
+        /* ── Exercise List (Today) ── */
+        .ex-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .ex-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg3, #F8F9FA);
+            border: 0.5px solid rgba(0,0,0,0.08);
+            border-radius: 10px;
+            padding: 10px 14px;
+            transition: all 0.2s;
+        }
+
+            .ex-row:hover {
+                border-color: rgba(37, 99, 235, 0.25);
+                background: #EFF4FF;
+            }
+
+        .ex-num {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--blue-light);
+            color: var(--blue);
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .ex-info {
+            flex: 1;
+        }
+
+        .ex-name {
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .ex-meta {
+            font-size: 11.5px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .ex-duration {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--blue);
+            background: var(--blue-light);
+            border-radius: 6px;
+            padding: 3px 9px;
+            white-space: nowrap;
+        }
+
+        /* ── Exercise Form ── */
+        .exercise-form {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr auto;
+            gap: 10px;
+            align-items: end;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+            .form-group label {
+                font-size: 11px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                color: var(--text-secondary, #5A6175);
+                display: flex;
+                align-items: center;
+                gap: 5px;
+            }
+
+                .form-group label i {
+                    font-size: 11px;
+                    color: var(--blue);
+                }
+
+            .form-group input[type="text"],
+            .form-group input[type="number"] {
+                font-family: 'DM Sans', sans-serif;
+                font-size: 13.5px;
+                color: var(--text-primary);
+                background: var(--surface, #fff);
+                border: 0.5px solid rgba(0,0,0,0.14);
+                border-radius: 8px;
+                padding: 8px 12px;
+                outline: none;
+                width: 100%;
+                transition: border-color 0.15s, box-shadow 0.15s;
+                -webkit-appearance: none;
+                appearance: none;
+            }
+
+            .form-group input:focus {
+                border-color: var(--blue);
+                box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            }
+
+        /* ── Data Table ── */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+            .data-table th {
+                padding: 9px 14px;
+                text-align: left;
+                font-size: 11px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                color: var(--text-muted);
+                background: var(--bg3, #F8F9FA);
+                border-bottom: 0.5px solid rgba(0,0,0,0.08);
+            }
+
+            .data-table td {
+                padding: 11px 14px;
+                border-bottom: 0.5px solid rgba(0,0,0,0.06);
+                vertical-align: middle;
+                font-size: 13.5px;
+            }
+
+            .data-table tr:last-child td {
+                border-bottom: none;
+            }
+
+            .data-table tr:hover td {
+                background: #F8FAFF;
+            }
+
+        .row-num {
+            width: 22px;
+            height: 22px;
+            background: var(--bg3, #F8F9FA);
+            border: 0.5px solid rgba(0,0,0,0.1);
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10.5px;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        /* ── Buttons ── */
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 18px;
+            background: var(--blue);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.15s, transform 0.1s;
+            white-space: nowrap;
+        }
+
+            .btn-primary:hover {
+                background: #1D4ED8;
+                transform: translateY(-1px);
+                color: #fff;
+            }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 16px;
+            background: transparent;
+            border: 0.5px solid rgba(0,0,0,0.14);
+            color: var(--text-secondary);
+            border-radius: 8px;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+            .btn-secondary:hover {
+                background: var(--bg3, #F8F9FA);
+                color: var(--text-primary);
+            }
+
+        .btn-done {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: #16A34A;
+            color: #fff;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 9px 18px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.1s;
+        }
+
+            .btn-done:hover {
+                background: #15803D;
+                transform: translateY(-1px);
+            }
+
+            .btn-done:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+            }
+
+        .btn-danger {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 10px;
+            background: #FEF2F2;
+            border: 0.5px solid rgba(220, 38, 38, 0.2);
+            color: #DC2626;
+            border-radius: 7px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+            .btn-danger:hover {
+                background: #DC2626;
+                color: #fff;
+                border-color: #DC2626;
+            }
+
+        /* ── Session footer actions ── */
+        .session-footer {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .session-footer-hint {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* ── Footer Actions ── */
+        .footer-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 0.5px solid rgba(0,0,0,0.07);
+            flex-wrap: wrap;
+        }
+
+        /* ── Empty State ── */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+            .empty-state i {
+                font-size: 32px;
+                opacity: 0.25;
+                display: block;
+                margin-bottom: 10px;
+            }
+
+            .empty-state p {
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--text-secondary);
+                margin: 0 0 4px;
+            }
+
+            .empty-state span {
+                font-size: 12.5px;
+                color: var(--text-muted);
+            }
+
+        /* ── Modal ── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+            .modal-overlay.open {
+                display: flex;
+            }
+
+        .modal-box {
+            background: #fff;
+            border-radius: 14px;
+            padding: 28px 32px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+
+        .modal-icon {
+            font-size: 40px;
+            color: #16A34A;
+            margin-bottom: 14px;
+        }
+
+        .modal-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 20px;
+            font-weight: 400;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            letter-spacing: -0.01em;
+        }
+
+        .modal-sub {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 22px;
+            line-height: 1.6;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        /* ── Responsive ── */
+        @@media (max-width: 860px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+
+            .exercise-form {
+                grid-template-columns: 1fr 1fr;
+            }
+
+                .exercise-form .form-group:first-child {
+                    grid-column: 1 / -1;
+                }
+        }
+
+        @@media (max-width: 560px) {
+            .exercise-form {
+                grid-template-columns: 1fr;
+            }
+
+            .program-banner {
+                flex-direction: column;
+            }
+        }
+    </style>
+}
+
+<!-- Page Header -->
+<div class="page-header">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb-trail">
+            <li><i class="fas fa-home"></i></li>
+            <li><i class="fas fa-chevron-right"></i></li>
+            <li><a class="crumb-link" href="@Url.Action("Dashboard", "Trainer")">Dashboard</a></li>
+            <li><i class="fas fa-chevron-right"></i></li>
+            <li><a class="crumb-link" href="@Url.Action("WorkoutPrograms", "Trainer")">Workout Programs</a></li>
+            <li><i class="fas fa-chevron-right"></i></li>
+            <li><span class="crumb-current">Add Exercises</span></li>
+        </ol>
+    </nav>
+    <div class="page-title">Add Exercises</div>
+    <div class="page-sub">Manage exercises and track today's session for <strong>@memberName</strong></div>
+</div>
+
+<!-- Program Banner -->
+<div class="program-banner">
+    <div class="program-banner-icon">
+        <i class="fas fa-dumbbell"></i>
+    </div>
+    <div class="program-banner-info">
+        <div class="program-banner-name">@program.ProgramName</div>
+        <div class="program-banner-meta">
+            <span><i class="fas fa-user"></i> @memberName</span>
+            <span><i class="fas fa-calendar-alt"></i> @rangeStr</span>
+        </div>
+    </div>
+    <div class="program-status">
+        @if (isActive)
+        {
+            <span class="badge badge-active"><i class="fas fa-circle" style="font-size:7px;"></i> Active</span>
+        }
+        else if (DateTime.Today >= programExpiry)
+        {
+            <span class="badge badge-expired"><i class="fas fa-ban"></i> Expired</span>
+        }
+        else
+        {
+            <span class="badge badge-pending"><i class="fas fa-clock"></i> Upcoming</span>
+        }
+        <span class="badge badge-blue"><i class="fas fa-list"></i> @(program.ProgramExercises?.Count ?? 0) exercises</span>
+    </div>
+</div>
+
+<!-- Two Column Layout -->
+<div class="two-column">
+
+    <!-- Left: Fitness Profile -->
+    <div>
+        <div class="cp-card">
+            <div class="cp-card-header">
+                <div class="cp-card-title">
+                    <i class="fas fa-heartbeat"></i> Fitness Profile
+                </div>
+            </div>
+            <div class="cp-card-body">
+                @if (fp != null)
+                {
+                    <ul class="fitness-list">
+                        <li>
+                            <span class="lbl"><i class="fas fa-bullseye"></i> Goal</span>
+                            <span class="goal-badge">@fp.GoalType</span>
+                        </li>
+                        <li>
+                            <span class="lbl"><i class="fas fa-chart-line"></i> BMI</span>
+                            <span class="val">@fp.BMI.ToString("F1") <small style="font-size:10px;font-weight:400;color:var(--text-muted);">(@fp.BMICategory)</small></span>
+                        </li>
+                        <li>
+                            <span class="lbl"><i class="fas fa-weight-scale"></i> Weight</span>
+                            <span class="val">@fp.WeightKg kg</span>
+                        </li>
+                        <li>
+                            <span class="lbl"><i class="fas fa-percent"></i> Body Fat</span>
+                            <span class="val">@fp.BodyFatPercent%</span>
+                        </li>
+                        <li>
+                            <span class="lbl"><i class="fas fa-person-walking"></i> Activity</span>
+                            <span class="val">@fp.ActivityLevel</span>
+                        </li>
+                    </ul>
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <i class="fas fa-user-slash"></i>
+                        <p>No profile yet</p>
+                        <span>Member hasn't set up a fitness profile</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column -->
+    <div>
+
+        <!-- Inactive / Active notice -->
+        @if (!isActive)
+        {
+            <div class="inactive-notice">
+                <i class="fas fa-info-circle"></i>
+                @if (DateTime.Today >= programExpiry)
+                {
+                    <span>This program has <strong>expired</strong>. Active period was @programStart.ToString("dd MMM") – @programExpiry.AddDays(-1).ToString("dd MMM yyyy").</span>
+                }
+                else
+                {
+                    <span>This program <strong>hasn't started yet</strong>. It begins on @programStart.ToString("dd MMM yyyy").</span>
+                }
+            </div>
+        }
+
+        <!-- Today's Session (only when active) -->
+        @if (isActive)
+        {
+            <div class="cp-card" style="margin-bottom: 16px;">
+                <div class="cp-card-header">
+                    <div class="cp-card-title">
+                        <i class="fas fa-calendar-day"></i> Today's Session
+                    </div>
+                    <div class="cp-card-meta">@DateTime.Today.ToString("dddd, dd MMM yyyy")</div>
+                </div>
+                <div class="cp-card-body">
+
+                    @if (isAbsentToday)
+                    {
+                        <div class="status-banner absent">
+                            <i class="fas fa-user-slash"></i>
+                            <div>
+                                <div class="status-title">@memberName marked as Not Available today</div>
+                                <div class="status-sub">Absence has been saved to Progress Tracking.</div>
+                            </div>
+                        </div>
+                    }
+                    else if (isCompletedToday)
+                    {
+                        <div class="status-banner completed">
+                            <i class="fas fa-check-circle"></i>
+                            <div>
+                                <div class="status-title">Today's session marked as Complete</div>
+                                <div class="status-sub">Session saved to Progress Tracking.</div>
+                            </div>
+                        </div>
+                        <a href="@Url.Action("MemberProgress", "Trainer", new { memberId = program.MemberId })" class="btn-primary" style="margin-top: 4px;">
+                            <i class="fas fa-chart-line"></i> View Progress Tracking
+                        </a>
+                    }
+                    else
+                    {
+                        if (program.ProgramExercises != null && program.ProgramExercises.Any())
+                        {
+                            <div class="ex-list" id="todayExList">
+                                @{ int idx = 0; }
+                                @foreach (var ex in program.ProgramExercises)
+                                {
+                                    idx++;
+                                    <div class="ex-row" id="exRow-@ex.ProgramExerciseId">
+                                        <div class="ex-num">@idx</div>
+                                        <div class="ex-info">
+                                            <div class="ex-name">@ex.ExerciseName</div>
+                                            <div class="ex-meta">
+                                                @if (ex.Sets > 0 && ex.Reps > 0)
+                                                {@($"{ex.Sets} sets × {ex.Reps} reps") }
+                                                else if (ex.Sets > 0)
+                                                { @($"{ex.Sets} sets") }
+                                                else if (ex.Reps > 0)
+                                                { @($"{ex.Reps} reps")}
+                                            </div>
+                                        </div>
+                                        @if (ex.DurationMinutes > 0)
+                                        {
+                                            <div class="ex-duration">@ex.DurationMinutes min</div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                            <div class="session-footer">
+                                <button class="btn-done" id="markDoneBtn" onclick="openDoneModal()">
+                                    <i class="fas fa-check-circle"></i> Mark Day as Done
+                                </button>
+                                <span class="session-footer-hint">Saves to Progress Tracking</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="empty-state" style="padding: 28px 20px;">
+                                <i class="fas fa-dumbbell"></i>
+                                <p>No exercises yet</p>
+                                <span>Add exercises below to get started</span>
+                            </div>
+                        }
+                    }
+
+                </div>
+            </div>
+        }
+
+        <!-- Add Exercise Form -->
+        <div class="cp-card" style="margin-bottom: 16px;">
+            <div class="cp-card-header">
+                <div class="cp-card-title">
+                    <i class="fas fa-plus-circle"></i> Add Exercise
+                </div>
+            </div>
+            <div class="cp-card-body">
+                @using (Html.BeginForm("AddExercise", "Trainer", FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+                    @Html.HiddenFor(m => m.WorkoutProgramId)
+
+                    <div class="exercise-form">
+                        <div class="form-group">
+                            <label><i class="fas fa-running"></i> Exercise Name <span style="color:var(--red);">*</span></label>
+                            @Html.TextBoxFor(m => m.ExerciseName, new { placeholder = "e.g. Barbell Squat" })
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-layer-group"></i> Sets</label>
+                            @Html.TextBoxFor(m => m.Sets, new { type = "number", min = "1", placeholder = "3" })
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-rotate"></i> Reps</label>
+                            @Html.TextBoxFor(m => m.Reps, new { type = "number", min = "1", placeholder = "10" })
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-clock"></i> Duration (min)</label>
+                            @Html.TextBoxFor(m => m.DurationMinutes, new { type = "number", min = "0", placeholder = "0" })
+                        </div>
+                        <button type="submit" class="btn-primary">
+                            <i class="fas fa-plus"></i> Add
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Program Exercises Table -->
+        <div class="cp-card">
+            <div class="cp-card-header">
+                <div class="cp-card-title">
+                    <i class="fas fa-list-check"></i> Program Exercises
+                </div>
+                <span class="badge badge-blue">@(program.ProgramExercises?.Count ?? 0) items</span>
+            </div>
+            @if (program.ProgramExercises != null && program.ProgramExercises.Any())
+            {
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Exercise</th>
+                                <th>Sets</th>
+                                <th>Reps</th>
+                                <th>Duration</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{ int rowIdx = 1; }
+                            @foreach (var ex in program.ProgramExercises)
+                            {
+                                <tr>
+                                    <td><span class="row-num">@(rowIdx++)</span></td>
+                                    <td style="font-weight: 600;">@ex.ExerciseName</td>
+                                    <td><span class="badge badge-blue" style="font-size:11px;padding:2px 9px;">@ex.Sets</span></td>
+                                    <td><span class="badge badge-blue" style="font-size:11px;padding:2px 9px;">@ex.Reps</span></td>
+                                    <td style="color:var(--text-muted);font-size:13px;">@(ex.DurationMinutes > 0 ? ex.DurationMinutes + " min" : "—")</td>
+                                    <td>
+                                        @using (Html.BeginForm("DeleteExercise", "Trainer", FormMethod.Post))
+                                        {
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="exerciseId" value="@ex.ProgramExerciseId" />
+                                            <input type="hidden" name="programId" value="@programId" />
+                                            <button type="submit" class="btn-danger" onclick="return confirm('Remove @ex.ExerciseName?')">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="fas fa-dumbbell"></i>
+                    <p>No exercises yet</p>
+                    <span>Add exercises using the form above</span>
+                </div>
+            }
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="footer-actions">
+            <a href="@Url.Action("WorkoutPrograms", "Trainer")" class="btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Programs
+            </a>
+            <a href="@Url.Action("MemberProgress", "Trainer", new { memberId = program.MemberId })" class="btn-primary">
+                <i class="fas fa-chart-line"></i> View Progress Tracking
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+
+    </div>
+</div>
+
+<!-- Mark Done Modal -->
+<div class="modal-overlay" id="doneModal">
+    <div class="modal-box">
+        <div class="modal-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="modal-title">Mark Day as Done?</div>
+        <div class="modal-sub">
+            This will mark all of <strong>@memberName</strong>'s exercises as completed for today
+            (<strong>@DateTime.Today.ToString("dd MMM yyyy")</strong>). The session will be saved to
+            Progress Tracking where you can add a daily description.
+        </div>
+        <div class="modal-actions">
+            <button class="btn-secondary" onclick="closeDoneModal()">Cancel</button>
+            <button class="btn-done" id="confirmDoneBtn" onclick="submitMarkDone()">
+                <i class="fas fa-check"></i> Yes, Mark Done
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function getToken() {
+            return document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+        }
+
+        var PROGRAM_ID = @programId;
+        var MARK_DONE_URL = '@Url.Action("MarkDayDone", "Trainer")';
+
+        function openDoneModal() {
+            document.getElementById('doneModal').classList.add('open');
+        }
+
+        function closeDoneModal() {
+            document.getElementById('doneModal').classList.remove('open');
+        }
+
+        document.getElementById('doneModal').addEventListener('click', function (e) {
+            if (e.target === this) closeDoneModal();
+        });
+
+        function submitMarkDone() {
+            var btn = document.getElementById('confirmDoneBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Saving...';
+
+            fetch(MARK_DONE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: '__RequestVerificationToken=' + encodeURIComponent(getToken()) + '&workoutProgramId=' + PROGRAM_ID
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.success) {
+                    closeDoneModal();
+                    var rows = document.querySelectorAll('#todayExList .ex-row');
+                    rows.forEach(function (row, i) {
+                        setTimeout(function () {
+                            row.style.transition = 'all 0.4s';
+                            row.style.opacity = '0';
+                            row.style.transform = 'translateX(20px)';
+                        }, i * 80);
+                    });
+                    setTimeout(function () { window.location.reload(); }, rows.length * 80 + 500);
+                } else {
+                    alert(data.message || 'Could not mark as done.');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-check"></i> Yes, Mark Done';
+                }
+            })
+            .catch(function () {
+                alert('Network error. Please try again.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check"></i> Yes, Mark Done';
+            });
+        }
+    </script>
+}

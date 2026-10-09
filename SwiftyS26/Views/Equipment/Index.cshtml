@@ -1,0 +1,2059 @@
+﻿@model SwiftyS26.Models.EquipmentManagementViewModel
+@using SwiftyS26.Models
+@using System.Web
+@using System.Collections.Generic
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewBag.Title = "Equipment Management";
+    var equipmentList = Model?.AllEquipment ?? new List<Equipment>();
+    var dueList = Model?.DueForInspection ?? new List<Equipment>();
+    var historyList = Model?.InspectionHistory ?? new List<Inspection>();
+    var repairsList = Model?.OpenRepairs ?? new List<Repair>();
+    var technicians = Model?.Technicians ?? new List<Technician>();
+    var recommendedTechs = Model?.RecommendedTechnicians ?? new Dictionary<int, Technician>();
+    var vendors = Model?.Vendors ?? new List<Vendor>();
+    var awaitingInspectionList = Model?.AwaitingInspectionRepairs ?? new List<Repair>();
+    var maintDueList = Model?.DueForMaintenance ?? new List<Equipment>();
+    var maintHistoryList = Model?.MaintenanceHistory ?? new List<Maintenance>();
+    var adminName = Session["LoggedInAdminName"] as string ?? "Admin";
+    var adminRole = Session["LoggedInAdminRole"] as string ?? "Administrator";
+}
+@section Styles{
+    <style>
+        .page-content {
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            animation: fadeUp 0.22s ease both;
+        }
+
+        @@keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .admin-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 16px;
+        }
+
+        .admin-stat-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px 22px;
+            position: relative;
+            overflow: hidden;
+            transition: transform var(--transition), box-shadow var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+
+            .admin-stat-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 3px;
+                border-radius: var(--radius) var(--radius) 0 0;
+            }
+
+            .admin-stat-card.blue::before {
+                background: var(--blue);
+            }
+
+            .admin-stat-card.green::before {
+                background: var(--green);
+            }
+
+            .admin-stat-card.gold::before {
+                background: var(--gold);
+            }
+
+            .admin-stat-card.red::before {
+                background: var(--red);
+            }
+
+            .admin-stat-card.purple::before {
+                background: var(--purple);
+            }
+
+            .admin-stat-card:hover {
+                transform: translateY(-2px);
+                box-shadow: var(--shadow-md);
+            }
+
+        .stat-icon {
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+
+        .admin-stat-card.blue .stat-icon {
+            color: var(--blue);
+        }
+
+        .admin-stat-card.green .stat-icon {
+            color: var(--green);
+        }
+
+        .admin-stat-card.gold .stat-icon {
+            color: var(--gold);
+        }
+
+        .admin-stat-card.red .stat-icon {
+            color: var(--red);
+        }
+
+        .admin-stat-card.purple .stat-icon {
+            color: var(--purple);
+        }
+
+        .stat-number {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 34px;
+            letter-spacing: 1px;
+            line-height: 1;
+            margin-bottom: 4px;
+            color: var(--text);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            color: var(--muted);
+        }
+
+        .admin-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .admin-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 22px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg3);
+        }
+
+        .admin-card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+            .admin-card-title i {
+                color: var(--blue);
+            }
+
+        .admin-card-count {
+            font-size: 12px;
+            color: var(--muted);
+            background: var(--white);
+            border: 1px solid var(--border);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .admin-table-wrap {
+            overflow-x: auto;
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+            .admin-table th {
+                padding: 11px 16px;
+                font-size: 10px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.7px;
+                color: var(--muted);
+                border-bottom: 1px solid var(--border);
+                background: var(--bg3);
+                text-align: left;
+                white-space: nowrap;
+            }
+
+            .admin-table td {
+                padding: 12px 16px;
+                border-bottom: 1px solid var(--border);
+                color: var(--text-sub);
+                vertical-align: middle;
+            }
+
+            .admin-table tr:last-child td {
+                border-bottom: none;
+            }
+
+            .admin-table tbody tr {
+                transition: background var(--transition);
+            }
+
+                .admin-table tbody tr:hover td {
+                    background: var(--blue-light);
+                }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .badge-basic {
+            background: var(--bg3);
+            color: var(--muted);
+        }
+
+        .badge-available {
+            background: var(--green-light);
+            color: var(--green);
+        }
+
+        .badge-outofservice {
+            background: var(--red-light);
+            color: var(--red);
+        }
+
+        .badge-maintenance {
+            background: var(--gold-light);
+            color: var(--gold);
+        }
+
+        .badge-retired {
+            background: var(--bg3);
+            color: var(--muted);
+        }
+
+        .urgency-overdue {
+            background: var(--red-light);
+            color: var(--red);
+        }
+
+        .urgency-today {
+            background: var(--gold-light);
+            color: var(--gold);
+        }
+
+        /* ===== Phase 3+ repair status badges ===== */
+        .badge-assigned {
+            background: var(--blue-light);
+            color: var(--blue);
+        }
+
+        .badge-accepted {
+            background: var(--purple-light);
+            color: var(--purple);
+        }
+
+        .badge-escalated {
+            background: var(--orange-light);
+            color: var(--orange);
+        }
+
+        .badge-awaitinginspection {
+            background: var(--gold-light);
+            color: var(--gold);
+        }
+
+        .badge-awaitingapproval {
+            background: var(--purple-light);
+            color: var(--purple);
+        }
+
+        .badge-reopened {
+            background: var(--red-light);
+            color: var(--red);
+        }
+
+        .badge-postrepair {
+            background: var(--purple-light);
+            color: var(--purple);
+        }
+
+        .badge-vendorrepair {
+            background: var(--orange-light);
+            color: var(--orange);
+        }
+
+        .equipment-code {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 14px;
+            letter-spacing: 1px;
+            color: var(--blue);
+            background: var(--blue-light);
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        .item-name {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .item-sub {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .item-date {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .search-bar {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--white);
+        }
+
+            .search-bar input {
+                width: 100%;
+                max-width: 380px;
+                padding: 9px 14px 9px 36px;
+                background: var(--bg3);
+                border: 1px solid var(--border);
+                border-radius: var(--radius-sm);
+                font-family: 'DM Sans', sans-serif;
+                font-size: 13px;
+                color: var(--text);
+                outline: none;
+                transition: all var(--transition);
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                background-position: 12px center;
+            }
+
+                .search-bar input:focus {
+                    border-color: var(--blue);
+                    box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+                    background-color: var(--white);
+                }
+
+                .search-bar input::placeholder {
+                    color: var(--muted);
+                }
+
+        .action-bar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 11px 22px;
+            background: var(--blue);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(37,99,235,.25);
+            transition: all var(--transition);
+        }
+
+            .btn-primary:hover {
+                background: var(--blue-dark);
+                transform: translateY(-1px);
+            }
+
+        .btn-qr {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--blue-light);
+            color: var(--blue);
+            border: 1px solid rgba(37,99,235,.2);
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all var(--transition);
+            font-family: 'DM Sans', sans-serif;
+        }
+
+            .btn-qr:hover {
+                background: var(--blue);
+                color: #fff;
+            }
+
+        .alert {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .alert-success {
+            background: var(--green-light);
+            color: var(--green);
+            border: 1px solid rgba(22,163,74,.2);
+        }
+
+        .alert-danger {
+            background: var(--red-light);
+            color: var(--red);
+            border: 1px solid rgba(220,38,38,.2);
+        }
+
+        .alert-warning {
+            background: var(--gold-light);
+            color: var(--gold);
+            border: 1px solid rgba(217,119,6,.2);
+        }
+
+        .close-alert {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            margin-left: auto;
+            color: inherit;
+            opacity: 0.6;
+        }
+
+            .close-alert:hover {
+                opacity: 1;
+            }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15,23,42,.55);
+            backdrop-filter: blur(4px);
+            z-index: 500;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-box {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 36px;
+            width: 100%;
+            max-width: 600px;
+            margin: 20px;
+            box-shadow: var(--shadow-lg);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 24px;
+            letter-spacing: 2px;
+            color: var(--text);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+            .form-group label {
+                display: block;
+                font-size: 11px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.7px;
+                color: var(--muted);
+                margin-bottom: 6px;
+            }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg3);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            color: var(--text);
+            outline: none;
+            transition: all var(--transition);
+        }
+
+            .form-control:focus {
+                border-color: var(--blue);
+                box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+                background: var(--white);
+            }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 24px;
+        }
+
+        .modal-btn {
+            flex: 1;
+            padding: 13px;
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            transition: all var(--transition);
+        }
+
+            .modal-btn.save {
+                background: var(--blue);
+                color: #fff;
+                box-shadow: 0 4px 12px rgba(37,99,235,.25);
+            }
+
+                .modal-btn.save:hover {
+                    background: var(--blue-dark);
+                }
+
+            .modal-btn.cancel {
+                background: transparent;
+                border: 1.5px solid var(--border);
+                color: var(--muted);
+            }
+
+                .modal-btn.cancel:hover {
+                    background: var(--bg3);
+                }
+
+        /* QR view modal */
+        .qr-modal-box {
+            text-align: center;
+            max-width: 360px;
+        }
+
+            .qr-modal-box img {
+                width: 220px;
+                height: 220px;
+                border: 4px solid var(--text);
+                border-radius: 8px;
+                margin: 16px auto;
+                display: block;
+            }
+
+        .tab-btn {
+            background: var(--white);
+            border: 1px solid var(--border);
+        }
+
+            .tab-btn.active {
+                background: var(--blue-light);
+                color: var(--blue);
+                border-color: var(--blue);
+            }
+
+        .eq-card {
+            background: #fff;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,.06);
+        }
+
+        .eq-card-img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            background: #F1F5F9;
+        }
+
+        .eq-card-img-placeholder {
+            width: 100%;
+            height: 160px;
+            background: #F1F5F9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #CBD5E1;
+            font-size: 32px;
+        }
+
+        .eq-card-body {
+            padding: 16px 18px;
+        }
+    </style>
+}
+<div class="page-content">
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i> @TempData["Success"]
+            <button type="button" class="close-alert" onclick="this.parentElement.remove()">&times;</button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-circle"></i> @TempData["Error"]
+            <button type="button" class="close-alert" onclick="this.parentElement.remove()">&times;</button>
+        </div>
+    }
+
+    <!-- ===== TABS ===== -->
+    <div class="admin-card" style="padding:6px; display:flex; gap:4px; box-shadow:none; border:none; background:transparent;">
+        <button class="sidebar-link tab-btn active" data-tab="all" onclick="switchTab('all')" style="width:auto;">
+            <i class="fas fa-dumbbell"></i> All Equipment
+        </button>
+        <button class="sidebar-link tab-btn" data-tab="due" onclick="switchTab('due')" style="width:auto;">
+            <i class="fas fa-clipboard-check"></i> Inspections Due
+            @{ var totalDueCount = dueList.Count + awaitingInspectionList.Count; }
+            @if (totalDueCount > 0)
+            {
+                <span class="badge urgency-overdue" style="margin-left:6px;">@totalDueCount</span>
+            }
+        </button>
+        <button class="sidebar-link tab-btn" data-tab="history" onclick="switchTab('history')" style="width:auto;">
+            <i class="fas fa-history"></i> Inspection History
+        </button>
+        <button class="sidebar-link tab-btn" data-tab="repairs" onclick="switchTab('repairs')" style="width:auto;">
+            <i class="fas fa-screwdriver-wrench"></i> Fault Repair
+            @if (repairsList.Count > 0)
+            {
+                <span class="badge urgency-overdue" style="margin-left:6px;">@repairsList.Count</span>
+            }
+        </button>
+        <button class="sidebar-link tab-btn" data-tab="maintdue" onclick="switchTab('maintdue')" style="width:auto;">
+            <i class="fas fa-oil-can"></i> Maintenance Due
+            @if (maintDueList.Count > 0)
+            {
+                <span class="badge urgency-overdue" style="margin-left:6px;">@maintDueList.Count</span>
+            }
+        </button>
+        <button class="sidebar-link tab-btn" data-tab="maintenance" onclick="switchTab('maintenance')" style="width:auto;">
+            <i class="fas fa-clock-rotate-left"></i> Maintenance History
+        </button>
+    </div>
+
+    <!-- ===== TAB: ALL EQUIPMENT ===== -->
+    <div id="tab-all" class="tab-panel">
+
+        <!-- Stat Cards -->
+        <div class="admin-stats-grid">
+            <div class="admin-stat-card blue">
+                <div class="stat-icon"><i class="fas fa-dumbbell"></i></div>
+                <div class="stat-number">@equipmentList.Count</div>
+                <div class="stat-label">Total Equipment</div>
+            </div>
+            <div class="admin-stat-card green">
+                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-number">@equipmentList.Count(e => e.Status == "Available")</div>
+                <div class="stat-label">Available</div>
+            </div>
+            <div class="admin-stat-card red">
+                <div class="stat-icon"><i class="fas fa-ban"></i></div>
+                <div class="stat-number">@equipmentList.Count(e => e.Status == "OutOfService")</div>
+                <div class="stat-label">Out of Service</div>
+            </div>
+            <div class="admin-stat-card gold">
+                <div class="stat-icon"><i class="fas fa-wrench"></i></div>
+                <div class="stat-number">@equipmentList.Count(e => e.Status == "UnderMaintenance")</div>
+                <div class="stat-label">Under Maintenance</div>
+            </div>
+            <div class="admin-stat-card purple">
+                <div class="stat-icon"><i class="fas fa-archive"></i></div>
+                <div class="stat-number">@equipmentList.Count(e => e.Status == "Retired")</div>
+                <div class="stat-label">Retired</div>
+            </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="action-bar">
+            <button class="btn-primary" onclick="openAddModal()">
+                <i class="fas fa-plus"></i> Register Equipment
+            </button>
+        </div>
+
+        <!-- Equipment Table -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div class="admin-card-title"><i class="fas fa-dumbbell"></i> All Equipment</div>
+                <div class="admin-card-count">@equipmentList.Count records</div>
+            </div>
+            <div class="search-bar">
+                <input type="text" id="equipmentSearch"
+                       placeholder="Search by name, code or category..."
+                       oninput="filterTable()" />
+            </div>
+            <div class="admin-table-wrap">
+                <table class="admin-table" id="equipmentTable">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Gym Area</th>
+                            <th>Status</th>
+                            <th>Next Inspection</th>
+                            <th>Next Maintenance</th>
+                            <th>Registered</th>
+                            <th>QR</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (equipmentList.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="10" style="text-align:center;padding:48px;color:var(--muted);">
+                                    <i class="fas fa-dumbbell" style="font-size:32px;opacity:.3;display:block;margin-bottom:12px;"></i>
+                                    No equipment registered yet. Add one using the button above.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var e in equipmentList)
+                            {
+                                var statusClass = e.Status == "Available" ? "badge-available"
+                                                 : e.Status == "OutOfService" ? "badge-outofservice"
+                                                 : e.Status == "UnderMaintenance" ? "badge-maintenance"
+                                                 : "badge-retired";
+                                <tr>
+                                    <td><span class="equipment-code">@e.EquipmentCode</span></td>
+                                    <td class="item-name">@e.Name</td>
+                                    <td><span class="badge badge-basic">@e.Category</span></td>
+                                    <td class="item-sub">@e.GymArea</td>
+                                    <td><span class="badge @statusClass">@e.StatusDisplay</span></td>
+                                    <td class="item-date">@(e.NextInspectionDueDate?.ToString("dd MMM yyyy") ?? "—")</td>
+                                    <td class="item-date">@(e.NextMaintenanceDueDate?.ToString("dd MMM yyyy") ?? "—")</td>
+                                    <td class="item-date">@e.RegisteredAt.ToString("dd MMM yyyy")</td>
+                                    <td>
+                                        <button class="btn-qr" onclick="viewQr('@Html.Raw(HttpUtility.JavaScriptStringEncode(e.Name))', '@e.EquipmentCode', 'data:image/png;base64,@e.QrCodeBase64')">
+                                            <i class="fas fa-qrcode"></i> View
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <div style="display:flex; gap:6px;">
+                                            <button class="btn-qr" onclick="openEditModal(@e.EquipmentId, '@Html.Raw(HttpUtility.JavaScriptStringEncode(e.Name))', '@e.Category', '@Html.Raw(HttpUtility.JavaScriptStringEncode(e.Brand))', '@Html.Raw(HttpUtility.JavaScriptStringEncode(e.Model))', '@Html.Raw(HttpUtility.JavaScriptStringEncode(e.SerialNumber))', '@e.GymArea', '@(e.PurchaseDate?.ToString("yyyy-MM-dd"))', '@e.PurchaseCost', '@Html.Raw(HttpUtility.JavaScriptStringEncode(e.VendorName))', '@Html.Raw(HttpUtility.JavaScriptStringEncode(e.VendorContact))', '@(e.WarrantyExpiryDate?.ToString("yyyy-MM-dd"))', @e.InspectionIntervalDays, @e.MaintenanceIntervalDays, '@Html.Raw(HttpUtility.JavaScriptStringEncode(e.Notes))', '@e.Status', '@e.ImagePath')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn-qr" style="background:var(--red-light); color:var(--red); border-color:rgba(220,38,38,.2);" onclick="confirmDelete(@e.EquipmentId, '@Html.Raw(HttpUtility.JavaScriptStringEncode(e.Name))')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div><!-- /tab-all -->
+    <!-- ===== TAB: INSPECTIONS DUE ===== -->
+    <div id="tab-due" class="tab-panel" style="display:none;">
+        <div class="admin-stats-grid">
+            <div class="admin-stat-card red">
+                <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="stat-number">@dueList.Count(e => e.NextInspectionDueDate < DateTime.Today)</div>
+                <div class="stat-label">Overdue</div>
+            </div>
+            <div class="admin-stat-card gold">
+                <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                <div class="stat-number">@dueList.Count(e => e.NextInspectionDueDate == DateTime.Today)</div>
+                <div class="stat-label">Due Today</div>
+            </div>
+        </div>
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div class="admin-card-title"><i class="fas fa-clipboard-check"></i> Equipment Requiring Inspection</div>
+                <div class="admin-card-count">@(dueList.Count + awaitingInspectionList.Count) records</div>
+            </div>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Gym Area</th>
+                            <th>Current Status</th>
+                            <th>Due Date</th>
+                            <th>Urgency</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (dueList.Count == 0 && awaitingInspectionList.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="7" style="text-align:center;padding:48px;color:var(--muted);">
+                                    <i class="fas fa-check-circle" style="font-size:32px;opacity:.3;display:block;margin-bottom:12px;"></i>
+                                    No equipment currently requires inspection.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @* ── POST-REPAIR VERIFICATIONS — sorted first, most urgent.
+                                Covers BOTH technician-completed and vendor-completed repairs,
+                                since both routes now converge on RepairStatus == "AwaitingInspection".
+                                IMPORTANT: TechnicianId is NOT cleared when a repair escalates to a
+                                vendor (it's kept as history of who originally worked it), so vendor
+                                detection must key off VendorId alone, not "TechnicianId == null".
+                                A vendor repair means the vendor did the actual fix, so any active
+                                technician may verify it — no exclusion needed even if a stale
+                                TechnicianId is still sitting on the record. ── *@
+                            foreach (var r in awaitingInspectionList)
+                            {
+                                bool isVendorRepair = r.VendorId != null;
+                                var repTechId = isVendorRepair ? "null" : (r.TechnicianId?.ToString() ?? "null");
+                                var repTechName = isVendorRepair ? "" : (r.Technician?.FullName ?? "");
+                                <tr>
+                                    <td><span class="equipment-code">@(r.Equipment?.EquipmentCode)</span></td>
+                                    <td class="item-name">@(r.Equipment?.Name)</td>
+                                    <td class="item-sub">@(r.Equipment?.GymArea)</td>
+                                    <td><span class="badge badge-outofservice">@(r.Equipment?.StatusDisplay ?? "Out of Service")</span></td>
+                                    <td class="item-date">—</td>
+                                    <td>
+                                        @if (isVendorRepair)
+                                        {
+                                            <span class="badge badge-vendorrepair"><i class="fas fa-truck"></i> Vendor Repair</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-postrepair"><i class="fas fa-tools"></i> Post-Repair</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (r.VerificationTechnicianId == null)
+                                        {
+                                            <button class="btn-primary" style="padding:7px 14px;font-size:12px;background:@(isVendorRepair ? "var(--orange)" : "var(--purple)");"
+                                                    onclick="openAssignVerificationModal(@r.RepairId, '@Html.Raw(HttpUtility.JavaScriptStringEncode(r.Equipment?.Name))', @repTechId, '@Html.Raw(HttpUtility.JavaScriptStringEncode(repTechName))')">
+                                                <i class="fas fa-user-plus"></i> Assign Inspector
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn-primary" style="padding:7px 14px;font-size:12px;background:@(isVendorRepair ? "var(--orange)" : "var(--purple)");"
+                                                    onclick="openInspectModal(@r.EquipmentId, '@Html.Raw(HttpUtility.JavaScriptStringEncode(r.Equipment?.Name))', '@(r.Equipment?.EquipmentCode)', @r.RepairId, @repTechId, '@Html.Raw(HttpUtility.JavaScriptStringEncode(repTechName))', @r.VerificationTechnicianId, '@Html.Raw(HttpUtility.JavaScriptStringEncode(r.VerificationTechnician?.FullName ?? ""))')">
+                                                <i class="fas fa-clipboard-check"></i> @(isVendorRepair ? "Verify Vendor Repair" : "Verify Repair")
+                                            </button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                            foreach (var e in dueList)
+                            {
+                                var daysOverdue = (DateTime.Today - e.NextInspectionDueDate.Value).Days;
+                                var isOverdue = daysOverdue > 0;
+                                var statusClass = e.Status == "Available" ? "badge-available"
+                                                 : e.Status == "OutOfService" ? "badge-outofservice"
+                                                 : e.Status == "UnderMaintenance" ? "badge-maintenance"
+                                                 : "badge-retired";
+                                <tr>
+                                    <td><span class="equipment-code">@e.EquipmentCode</span></td>
+                                    <td class="item-name">@e.Name</td>
+                                    <td class="item-sub">@e.GymArea</td>
+                                    <td><span class="badge @statusClass">@e.StatusDisplay</span></td>
+                                    <td class="item-date">@(e.NextInspectionDueDate?.ToString("dd MMM yyyy"))</td>
+                                    <td>
+                                        @if (isOverdue)
+                                        {
+                                            <span class="badge urgency-overdue">@daysOverdue day@(daysOverdue == 1 ? "" : "s") overdue</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge urgency-today">Due today</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (e.PendingInspectionTechnicianId == null)
+                                        {
+                                            @* Fallback only — happens if no active technician existed
+                                                when auto-assignment last ran. Same manual path as before,
+                                                kept purely as a safety net. *@
+                                            <button class="btn-primary" style="padding:7px 14px;font-size:12px;background:var(--red);"
+                                                    onclick="openAssignInspectionModal(@e.EquipmentId, '@Html.Raw(HttpUtility.JavaScriptStringEncode(e.Name))')">
+                                                <i class="fas fa-triangle-exclamation"></i> No Technician — Assign Manually
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <div style="font-size:11px;color:var(--muted);margin-bottom:5px;">
+                                                <i class="fas fa-user-check"></i> Auto-assigned: <strong>@(e.PendingInspectionTechnician?.FullName)</strong>
+                                            </div>
+                                            <div style="display:flex;gap:6px;">
+                                                <button class="btn-primary" style="padding:7px 14px;font-size:12px;"
+                                                        onclick="openInspectModal(@e.EquipmentId, '@Html.Raw(HttpUtility.JavaScriptStringEncode(e.Name))', '@e.EquipmentCode', null, null, '', @e.PendingInspectionTechnicianId, '@Html.Raw(HttpUtility.JavaScriptStringEncode(e.PendingInspectionTechnician?.FullName ?? ""))')">
+                                                    <i class="fas fa-clipboard-check"></i> Perform Inspection
+                                                </button>
+                                                <button class="btn-qr" onclick="openAssignInspectionModal(@e.EquipmentId, '@Html.Raw(HttpUtility.JavaScriptStringEncode(e.Name))')" title="Override the auto-assigned technician">
+                                                    <i class="fas fa-arrows-rotate"></i>
+                                                </button>
+                                            </div>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div><!-- /tab-due -->
+    <!-- ===== TAB: INSPECTION HISTORY ===== -->
+    <div id="tab-history" class="tab-panel" style="display:none;">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div class="admin-card-title"><i class="fas fa-history"></i> Inspection History</div>
+                <div class="admin-card-count">@historyList.Count records</div>
+            </div>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Equipment</th>
+                            <th>Technician</th>
+                            <th>Result</th>
+                            <th>Findings</th>
+                            <th>Action Taken</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (historyList.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="6" style="text-align:center;padding:48px;color:var(--muted);">
+                                    <i class="fas fa-history" style="font-size:32px;opacity:.3;display:block;margin-bottom:12px;"></i>
+                                    No inspections recorded yet.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var i in historyList)
+                            {
+                                <tr>
+                                    <td class="item-date">@i.InspectionDate.ToString("dd MMM yyyy HH:mm")</td>
+                                    <td><span class="equipment-code">@(i.Equipment?.EquipmentCode)</span> @(i.Equipment?.Name)</td>
+                                    <td class="item-sub">@(i.Technician?.FullName ?? "—")</td>
+                                    <td><span class="badge @(i.Result == "Pass" ? "badge-available" : "badge-outofservice")">@i.Result</span></td>
+                                    <td class="item-sub">@(string.IsNullOrEmpty(i.Findings) ? "—" : i.Findings)</td>
+                                    <td class="item-sub">@(string.IsNullOrEmpty(i.ActionTaken) ? "—" : i.ActionTaken)</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div><!-- /tab-history -->
+    <!-- ===== TAB: FAULT REPAIR ===== -->
+    <div id="tab-repairs" class="tab-panel" style="display:none;">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div class="admin-card-title"><i class="fas fa-screwdriver-wrench"></i> Open Repairs</div>
+                <div class="admin-card-count">@repairsList.Count records</div>
+            </div>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Equipment</th>
+                            <th>Reported</th>
+                            <th>Fault</th>
+                            <th>Assigned To</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (repairsList.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="6" style="text-align:center;padding:48px;color:var(--muted);">
+                                    <i class="fas fa-check-circle" style="font-size:32px;opacity:.3;display:block;margin-bottom:12px;"></i>
+                                    No open repairs. All equipment is operational.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var r in repairsList)
+                            {
+                                var repairStatusClass = r.RepairStatus == "InProgress" ? "badge-maintenance"
+                                                       : r.RepairStatus == "Assigned" ? "badge-assigned"
+                                                       : r.RepairStatus == "Accepted" ? "badge-accepted"
+                                                       : r.RepairStatus == "Escalated" ? "badge-escalated"
+                                                       : r.RepairStatus == "AwaitingInspection" ? "badge-awaitinginspection"
+                                                       : r.RepairStatus == "AwaitingApproval" ? "badge-awaitingapproval"
+                                                       : r.RepairStatus == "Reopened" ? "badge-reopened"
+                                                       : "badge-outofservice"; // Pending
+                                <tr>
+                                    <td><span class="equipment-code">@(r.Equipment?.EquipmentCode)</span> @(r.Equipment?.Name)</td>
+                                    <td class="item-date">@r.ReportedDate.ToString("dd MMM yyyy")</td>
+                                    <td class="item-sub">@r.FaultDescription</td>
+                                    <td class="item-sub">@(r.Vendor != null ? r.Vendor.CompanyName + " (Vendor)" : (r.Technician?.FullName ?? "Unassigned"))</td>
+                                    <td><span class="badge @repairStatusClass">@r.RepairStatus</span></td>
+                                    <td>
+                                        @if (r.RepairStatus == "Pending")
+                                        {
+                                            var rec = recommendedTechs.ContainsKey(r.RepairId) ? recommendedTechs[r.RepairId] : null;
+                                            <button class="btn-primary" style="padding:7px 14px;font-size:12px;"
+                                                    onclick="openAssignModal(@r.RepairId, '@Html.Raw(HttpUtility.JavaScriptStringEncode(r.Equipment?.Name))', @(rec?.TechnicianId.ToString() ?? "null"), '@Html.Raw(HttpUtility.JavaScriptStringEncode(rec?.FullName ?? ""))')">
+                                                <i class="fas fa-user-plus"></i> Assign
+                                            </button>
+                                        }
+                                        else if (r.RepairStatus == "Escalated")
+                                        {
+                                            <button class="btn-primary" style="padding:7px 14px;font-size:12px;background:var(--orange);"
+                                                    onclick="openVendorModal(@r.RepairId, '@Html.Raw(HttpUtility.JavaScriptStringEncode(r.Equipment?.Name))')">
+                                                <i class="fas fa-truck"></i> Assign Vendor
+                                            </button>
+                                        }
+                                        else if (r.RepairStatus == "AwaitingInspection")
+                                        {
+                                            <span class="item-sub" style="font-style:italic;">
+                                                <i class="fas fa-clipboard-check"></i> See Inspections Due tab
+                                            </span>
+                                        }
+                                        else if (r.RepairStatus == "AwaitingApproval")
+                                        {
+                                            <div style="display:flex; gap:6px;">
+                                                <button class="btn-primary" style="padding:7px 14px;font-size:12px;background:var(--green);"
+                                                        onclick="openApproveModal(@r.RepairId, '@Html.Raw(HttpUtility.JavaScriptStringEncode(r.Equipment?.Name))')">
+                                                    <i class="fas fa-check"></i> Approve
+                                                </button>
+                                                <button class="btn-primary" style="padding:7px 14px;font-size:12px;background:var(--red);"
+                                                        onclick="openRejectModal(@r.RepairId, '@Html.Raw(HttpUtility.JavaScriptStringEncode(r.Equipment?.Name))')">
+                                                    <i class="fas fa-xmark"></i> Reject
+                                                </button>
+                                            </div>
+                                        }
+                                        else if (r.VendorId != null)
+                                        {
+                                            @* Vendor-driven repair — the vendor has no dashboard of their
+                                                own, so the admin MUST be the one to close this out once the
+                                                vendor reports back. This is the only case where the admin
+                                                closes out someone else's active work. ── *@
+                                            <div style="display:flex; gap:6px;">
+                                                <button class="btn-primary" style="padding:7px 14px;font-size:12px;background:var(--green);"
+                                                        onclick="openMarkCompleteModal(@r.RepairId, '@Html.Raw(HttpUtility.JavaScriptStringEncode(r.Equipment?.Name))')">
+                                                    <i class="fas fa-check"></i> Mark Complete
+                                                </button>
+                                                <button class="btn-primary" style="padding:7px 14px;font-size:12px;background:var(--red);"
+                                                        onclick="openMarkUnrepairableModal(@r.RepairId, '@Html.Raw(HttpUtility.JavaScriptStringEncode(r.Equipment?.Name))')">
+                                                    <i class="fas fa-ban"></i> Unrepairable
+                                                </button>
+                                            </div>
+                                        }
+                                        else if (r.TechnicianId != null && (r.RepairStatus == "Assigned" || r.RepairStatus == "Accepted"))
+                                        {
+                                            @* Technician-driven, work not yet started — safe window to
+                                                swap who's assigned without stepping on anyone's active work. ── *@
+                                            <button class="btn-primary" style="padding:7px 14px;font-size:12px;background:var(--purple);"
+                                                    onclick="openReassignModal(@r.RepairId, '@Html.Raw(HttpUtility.JavaScriptStringEncode(r.Equipment?.Name))')">
+                                                <i class="fas fa-arrows-rotate"></i> Reassign
+                                            </button>
+                                        }
+                                        else if (r.TechnicianId != null)
+                                        {
+                                            @* InProgress / Reopened on the technician side — their own
+                                                dashboard (Complete / Escalate / Resume) is the only place
+                                                this should move forward from, to avoid a collision where
+                                                the admin closes it out while the technician is mid-repair. ── *@
+                                            <span class="item-sub" style="font-style:italic;">
+                                                <i class="fas fa-user-gear"></i> Managed by technician
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="item-sub" style="font-style:italic;">Awaiting assignment</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div><!-- /tab-repairs -->
+    <!-- ===== TAB: MAINTENANCE DUE ===== -->
+    <div id="tab-maintdue" class="tab-panel" style="display:none;">
+        <div class="admin-stats-grid">
+            <div class="admin-stat-card gold">
+                <div class="stat-icon"><i class="fas fa-oil-can"></i></div>
+                <div class="stat-number">@maintDueList.Count</div>
+                <div class="stat-label">Due For Maintenance</div>
+            </div>
+            <div class="admin-stat-card blue">
+                <div class="stat-icon"><i class="fas fa-user-check"></i></div>
+                <div class="stat-number">@maintDueList.Count(e => e.PendingMaintenanceTechnicianId != null)</div>
+                <div class="stat-label">Auto-Assigned</div>
+            </div>
+        </div>
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div class="admin-card-title"><i class="fas fa-oil-can"></i> Equipment Requiring Maintenance</div>
+                <div class="admin-card-count">@maintDueList.Count records</div>
+            </div>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Gym Area</th>
+                            <th>Due Date</th>
+                            <th>Assigned Technician</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (maintDueList.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="6" style="text-align:center;padding:48px;color:var(--muted);">
+                                    <i class="fas fa-check-circle" style="font-size:32px;opacity:.3;display:block;margin-bottom:12px;"></i>
+                                    No equipment currently due for maintenance.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var e in maintDueList)
+                            {
+                                <tr>
+                                    <td><span class="equipment-code">@e.EquipmentCode</span></td>
+                                    <td class="item-name">@e.Name</td>
+                                    <td class="item-sub">@e.GymArea</td>
+                                    <td class="item-date">@(e.NextMaintenanceDueDate?.ToString("dd MMM yyyy"))</td>
+                                    <td class="item-sub">
+                                        @if (e.PendingMaintenanceTechnicianId != null)
+                                        {
+                                            <span class="badge badge-assigned">@(e.PendingMaintenanceTechnician?.FullName)</span>
+                                        }
+                                        else
+                                        {
+                                            <span style="font-style:italic;color:var(--muted);">Awaiting auto-assignment</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <button class="btn-primary" style="padding:7px 14px;font-size:12px;background:var(--purple);"
+                                                onclick="openReassignMaintenanceModal(@e.EquipmentId, '@Html.Raw(HttpUtility.JavaScriptStringEncode(e.Name))', @(e.PendingMaintenanceTechnicianId?.ToString() ?? "null"))">
+                                            <i class="fas fa-arrows-rotate"></i> @(e.PendingMaintenanceTechnicianId != null ? "Reassign" : "Assign")
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div><!-- /tab-maintdue -->
+    <!-- ===== TAB: MAINTENANCE HISTORY ===== -->
+    <div id="tab-maintenance" class="tab-panel" style="display:none;">
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div class="admin-card-title"><i class="fas fa-clock-rotate-left"></i> Maintenance History</div>
+                <div class="admin-card-count">@maintHistoryList.Count records</div>
+            </div>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Equipment</th>
+                            <th>Technician</th>
+                            <th>Result</th>
+                            <th>Tasks Performed</th>
+                            <th>Parts Replaced</th>
+                            <th>Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (maintHistoryList.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="7" style="text-align:center;padding:48px;color:var(--muted);">
+                                    <i class="fas fa-clock-rotate-left" style="font-size:32px;opacity:.3;display:block;margin-bottom:12px;"></i>
+                                    No maintenance recorded yet.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            foreach (var m in maintHistoryList)
+                            {
+                                <tr>
+                                    <td class="item-date">@m.MaintenanceDate.ToString("dd MMM yyyy HH:mm")</td>
+                                    <td><span class="equipment-code">@(m.Equipment?.EquipmentCode)</span> @(m.Equipment?.Name)</td>
+                                    <td class="item-sub">@(m.Technician?.FullName ?? "—")</td>
+                                    <td><span class="badge @(m.Result == "Completed" ? "badge-available" : "badge-outofservice")">@(m.Result == "Completed" ? "Completed" : "Issue Found")</span></td>
+                                    <td class="item-sub">@(string.IsNullOrEmpty(m.TasksPerformed) ? "—" : m.TasksPerformed)</td>
+                                    <td class="item-sub">@(string.IsNullOrEmpty(m.PartsReplaced) ? "—" : m.PartsReplaced)</td>
+                                    <td class="item-sub">@(m.Cost.HasValue ? "R" + m.Cost.Value.ToString("F2") : "—")</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div><!-- /tab-maintenance -->
+
+</div><!-- /page-content -->
+
+
+@section Modals {
+    <!-- ===== ADD MODAL ===== -->
+    <div id="addModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title"><i class="fas fa-dumbbell" style="color:var(--blue);font-size:20px;"></i> Register New Equipment</div>
+            @using (Html.BeginForm("Register", "Equipment", FormMethod.Post, new { enctype = "multipart/form-data" }))
+            {
+                @Html.AntiForgeryToken()
+                <div class="form-row">
+                    <div class="form-group"><label>Equipment Name <span style="color:var(--red)">*</span></label><input name="Name" class="form-control" placeholder="e.g. Treadmill" required /></div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select name="Category" class="form-control">
+                            <option value="">Select</option>
+                            <option>Cardio</option>
+                            <option>Strength Machines</option>
+                            <option>Free Weights</option>
+                            <option>Functional Training</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Equipment Photo</label>
+                    <input type="file" name="imageFile" accept="image/*" class="form-control" style="padding:8px;" />
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Brand</label><input name="Brand" class="form-control" placeholder="e.g. Life Fitness" /></div>
+                    <div class="form-group"><label>Model</label><input name="Model" class="form-control" placeholder="e.g. T5 Track" /></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Serial Number</label><input name="SerialNumber" class="form-control" /></div>
+                    <div class="form-group">
+                        <label>Gym Area</label>
+                        <select name="GymArea" class="form-control">
+                            <option value="">Select</option>
+                            <option>Cardio Zone</option>
+                            <option>Free Weights Area</option>
+                            <option>Strength Machines</option>
+                            <option>Functional Training Area</option>
+                            <option>Studio / Group Class Room</option>
+                            <option>Locker Room / Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Purchase Date</label><input name="PurchaseDate" type="date" class="form-control" /></div>
+                    <div class="form-group"><label>Purchase Cost (R)</label><input name="PurchaseCost" type="number" step="0.01" min="0" class="form-control" /></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Vendor Name</label><input name="VendorName" class="form-control" placeholder="e.g. FitTech Suppliers" /></div>
+                    <div class="form-group"><label>Vendor Contact</label><input name="VendorContact" class="form-control" placeholder="Phone or email" /></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Warranty Expiry</label><input name="WarrantyExpiryDate" type="date" class="form-control" /></div>
+                    <div class="form-group"><label>Inspection Interval (days)</label><input name="InspectionIntervalDays" type="number" min="1" value="30" class="form-control" /></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Maintenance Interval (days)</label><input name="MaintenanceIntervalDays" type="number" min="1" value="90" class="form-control" /></div>
+                    <div class="form-group"><label>Notes</label><input name="Notes" class="form-control" placeholder="Optional" /></div>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn save"><i class="fas fa-save"></i> Register Equipment</button>
+                    <button type="button" class="modal-btn cancel" onclick="closeAddModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ===== EDIT MODAL ===== -->
+    <div id="editModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title"><i class="fas fa-edit" style="color:var(--blue);font-size:20px;"></i> Edit Equipment</div>
+            @using (Html.BeginForm("Edit", "Equipment", FormMethod.Post, new { id = "editForm", enctype = "multipart/form-data" }))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="EquipmentId" id="edit_EquipmentId" />
+                <div class="form-row">
+                    <div class="form-group"><label>Equipment Name <span style="color:var(--red)">*</span></label><input name="Name" id="edit_Name" class="form-control" required /></div>
+                    <div class="form-group">
+                        <label>Category</label>
+                        <select name="Category" id="edit_Category" class="form-control">
+                            <option value="">Select</option>
+                            <option>Cardio</option>
+                            <option>Strength Machines</option>
+                            <option>Free Weights</option>
+                            <option>Functional Training</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Equipment Photo</label>
+                    <img id="edit_CurrentImage" src="" style="max-width:120px;max-height:80px;border-radius:6px;display:none;margin-bottom:8px;object-fit:cover;" />
+                    <input type="file" name="imageFile" accept="image/*" class="form-control" style="padding:8px;" />
+                    <div style="font-size:11px;color:var(--muted);margin-top:4px;">Leave empty to keep the current photo</div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Brand</label><input name="Brand" id="edit_Brand" class="form-control" /></div>
+                    <div class="form-group"><label>Model</label><input name="Model" id="edit_Model" class="form-control" /></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Serial Number</label><input name="SerialNumber" id="edit_SerialNumber" class="form-control" /></div>
+                    <div class="form-group">
+                        <label>Gym Area</label>
+                        <select name="GymArea" id="edit_GymArea" class="form-control">
+                            <option value="">Select</option>
+                            <option>Cardio Zone</option>
+                            <option>Free Weights Area</option>
+                            <option>Strength Machines</option>
+                            <option>Functional Training Area</option>
+                            <option>Studio / Group Class Room</option>
+                            <option>Locker Room / Other</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Purchase Date</label><input name="PurchaseDate" id="edit_PurchaseDate" type="date" class="form-control" /></div>
+                    <div class="form-group"><label>Purchase Cost (R)</label><input name="PurchaseCost" id="edit_PurchaseCost" type="number" step="0.01" min="0" class="form-control" /></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Vendor Name</label><input name="VendorName" id="edit_VendorName" class="form-control" /></div>
+                    <div class="form-group"><label>Vendor Contact</label><input name="VendorContact" id="edit_VendorContact" class="form-control" /></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Warranty Expiry</label><input name="WarrantyExpiryDate" id="edit_WarrantyExpiryDate" type="date" class="form-control" /></div>
+                    <div class="form-group">
+                        <label>Status</label>
+                        <select name="Status" id="edit_Status" class="form-control">
+                            <option value="Available">Available</option>
+                            <option value="OutOfService">Out of Service</option>
+                            <option value="UnderMaintenance">Under Maintenance</option>
+                            <option value="Retired">Retired</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Inspection Interval (days)</label><input name="InspectionIntervalDays" id="edit_InspectionIntervalDays" type="number" min="1" class="form-control" /></div>
+                    <div class="form-group"><label>Maintenance Interval (days)</label><input name="MaintenanceIntervalDays" id="edit_MaintenanceIntervalDays" type="number" min="1" class="form-control" /></div>
+                </div>
+                <div class="form-group"><label>Notes</label><input name="Notes" id="edit_Notes" class="form-control" /></div>
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn save"><i class="fas fa-save"></i> Save Changes</button>
+                    <button type="button" class="modal-btn cancel" onclick="closeEditModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ===== DELETE CONFIRM MODAL ===== -->
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal-box qr-modal-box">
+            <div class="modal-title" style="justify-content:center; color:var(--red);"><i class="fas fa-exclamation-triangle"></i> Confirm Delete</div>
+            <p style="color:var(--text-sub); margin-bottom:20px;">Remove <strong id="deleteEquipmentName"></strong>? This cannot be undone.</p>
+            @using (Html.BeginForm("Delete", "Equipment", FormMethod.Post, new { id = "deleteForm" }))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="delete_EquipmentId" />
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn save" style="background:var(--red); box-shadow:0 4px 12px rgba(220,38,38,.25);"><i class="fas fa-trash"></i> Delete</button>
+                    <button type="button" class="modal-btn cancel" onclick="closeDeleteModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ===== QR VIEW MODAL ===== -->
+    <div id="qrModal" class="modal-overlay">
+        <div class="modal-box qr-modal-box">
+            <div class="modal-title" style="justify-content:center;" id="qrModalTitle">Equipment QR</div>
+            <img id="qrModalImage" src="" alt="Equipment QR Code" />
+            <div style="font-size:12px;color:var(--muted);margin-bottom:16px;" id="qrModalCode">—</div>
+            <button type="button" class="modal-btn cancel" onclick="closeQrModal()" style="width:100%;">Close</button>
+        </div>
+    </div>
+
+    <!-- ===== PERFORM INSPECTION MODAL ===== -->
+    <div id="inspectModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title"><i class="fas fa-clipboard-check" style="color:var(--blue);font-size:20px;"></i> Perform Inspection</div>
+            <p style="color:var(--muted);font-size:13px;margin-bottom:16px;">
+                <span id="inspectEquipmentName"></span> (<span id="inspectEquipmentCode"></span>)
+            </p>
+            @using (Html.BeginForm("PerformInspection", "Inspection", FormMethod.Post, new { id = "inspectForm" }))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="equipmentId" id="inspect_EquipmentId" />
+                <input type="hidden" name="repairId" id="inspect_RepairId" />
+
+                <div id="inspectPostRepairNote" style="display:none;background:var(--purple-light);border:1px solid rgba(124,58,237,.2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--purple);">
+                    <i class="fas fa-info-circle"></i> <span id="inspectPostRepairNoteText"></span>
+                </div>
+
+                <div id="inspectAssignedNote" style="display:none;background:var(--blue-light);border:1px solid rgba(37,99,235,.2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--blue);"></div>
+
+                <div class="form-group">
+                    <label>Technician</label>
+                    <select name="technicianId" id="inspect_TechnicianId" class="form-control">
+                        <option value="">— Not assigned —</option>
+                        @foreach (var t in technicians)
+                        {
+                            <option value="@t.TechnicianId">@t.FullName</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Result <span style="color:var(--red)">*</span></label>
+                    <select name="result" class="form-control" required>
+                        <option value="">Select</option>
+                        <option value="Pass">Pass</option>
+                        <option value="Fail">Fail</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Findings</label>
+                    <input name="findings" class="form-control" placeholder="What was observed during inspection" />
+                </div>
+
+                <div class="form-group">
+                    <label>Action Taken (if Fail)</label>
+                    <input name="actionTaken" class="form-control" placeholder="Any immediate action taken, optional" />
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn save"><i class="fas fa-save"></i> Submit Inspection</button>
+                    <button type="button" class="modal-btn cancel" onclick="closeInspectModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ===== ASSIGN INSPECTION MODAL (routine) ===== -->
+    <div id="assignInspectionModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title"><i class="fas fa-user-plus" style="color:var(--blue);font-size:20px;"></i> Assign Inspection</div>
+            <p style="color:var(--muted);font-size:13px;margin-bottom:16px;"><span id="assignInspectionEquipmentName"></span></p>
+
+            @using (Html.BeginForm("AssignInspection", "Inspection", FormMethod.Post, new { id = "assignInspectionForm" }))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="equipmentId" id="assignInspection_EquipmentId" />
+
+                <div class="form-group">
+                    <label>Technician <span style="color:var(--red)">*</span></label>
+                    <select name="technicianId" class="form-control" required>
+                        <option value="">Select a technician</option>
+                        @foreach (var t in technicians)
+                        {
+                            <option value="@t.TechnicianId">@t.FullName — @t.Specialization</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn save"><i class="fas fa-check"></i> Assign</button>
+                    <button type="button" class="modal-btn cancel" onclick="closeAssignInspectionModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ===== ASSIGN VERIFICATION MODAL (post-repair / vendor) ===== -->
+    <div id="assignVerificationModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title"><i class="fas fa-user-plus" style="color:var(--purple);font-size:20px;"></i> Assign Verification</div>
+            <p style="color:var(--muted);font-size:13px;margin-bottom:16px;"><span id="assignVerificationEquipmentName"></span></p>
+
+            <div id="assignVerificationNote" style="display:none;background:var(--purple-light);border:1px solid rgba(124,58,237,.2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--purple);">
+                <i class="fas fa-info-circle"></i> <span id="assignVerificationNoteText"></span>
+            </div>
+
+            @using (Html.BeginForm("AssignVerification", "Inspection", FormMethod.Post, new { id = "assignVerificationForm" }))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="repairId" id="assignVerification_RepairId" />
+
+                <div class="form-group">
+                    <label>Technician <span style="color:var(--red)">*</span></label>
+                    <select name="technicianId" id="assignVerification_TechnicianId" class="form-control" required>
+                        <option value="">Select a technician</option>
+                        @foreach (var t in technicians)
+                        {
+                            <option value="@t.TechnicianId">@t.FullName — @t.Specialization</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn save" style="background:var(--purple);"><i class="fas fa-check"></i> Assign</button>
+                    <button type="button" class="modal-btn cancel" onclick="closeAssignVerificationModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ===== APPROVE COMPLETION MODAL ===== -->
+    <div id="approveModal" class="modal-overlay">
+        <div class="modal-box qr-modal-box">
+            <div class="modal-title" style="justify-content:center; color:var(--green);"><i class="fas fa-check-circle"></i> Approve Completion</div>
+            <p style="color:var(--text-sub); margin-bottom:20px;">
+                Confirm <strong id="approveEquipmentName"></strong> passed inspection and should return to service.
+            </p>
+            @using (Html.BeginForm("ApproveCompletion", "Repair", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="repairId" id="approve_RepairId" />
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn save" style="background:var(--green);"><i class="fas fa-check"></i> Approve — Return to Service</button>
+                    <button type="button" class="modal-btn cancel" onclick="closeApproveModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ===== REJECT COMPLETION MODAL ===== -->
+    <div id="rejectModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title" style="color:var(--red);"><i class="fas fa-xmark" style="font-size:20px;"></i> Reject Completion</div>
+            <p style="color:var(--text-sub); font-size:13px; margin-bottom:16px;">
+                <strong id="rejectEquipmentName"></strong> will be sent back to the technician as Reopened.
+            </p>
+            @using (Html.BeginForm("RejectCompletion", "Repair", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="repairId" id="reject_RepairId" />
+                <div class="form-group">
+                    <label>Reason <span style="color:var(--red)">*</span></label>
+                    <input type="text" name="reason" class="form-control" required placeholder="Why doesn't this meet the standard for return to service?" />
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn save" style="background:var(--red);"><i class="fas fa-xmark"></i> Reject</button>
+                    <button type="button" class="modal-btn cancel" onclick="closeRejectModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ===== MARK COMPLETE MODAL ===== -->
+    <div id="markCompleteModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title"><i class="fas fa-check" style="color:var(--green);font-size:20px;"></i> Mark Repair Complete</div>
+            <p style="color:var(--muted);font-size:13px;margin-bottom:16px;"><span id="markCompleteEquipmentName"></span></p>
+            <div style="background:var(--gold-light);border:1px solid rgba(217,119,6,.2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--gold);">
+                <i class="fas fa-info-circle"></i> This won't mark the equipment Available yet — it moves to Awaiting Inspection and needs to be verified first.
+            </div>
+            @using (Html.BeginForm("MarkComplete", "Repair", FormMethod.Post, new { id = "markCompleteForm" }))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="repairId" id="markComplete_RepairId" />
+
+                <div class="form-group">
+                    <label>Diagnosis Notes</label>
+                    <input name="diagnosisNotes" class="form-control" placeholder="What was wrong, what was done" />
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group"><label>Parts Used</label><input name="partsUsed" class="form-control" placeholder="Optional" /></div>
+                    <div class="form-group"><label>Repair Cost (R)</label><input name="repairCost" type="number" step="0.01" min="0" class="form-control" /></div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn save" style="background:var(--green);"><i class="fas fa-check"></i> Mark Complete</button>
+                    <button type="button" class="modal-btn cancel" onclick="closeMarkCompleteModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ===== MARK UNREPAIRABLE MODAL ===== -->
+    <div id="markUnrepairableModal" class="modal-overlay">
+        <div class="modal-box qr-modal-box">
+            <div class="modal-title" style="justify-content:center; color:var(--red);"><i class="fas fa-exclamation-triangle"></i> Mark Unrepairable</div>
+            <p style="color:var(--text-sub); margin-bottom:16px;">Retire <strong id="markUnrepairableEquipmentName"></strong>? This cannot be undone — the equipment will be marked Retired.</p>
+            @using (Html.BeginForm("MarkUnrepairable", "Repair", FormMethod.Post, new { id = "markUnrepairableForm" }))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="repairId" id="markUnrepairable_RepairId" />
+                <div class="form-group" style="text-align:left;">
+                    <label>Reason <span style="color:var(--red)">*</span></label>
+                    <input name="reason" class="form-control" placeholder="Why can't this be fixed?" required />
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn save" style="background:var(--red); box-shadow:0 4px 12px rgba(220,38,38,.25);"><i class="fas fa-ban"></i> Mark Unrepairable</button>
+                    <button type="button" class="modal-btn cancel" onclick="closeMarkUnrepairableModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ===== ASSIGN TECHNICIAN MODAL ===== -->
+    <div id="assignModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title"><i class="fas fa-user-plus" style="color:var(--blue);font-size:20px;"></i> Assign Technician</div>
+            <p style="color:var(--muted);font-size:13px;margin-bottom:16px;"><span id="assignEquipmentName"></span></p>
+
+            <div id="assignRecommendation" style="display:none;background:var(--blue-light);border:1px solid rgba(37,99,235,.2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--blue);">
+                <i class="fas fa-star"></i> Recommended: <strong id="assignRecommendedName"></strong>
+            </div>
+
+            @using (Html.BeginForm("AssignTechnician", "Repair", FormMethod.Post, new { id = "assignForm" }))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="repairId" id="assign_RepairId" />
+
+                <div class="form-group">
+                    <label>Technician <span style="color:var(--red)">*</span></label>
+                    <select name="technicianId" id="assign_TechnicianId" class="form-control" required>
+                        <option value="">Select a technician</option>
+                        @foreach (var t in technicians)
+                        {
+                            <option value="@t.TechnicianId">@t.FullName — @t.Specialization</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Priority</label>
+                        <select name="priority" class="form-control">
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                            <option value="Urgent">Urgent</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Due Date</label>
+                        <input name="dueDate" type="date" class="form-control" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Notes</label>
+                    <input name="assignmentNotes" class="form-control" placeholder="Optional — anything the technician should know" />
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn save"><i class="fas fa-check"></i> Assign</button>
+                    <button type="button" class="modal-btn cancel" onclick="closeAssignModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ===== REASSIGN TECHNICIAN MODAL ===== -->
+    <div id="reassignModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title"><i class="fas fa-arrows-rotate" style="color:var(--purple);font-size:20px;"></i> Reassign Technician</div>
+            <p style="color:var(--muted);font-size:13px;margin-bottom:16px;"><span id="reassignEquipmentName"></span></p>
+            <div style="background:var(--purple-light);border:1px solid rgba(124,58,237,.2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--purple);">
+                <i class="fas fa-info-circle"></i> The current technician's assignment will be marked superseded. Only usable before work has started.
+            </div>
+
+            @using (Html.BeginForm("ReassignTechnician", "Repair", FormMethod.Post, new { id = "reassignForm" }))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="repairId" id="reassign_RepairId" />
+
+                <div class="form-group">
+                    <label>New Technician <span style="color:var(--red)">*</span></label>
+                    <select name="technicianId" class="form-control" required>
+                        <option value="">Select a technician</option>
+                        @foreach (var t in technicians)
+                        {
+                            <option value="@t.TechnicianId">@t.FullName — @t.Specialization</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Priority</label>
+                        <select name="priority" class="form-control">
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                            <option value="Urgent">Urgent</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Due Date</label>
+                        <input name="dueDate" type="date" class="form-control" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Notes</label>
+                    <input name="assignmentNotes" class="form-control" placeholder="Optional — why this is being reassigned" />
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn save" style="background:var(--purple);"><i class="fas fa-arrows-rotate"></i> Reassign</button>
+                    <button type="button" class="modal-btn cancel" onclick="closeReassignModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ===== REASSIGN MAINTENANCE MODAL ===== -->
+    <div id="reassignMaintenanceModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title"><i class="fas fa-oil-can" style="color:var(--purple);font-size:20px;"></i> Assign Maintenance</div>
+            <p style="color:var(--muted);font-size:13px;margin-bottom:16px;"><span id="reassignMaintenanceEquipmentName"></span></p>
+            <div style="background:var(--purple-light);border:1px solid rgba(124,58,237,.2);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:16px;font-size:13px;color:var(--purple);">
+                <i class="fas fa-info-circle"></i> Maintenance is normally auto-assigned by specialization and workload. Use this to override.
+            </div>
+            @using (Html.BeginForm("ReassignMaintenance", "Maintenance", FormMethod.Post, new { id = "reassignMaintenanceForm" }))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="equipmentId" id="reassignMaintenance_EquipmentId" />
+                <div class="form-group">
+                    <label>Technician <span style="color:var(--red)">*</span></label>
+                    <select name="technicianId" id="reassignMaintenance_TechnicianId" class="form-control" required>
+                        <option value="">Select a technician</option>
+                        @foreach (var t in technicians)
+                        {
+                            <option value="@t.TechnicianId">@t.FullName — @t.Specialization</option>
+                        }
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn save" style="background:var(--purple);"><i class="fas fa-check"></i> Save</button>
+                    <button type="button" class="modal-btn cancel" onclick="closeReassignMaintenanceModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ===== ASSIGN VENDOR MODAL ===== -->
+    <div id="vendorModal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title"><i class="fas fa-truck" style="color:var(--orange);font-size:20px;"></i> Assign Vendor</div>
+            <p style="color:var(--muted);font-size:13px;margin-bottom:16px;"><span id="vendorEquipmentName"></span></p>
+
+            @using (Html.BeginForm("AssignVendor", "Repair", FormMethod.Post, new { id = "vendorForm" }))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="repairId" id="vendor_RepairId" />
+
+                <div class="form-group">
+                    <label>Vendor <span style="color:var(--red)">*</span></label>
+                    <select name="vendorId" class="form-control" required>
+                        <option value="">Select a vendor</option>
+                        @foreach (var v in vendors)
+                        {
+                            <option value="@v.VendorId">@v.CompanyName — @v.ServiceType</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Priority</label>
+                        <select name="priority" class="form-control">
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                            <option value="Urgent">Urgent</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Due Date</label>
+                        <input name="dueDate" type="date" class="form-control" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Notes</label>
+                    <input name="assignmentNotes" class="form-control" placeholder="Optional" />
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="modal-btn save" style="background:var(--orange);"><i class="fas fa-check"></i> Assign Vendor</button>
+                    <button type="button" class="modal-btn cancel" onclick="closeVendorModal()">Cancel</button>
+                </div>
+            }
+        </div>
+    </div>
+}
+@section Scripts{
+
+    <script>
+        function openAddModal() { document.getElementById('addModal').style.display = 'flex'; }
+        function closeAddModal() { document.getElementById('addModal').style.display = 'none'; }
+
+        function viewQr(name, code, dataUrl) {
+            document.getElementById('qrModalTitle').textContent = name;
+            document.getElementById('qrModalCode').textContent = code;
+            document.getElementById('qrModalImage').src = dataUrl;
+            document.getElementById('qrModal').style.display = 'flex';
+        }
+        function closeQrModal() { document.getElementById('qrModal').style.display = 'none'; }
+
+        function filterTable() {
+            var q = document.getElementById('equipmentSearch').value.toLowerCase();
+            document.querySelectorAll('#equipmentTable tbody tr').forEach(function (row) {
+                row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+            });
+        }
+
+        function openEditModal(id, name, category, brand, model, serial, gymArea, purchaseDate, purchaseCost, vendorName, vendorContact, warrantyExpiry, inspectionInterval, maintenanceInterval, notes, status, imagePath) {
+            document.getElementById('edit_EquipmentId').value = id;
+            document.getElementById('edit_Name').value = name;
+            document.getElementById('edit_Category').value = category;
+            document.getElementById('edit_Brand').value = brand;
+            document.getElementById('edit_Model').value = model;
+            document.getElementById('edit_SerialNumber').value = serial;
+            document.getElementById('edit_GymArea').value = gymArea;
+            document.getElementById('edit_PurchaseDate').value = purchaseDate === 'null' ? '' : purchaseDate;
+            document.getElementById('edit_PurchaseCost').value = purchaseCost;
+            document.getElementById('edit_VendorName').value = vendorName;
+            document.getElementById('edit_VendorContact').value = vendorContact;
+            document.getElementById('edit_WarrantyExpiryDate').value = warrantyExpiry === 'null' ? '' : warrantyExpiry;
+            document.getElementById('edit_InspectionIntervalDays').value = inspectionInterval;
+            document.getElementById('edit_MaintenanceIntervalDays').value = maintenanceInterval;
+            document.getElementById('edit_Notes').value = notes;
+            document.getElementById('edit_Status').value = status;
+
+            var img = document.getElementById('edit_CurrentImage');
+            if (imagePath && imagePath !== 'null' && imagePath !== '') {
+                img.src = imagePath;
+                img.style.display = 'block';
+            } else {
+                img.style.display = 'none';
+            }
+
+            document.getElementById('editModal').style.display = 'flex';
+        }
+        function closeEditModal() { document.getElementById('editModal').style.display = 'none'; }
+
+        function confirmDelete(id, name) {
+            document.getElementById('delete_EquipmentId').value = id;
+            document.getElementById('deleteEquipmentName').textContent = name;
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+        function closeDeleteModal() { document.getElementById('deleteModal').style.display = 'none'; }
+
+        // repairId / excludedTechId / excludedTechName are only passed for
+        // post-repair "Verify Repair" rows — routine "Inspect" rows pass
+        // null/null/'' and the dropdown behaves exactly as before.
+        function openInspectModal(id, name, code, repairId, excludedTechId, excludedTechName, assignedTechId, assignedTechName) {
+            document.getElementById('inspect_EquipmentId').value = id;
+            document.getElementById('inspectEquipmentName').textContent = name;
+            document.getElementById('inspectEquipmentCode').textContent = code;
+            document.getElementById('inspect_RepairId').value = repairId || '';
+
+            var noteBox = document.getElementById('inspectPostRepairNote');
+            var noteText = document.getElementById('inspectPostRepairNoteText');
+            var techSelect = document.getElementById('inspect_TechnicianId');
+            var assignedBox = document.getElementById('inspectAssignedNote');
+
+            // Reset every option to visible/enabled before applying any exclusion
+            Array.from(techSelect.options).forEach(function (opt) {
+                opt.disabled = false;
+                opt.hidden = false;
+            });
+            techSelect.value = '';
+
+            if (repairId && excludedTechId) {
+                var optToHide = techSelect.querySelector('option[value="' + excludedTechId + '"]');
+                if (optToHide) {
+                    optToHide.disabled = true;
+                    optToHide.hidden = true;
+                }
+                noteText.textContent = (excludedTechName || 'This technician') + ' performed this repair and cannot verify it — please select a different technician.';
+                noteBox.style.display = 'block';
+            } else {
+                noteBox.style.display = 'none';
+            }
+
+            // Pre-fill (still editable) with whoever was assigned via the
+            // separate Assign step — this is the split the admin asked for:
+            // assignment happens first with no result fields, performing
+            // happens later with the technician already selected.
+            if (assignedTechId) {
+                techSelect.value = assignedTechId;
+                assignedBox.textContent = 'Assigned to: ' + (assignedTechName || 'technician') + ' — change the technician below if someone else is actually performing this.';
+                assignedBox.style.display = 'block';
+            } else {
+                assignedBox.style.display = 'none';
+            }
+
+            document.getElementById('inspectModal').style.display = 'flex';
+        }
+        function closeInspectModal() { document.getElementById('inspectModal').style.display = 'none'; }
+
+        function openAssignInspectionModal(equipmentId, equipName) {
+            document.getElementById('assignInspection_EquipmentId').value = equipmentId;
+            document.getElementById('assignInspectionEquipmentName').textContent = equipName;
+            document.getElementById('assignInspectionModal').style.display = 'flex';
+        }
+        function closeAssignInspectionModal() { document.getElementById('assignInspectionModal').style.display = 'none'; }
+
+        function openAssignVerificationModal(repairId, equipName, excludedTechId, excludedTechName) {
+            document.getElementById('assignVerification_RepairId').value = repairId;
+            document.getElementById('assignVerificationEquipmentName').textContent = equipName;
+
+            var noteBox = document.getElementById('assignVerificationNote');
+            var noteText = document.getElementById('assignVerificationNoteText');
+            var techSelect = document.getElementById('assignVerification_TechnicianId');
+
+            Array.from(techSelect.options).forEach(function (opt) {
+                opt.disabled = false;
+                opt.hidden = false;
+            });
+            techSelect.value = '';
+
+            if (excludedTechId) {
+                var optToHide = techSelect.querySelector('option[value="' + excludedTechId + '"]');
+                if (optToHide) {
+                    optToHide.disabled = true;
+                    optToHide.hidden = true;
+                }
+                noteText.textContent = (excludedTechName || 'This technician') + ' performed this repair and cannot be assigned to verify it.';
+                noteBox.style.display = 'block';
+            } else {
+                noteBox.style.display = 'none';
+            }
+
+            document.getElementById('assignVerificationModal').style.display = 'flex';
+        }
+        function closeAssignVerificationModal() { document.getElementById('assignVerificationModal').style.display = 'none'; }
+
+        function openApproveModal(repairId, equipName) {
+            document.getElementById('approve_RepairId').value = repairId;
+            document.getElementById('approveEquipmentName').textContent = equipName;
+            document.getElementById('approveModal').style.display = 'flex';
+        }
+        function closeApproveModal() { document.getElementById('approveModal').style.display = 'none'; }
+
+        function openRejectModal(repairId, equipName) {
+            document.getElementById('reject_RepairId').value = repairId;
+            document.getElementById('rejectEquipmentName').textContent = equipName;
+            document.getElementById('rejectModal').style.display = 'flex';
+        }
+        function closeRejectModal() { document.getElementById('rejectModal').style.display = 'none'; }
+
+        function openMarkCompleteModal(repairId, equipName) {
+            document.getElementById('markComplete_RepairId').value = repairId;
+            document.getElementById('markCompleteEquipmentName').textContent = equipName;
+            document.getElementById('markCompleteModal').style.display = 'flex';
+        }
+        function closeMarkCompleteModal() { document.getElementById('markCompleteModal').style.display = 'none'; }
+
+        function openMarkUnrepairableModal(repairId, equipName) {
+            document.getElementById('markUnrepairable_RepairId').value = repairId;
+            document.getElementById('markUnrepairableEquipmentName').textContent = equipName;
+            document.getElementById('markUnrepairableModal').style.display = 'flex';
+        }
+        function closeMarkUnrepairableModal() { document.getElementById('markUnrepairableModal').style.display = 'none'; }
+
+        function openAssignModal(repairId, equipName, recommendedId, recommendedName) {
+            document.getElementById('assign_RepairId').value = repairId;
+            document.getElementById('assignEquipmentName').textContent = equipName;
+
+            var recBox = document.getElementById('assignRecommendation');
+            if (recommendedId) {
+                document.getElementById('assignRecommendedName').textContent = recommendedName;
+                document.getElementById('assign_TechnicianId').value = recommendedId;
+                recBox.style.display = 'block';
+            } else {
+                recBox.style.display = 'none';
+                document.getElementById('assign_TechnicianId').value = '';
+            }
+
+            document.getElementById('assignModal').style.display = 'flex';
+        }
+        function closeAssignModal() { document.getElementById('assignModal').style.display = 'none'; }
+
+        function openReassignModal(repairId, equipName) {
+            document.getElementById('reassign_RepairId').value = repairId;
+            document.getElementById('reassignEquipmentName').textContent = equipName;
+            document.getElementById('reassignModal').style.display = 'flex';
+        }
+        function closeReassignModal() { document.getElementById('reassignModal').style.display = 'none'; }
+
+        function openReassignMaintenanceModal(equipmentId, equipName, currentTechId) {
+            document.getElementById('reassignMaintenance_EquipmentId').value = equipmentId;
+            document.getElementById('reassignMaintenanceEquipmentName').textContent = equipName;
+            document.getElementById('reassignMaintenance_TechnicianId').value = currentTechId || '';
+            document.getElementById('reassignMaintenanceModal').style.display = 'flex';
+        }
+        function closeReassignMaintenanceModal() { document.getElementById('reassignMaintenanceModal').style.display = 'none'; }
+
+        function openVendorModal(repairId, equipName) {
+            document.getElementById('vendor_RepairId').value = repairId;
+            document.getElementById('vendorEquipmentName').textContent = equipName;
+            document.getElementById('vendorModal').style.display = 'flex';
+        }
+        function closeVendorModal() { document.getElementById('vendorModal').style.display = 'none'; }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-panel').forEach(p => p.style.display = 'none');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-' + tab).style.display = 'block';
+            document.querySelector('.tab-btn[data-tab="' + tab + '"]').classList.add('active');
+        }
+
+        document.querySelectorAll('.modal-overlay').forEach(function (overlay) {
+            overlay.addEventListener('click', function (e) {
+                if (e.target === overlay) {
+                    overlay.style.display = 'none';
+                }
+            });
+        });
+    </script>
+}

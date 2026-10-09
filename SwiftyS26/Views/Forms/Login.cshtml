@@ -1,0 +1,141 @@
+﻿@model SwiftyS26.Models.LoginViewModel
+
+@{
+
+    Layout = null;
+
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GymHub – Sign In</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <link href="~/Content/login.css" rel="stylesheet" />
+</head>
+<body>
+
+    <!-- ===== NAVBAR ===== -->
+    <nav>
+        <div class="nav-logo">
+            <div class="logo-icon">GH</div>
+            <div class="logo-text">Gym<span>Hub</span></div>
+        </div>
+        <a href="/Home/About" class="nav-back">← Back Home</a>
+    </nav>
+
+    <!-- ===== LOGIN WRAPPER ===== -->
+    <div class="login-wrap">
+        <div class="login-card">
+
+            <div class="login-title">WELCOME BACK</div>
+            <p class="login-sub">
+
+                Sign in to access your GymHub membership dashboard.
+            </p>
+
+            @* Error summary *@
+
+            @if (!ViewData.ModelState.IsValid)
+
+            {
+                <div class="error-summary">
+
+                    @foreach (var error in ViewData.ModelState.Values
+
+                        .SelectMany(v => v.Errors))
+
+                    {
+                        <div>@error.ErrorMessage</div>
+
+                    }
+                </div>
+
+            }
+
+            @using (Html.BeginForm("Login", "Forms", FormMethod.Post))
+
+            {
+
+                @Html.AntiForgeryToken()
+
+                @* Email *@
+                <div class="form-group">
+                    <label>Email Address *</label>
+
+                    @Html.TextBoxFor(m => m.Email, new
+
+                    {
+
+                        @type = "email",
+
+                        placeholder = "you@example.com",
+
+                        autocomplete = "email"
+
+                    })
+
+                    @Html.ValidationMessageFor(m => m.Email, "",
+
+                                  new { @class = "field-error", style = "display:block;" })
+                </div>
+
+                @* Password *@
+                <div class="form-group">
+                    <label>Password *</label>
+                    <div class="input-wrap">
+
+                        @Html.PasswordFor(m => m.Password, new
+
+                        {
+
+                            id = "loginPassword",
+
+                            placeholder = "Enter your password",
+
+                            autocomplete = "current-password"
+
+                        })
+                        <span class="input-badge" id="pwToggle"
+                              onclick="togglePassword()">👁</span>
+                    </div>
+
+                    @Html.ValidationMessageFor(m => m.Password, "",
+
+                                  new { @class = "field-error", style = "display:block;" })
+                </div>
+
+                @* Remember Me + Forgot Password *@
+                <div class="remember-row">
+                    <label>
+
+                        @Html.CheckBoxFor(m => m.RememberMe)
+
+                        Remember me
+                    </label>
+                    <a href="/Forms/ForgotPassword" class="forgot-link">Forgot password?</a>
+                </div>
+
+                @* Submit *@
+                <button type="submit" class="btn-login" id="loginBtn">
+
+                    Sign In →
+                </button>
+
+            }
+
+            <hr class="divider" />
+
+            <div class="login-footer">
+
+                Don't have an account?
+                <a href="/Forms/Register">Register here →</a>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="~/Scripts/login.js"></script>
+</body>
+</html>

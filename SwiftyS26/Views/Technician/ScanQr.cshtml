@@ -1,0 +1,117 @@
+﻿@{
+    Layout = "~/Views/Shared/_TechnicianLayout.cshtml";
+    ViewBag.PageTitle = "Scan Equipment";
+}
+
+<div class="pg-header" style="margin-bottom:20px;">
+    <h2 style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1.5px;">SCAN EQUIPMENT</h2>
+    <p style="font-size:13px;color:#64748b;margin-top:4px;">Point your camera at the QR code on the equipment to jump straight to your assigned task.</p>
+</div>
+
+<div style="max-width:480px;margin:0 auto;">
+
+    <div id="qr-reader" style="width:100%;border-radius:14px;overflow:hidden;background:#000;"></div>
+
+    <div id="qr-status" style="text-align:center;padding:16px;font-size:13px;color:#64748b;">
+        Point your camera at a GymHub equipment QR code.
+    </div>
+
+    <div id="qr-result" style="display:none;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:22px;text-align:center;">
+        <div id="qr-result-icon" style="font-size:32px;margin-bottom:10px;"></div>
+        <div id="qr-result-title" style="font-weight:700;font-size:16px;margin-bottom:4px;"></div>
+        <div id="qr-result-sub" style="font-size:13px;color:#64748b;margin-bottom:16px;"></div>
+        <button type="button" id="qr-scan-again" style="padding:10px 24px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
+            Scan Again
+        </button>
+    </div>
+
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+(function () {
+    var statusEl = document.getElementById('qr-status');
+    var readerEl = document.getElementById('qr-reader');
+    var resultEl = document.getElementById('qr-result');
+    var resultIcon = document.getElementById('qr-result-icon');
+    var resultTitle = document.getElementById('qr-result-title');
+    var resultSub = document.getElementById('qr-result-sub');
+    var scanAgainBtn = document.getElementById('qr-scan-again');
+
+    var resolveUrl = '@Url.Action("ResolveQr", "Technician")';
+    var busy = false;
+    var scanner = null;
+
+    function token() {
+        var el = document.querySelector('input[name="__RequestVerificationToken"]');
+        return el ? el.value : '';
+    }
+
+    function startScanner() {
+        readerEl.style.display = 'block';
+        resultEl.style.display = 'none';
+        statusEl.style.display = 'block';
+        statusEl.textContent = 'Point your camera at a GymHub equipment QR code.';
+        busy = false;
+
+        scanner = new Html5Qrcode('qr-reader');
+        scanner.start(
+            { facingMode: 'environment' },
+            { fps: 10, qrbox: { width: 240, height: 240 } },
+            onScanSuccess,
+            function () { /* ignore per-frame decode misses */ }
+        ).catch(function (err) {
+            statusEl.textContent = 'Could not access the camera. Please allow camera permission and reload.';
+        });
+    }
+
+    function stopScanner() {
+        if (scanner) {
+            scanner.stop().catch(function () {});
+        }
+    }
+
+    function onScanSuccess(decodedText) {
+        if (busy) return;
+        busy = true;
+        stopScanner();
+        readerEl.style.display = 'none';
+        statusEl.style.display = 'block';
+        statusEl.textContent = 'Looking up your task...';
+
+        var fd = new FormData();
+        fd.append('qrData', decodedText);
+        fd.append('__RequestVerificationToken', token());
+
+        fetch(resolveUrl, { method: 'POST', body: fd, credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                statusEl.style.display = 'none';
+                resultEl.style.display = 'block';
+
+                if (data.success) {
+                    resultIcon.textContent = '✅';
+                    resultTitle.textContent = data.equipmentName + ' (' + data.equipmentCode + ')';
+                    resultSub.textContent = 'Opening your ' + data.matchType.toLowerCase() + '...';
+                    setTimeout(function () { window.location.href = data.redirectUrl; }, 700);
+                } else {
+                    resultIcon.textContent = '⚠️';
+                    resultTitle.textContent = data.equipmentName ? (data.equipmentName + (data.equipmentCode ? ' (' + data.equipmentCode + ')' : '')) : 'Not found';
+                    resultSub.textContent = data.message || 'Something went wrong.';
+                }
+            })
+            .catch(function () {
+                statusEl.style.display = 'none';
+                resultEl.style.display = 'block';
+                resultIcon.textContent = '⚠️';
+                resultTitle.textContent = 'Something went wrong';
+                resultSub.textContent = 'Please try scanning again.';
+            });
+    }
+
+    scanAgainBtn.addEventListener('click', startScanner);
+
+    startScanner();
+})();
+</script>
+

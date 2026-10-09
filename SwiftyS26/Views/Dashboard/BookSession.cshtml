@@ -1,0 +1,528 @@
+﻿@model SwiftyS26.Models.TrainingSession
+@using SwiftyS26.Models
+@using System.Linq
+
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.ActivePage = "trainer";
+    ViewBag.PageTitle = "Book a Session";
+
+    Trainer trainer = ViewBag.Trainer as Trainer;
+    List<TrainerAvailability> availability =
+        ViewBag.Availability as List<TrainerAvailability>
+        ?? new List<TrainerAvailability>();
+
+    var allSlots = new[]
+    {
+        "06:00","07:00","08:00","09:00","10:00","11:00",
+        "12:00","13:00","14:00","15:00","16:00",
+        "17:00","18:00","19:00","20:00"
+    };
+}
+
+@section head {
+    <style>
+        .bs-wrap {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 0 4px;
+        }
+
+        .bs-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #6b7280;
+            font-size: 13px;
+            text-decoration: none;
+            margin-bottom: 4px;
+        }
+
+            .bs-back:hover {
+                color: #111827;
+            }
+
+        .bs-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #111827;
+            letter-spacing: -.3px;
+        }
+
+        .bs-sub {
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 3px;
+            margin-bottom: 22px;
+        }
+
+        /* Trainer mini card */
+        .trainer-mini {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 14px;
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .tm-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #2563eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .tm-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .tm-spec {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+
+        /* Availability hint */
+        .avail-hint {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 13px 16px;
+            margin-bottom: 18px;
+        }
+
+        .avail-hint-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #9ca3af;
+            margin-bottom: 9px;
+        }
+
+        .avail-pills {
+            display: flex;
+            gap: 7px;
+            flex-wrap: wrap;
+        }
+
+        .avail-pill {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 5px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #2563eb;
+            line-height: 1.3;
+        }
+
+            .avail-pill span {
+                display: block;
+                font-size: 11px;
+                font-weight: 400;
+                color: #6b7280;
+            }
+
+        /* Card */
+        .bs-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,.08);
+            overflow: hidden;
+            margin-bottom: 18px;
+        }
+
+        .bs-card-head {
+            padding: 13px 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bs-card-icon {
+            width: 26px;
+            height: 26px;
+            background: #eff6ff;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+            .bs-card-icon svg {
+                width: 14px;
+                height: 14px;
+                stroke: #2563eb;
+                fill: none;
+                stroke-width: 2;
+            }
+
+        .bs-card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .bs-card-body {
+            padding: 20px;
+        }
+
+        /* Day banner */
+        #dayUnavailableBanner {
+            display: none;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            padding: 9px 14px;
+            margin-bottom: 12px;
+            font-size: 12.5px;
+            color: #dc2626;
+        }
+
+        /* Form */
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+
+            .form-row.single {
+                grid-template-columns: 1fr;
+            }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #6b7280;
+        }
+
+        .form-control {
+            background: #f5f6fa;
+            border: 1px solid #d1d5db;
+            color: #111827;
+            border-radius: 10px;
+            padding: 9px 12px;
+            font-size: 13.5px;
+            font-family: inherit;
+            outline: none;
+            width: 100%;
+            transition: border-color .15s, box-shadow .15s;
+            appearance: none;
+            -webkit-appearance: none;
+        }
+
+            .form-control:focus {
+                border-color: #2563eb;
+                box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+                background: #fff;
+            }
+
+            .form-control:disabled {
+                opacity: .5;
+                cursor: not-allowed;
+            }
+
+        select.form-control {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 11px center;
+            padding-right: 30px;
+        }
+
+        .field-error {
+            font-size: 11.5px;
+            color: #dc2626;
+        }
+
+        /* Validation summary */
+        .val-summary {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            font-size: 13px;
+            color: #dc2626;
+        }
+
+        /* Footer */
+        .bs-footer {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-top: 6px;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: #fff;
+            font-family: inherit;
+            font-size: 13.5px;
+            font-weight: 600;
+            padding: 10px 24px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            transition: background .15s;
+        }
+
+            .btn-primary:hover {
+                background: #1d4ed8;
+            }
+
+            .btn-primary:disabled {
+                opacity: .45;
+                cursor: not-allowed;
+            }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1px solid #d1d5db;
+            color: #6b7280;
+            font-family: inherit;
+            font-size: 13.5px;
+            padding: 9px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+            .btn-ghost:hover {
+                background: #f5f6fa;
+            }
+
+        @@media (max-width: 540px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+}
+
+<div class="bs-wrap">
+
+    <a href="@Url.Action("TrainerHub","Dashboard")" class="bs-back">← Back to Trainer Hub</a>
+
+    <div class="bs-title">Book a Session</div>
+    <div class="bs-sub">Schedule your next training session with your trainer</div>
+
+    @if (trainer != null)
+    {
+        var ini = "";
+        foreach (var p in (trainer.FullName ?? "").Split(' '))
+        { if (p.Length > 0) { ini += p[0]; } }
+
+        <div class="trainer-mini">
+            <div class="tm-avatar">@ini</div>
+            <div>
+                <div class="tm-name">@trainer.FullName</div>
+                <div class="tm-spec">@trainer.Specialization &bull; @trainer.ExperienceLevel</div>
+            </div>
+        </div>
+    }
+
+    @if (availability != null && availability.Any())
+    {
+        <div class="avail-hint">
+            <div class="avail-hint-title">Trainer Availability</div>
+            <div class="avail-pills">
+                @foreach (var a in availability)
+                {
+                    <div class="avail-pill">
+                        @a.DayOfWeek
+                        <span>@a.StartTime – @a.EndTime</span>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="val-summary">
+            @foreach (var err in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                <div>⚠ @err.ErrorMessage</div>
+            }
+        </div>
+    }
+
+    @using (Html.BeginForm("BookSession", "Dashboard", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="TrainerId" value="@Model.TrainerId" />
+        <input type="hidden" name="MemberId" value="@Model.MemberId" />
+
+        <div class="bs-card">
+            <div class="bs-card-head">
+                <div class="bs-card-icon">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                </div>
+                <span class="bs-card-title">Session Details</span>
+            </div>
+
+            <div class="bs-card-body">
+
+                <div id="dayUnavailableBanner">
+                    ⚠ The trainer is <strong>not available</strong> on this day. Please pick a different date.
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Session Date</label>
+                        <input type="date" id="sessionDateInput" name="SessionDate"
+                               class="form-control"
+                               value="@Model.SessionDate.ToString("yyyy-MM-dd")"
+                               min="@DateTime.Today.ToString("yyyy-MM-dd")"
+                               required />
+                        @{ var sds = ViewData.ModelState["SessionDate"]; }
+                        @if (sds != null && sds.Errors.Any())
+                        {
+                            <span class="field-error">@sds.Errors[0].ErrorMessage</span>
+                        }
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Time Slot</label>
+                        <select id="timeSlotSelect" name="TimeSlot" class="form-control" required>
+                            <option value="">-- Select date first --</option>
+                        </select>
+                        @{ var tss = ViewData.ModelState["TimeSlot"]; }
+                        @if (tss != null && tss.Errors.Any())
+                        {
+                            <span class="field-error">@tss.Errors[0].ErrorMessage</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Session Type</label>
+                        <select name="SessionType" class="form-control" required>
+                            <option value="">-- Select type --</option>
+                            @foreach (var st in new[] { "Strength", "Cardio", "HIIT", "Flexibility", "Mixed" })
+                            {
+                                <option value="@st" @(Model.SessionType == st ? "selected='selected'" : "")>@st</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Duration</label>
+                        <select name="Duration" class="form-control" required>
+                            <option value="">-- Select duration --</option>
+                            @foreach (var d in new[] { "30 min", "45 min", "60 min", "90 min" })
+                            {
+                                <option value="@d" @(Model.Duration == d ? "selected='selected'" : "")>@d</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row single">
+                    <div class="form-group">
+                        <label class="form-label">Notes (optional)</label>
+                        <textarea name="Notes" class="form-control" rows="3"
+                                  placeholder="Focus areas or special requests">@Model.Notes</textarea>
+                    </div>
+                </div>
+
+                <div class="bs-footer">
+                    <button type="submit" id="confirmBtn" class="btn-primary">Confirm Booking</button>
+                    <a href="@Url.Action("TrainerHub","Dashboard")" class="btn-ghost">Cancel</a>
+                </div>
+
+            </div>
+        </div>
+    }
+
+</div>
+
+<script>
+(function () {
+    var avail = {};
+    @foreach (var a in availability)
+    {
+        @:if (!avail["@a.DayOfWeek"]) avail["@a.DayOfWeek"] = [];
+        @:avail["@a.DayOfWeek"].push({ start: "@a.StartTime", end: "@a.EndTime" });
+    }
+
+    var ALL_SLOTS = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(allSlots));
+    var PRESELECTED = "@Model.TimeSlot";
+    var DAY_NAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+
+    function toMins(hhmm) {
+        var p = hhmm.split(":"); return parseInt(p[0]) * 60 + parseInt(p[1]);
+    }
+
+    function getSlotsForDate(dateStr) {
+        if (!dateStr) return [];
+        var p = dateStr.split("-");
+        var d = new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+        var dayName = DAY_NAMES[d.getDay()];
+        var windows = avail[dayName];
+        if (!windows || !windows.length) return [];
+        return ALL_SLOTS.filter(function (slot) {
+            var m = toMins(slot);
+            return windows.some(function (w) { return m >= toMins(w.start) && m < toMins(w.end); });
+        });
+    }
+
+    function updateSlots() {
+        var dateInput  = document.getElementById("sessionDateInput");
+        var select     = document.getElementById("timeSlotSelect");
+        var banner     = document.getElementById("dayUnavailableBanner");
+        var confirmBtn = document.getElementById("confirmBtn");
+        var slots = getSlotsForDate(dateInput.value);
+        select.innerHTML = "";
+
+        if (!slots.length) {
+            var opt = document.createElement("option");
+            opt.value = ""; opt.textContent = "-- Trainer unavailable on this day --";
+            select.appendChild(opt);
+            select.disabled = true; banner.style.display = "block"; confirmBtn.disabled = true;
+        } else {
+            select.disabled = false; banner.style.display = "none"; confirmBtn.disabled = false;
+            var ph = document.createElement("option");
+            ph.value = ""; ph.textContent = "-- Select time --"; select.appendChild(ph);
+            slots.forEach(function (s) {
+                var opt = document.createElement("option");
+                opt.value = s; opt.textContent = s;
+                if (s === PRESELECTED) opt.selected = true;
+                select.appendChild(opt);
+            });
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var dateInput = document.getElementById("sessionDateInput");
+        if (dateInput) { dateInput.addEventListener("change", updateSlots); updateSlots(); }
+    });
+}());
+</script>

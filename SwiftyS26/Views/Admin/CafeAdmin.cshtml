@@ -1,0 +1,1243 @@
+﻿@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewBag.PageTitle = "CAFÉ MANAGEMENT";
+    ViewBag.ActiveNav = "cafe";
+}
+
+@section Styles {
+    <style>
+        /* Café's own internal tab bar (Products/Orders/Revenue/Collections) */
+        .cafe-tab-bar {
+            display: flex;
+            gap: 4px;
+            padding: 16px 0;
+        }
+
+        .cafe-tab {
+            padding: 9px 20px;
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1.5px solid var(--border);
+            background: transparent;
+            color: var(--muted);
+            transition: all var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+            .cafe-tab:hover {
+                background: var(--bg3);
+                color: var(--text);
+            }
+
+            .cafe-tab.active {
+                background: var(--blue);
+                color: #fff;
+                border-color: var(--blue);
+                box-shadow: 0 4px 12px rgba(37,99,235,.2);
+            }
+
+        .cafe-section {
+            display: none;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+            .cafe-section.active {
+                display: flex;
+            }
+
+        .stat-sub {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 5px;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 8px;
+            padding: 14px 22px;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-btn {
+            padding: 7px 16px;
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            border: 1.5px solid var(--border);
+            background: transparent;
+            color: var(--muted);
+            transition: all var(--transition);
+        }
+
+            .filter-btn:hover {
+                background: var(--bg3);
+                color: var(--text);
+            }
+
+            .filter-btn.active {
+                background: var(--blue);
+                color: #fff;
+                border-color: var(--blue);
+            }
+
+            .filter-btn.pending.active {
+                background: var(--gold);
+                color: #fff;
+                border-color: var(--gold);
+            }
+
+            .filter-btn.ready.active {
+                background: var(--blue);
+                color: #fff;
+                border-color: var(--blue);
+            }
+
+            .filter-btn.collected.active {
+                background: var(--green);
+                color: #fff;
+                border-color: var(--green);
+            }
+
+            .filter-btn.cancelled.active {
+                background: var(--red);
+                color: #fff;
+                border-color: var(--red);
+            }
+
+        .badge-pending {
+            background: var(--gold-light);
+            color: var(--gold);
+        }
+
+        .badge-ready {
+            background: var(--blue-light);
+            color: var(--blue);
+        }
+
+        .badge-collected {
+            background: var(--green-light);
+            color: var(--green);
+        }
+
+        .badge-cancelled {
+            background: var(--red-light);
+            color: var(--red);
+        }
+
+        .badge-active {
+            background: var(--green-light);
+            color: var(--green);
+        }
+
+        .badge-inactive {
+            background: var(--bg3);
+            color: var(--muted);
+        }
+
+        .badge-instock {
+            background: var(--green-light);
+            color: var(--green);
+        }
+
+        .badge-outstock {
+            background: var(--red-light);
+            color: var(--red);
+        }
+
+        .cafe-status-select {
+            padding: 6px 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            background: var(--white);
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        .btn-outline {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 11px 20px;
+            background: transparent;
+            color: var(--blue);
+            border: 1.5px solid var(--blue);
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+            .btn-outline:hover {
+                background: var(--blue-light);
+            }
+
+        .btn-ghost {
+            padding: 6px 12px;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--muted);
+            transition: all var(--transition);
+            font-family: 'DM Sans', sans-serif;
+        }
+
+            .btn-ghost:hover {
+                background: var(--border);
+            }
+
+        .btn-sm-edit {
+            padding: 5px 10px;
+            background: var(--gold-light);
+            color: var(--gold);
+            border: 1px solid rgba(217,119,6,.2);
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all var(--transition);
+            font-family: 'DM Sans', sans-serif;
+        }
+
+            .btn-sm-edit:hover {
+                background: var(--gold);
+                color: #fff;
+            }
+
+        .btn-sm-delete {
+            padding: 5px 10px;
+            background: var(--red-light);
+            color: var(--red);
+            border: 1px solid rgba(220,38,38,.2);
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all var(--transition);
+            font-family: 'DM Sans', sans-serif;
+        }
+
+            .btn-sm-delete:hover {
+                background: var(--red);
+                color: #fff;
+            }
+
+        .toggle-wrap {
+            position: relative;
+            display: inline-block;
+            width: 42px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+            .toggle-wrap input {
+                opacity: 0;
+                width: 0;
+                height: 0;
+            }
+
+        .toggle-track {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: #e2e8f0;
+            border-radius: 50px;
+            transition: 0.3s;
+        }
+
+            .toggle-track::after {
+                content: '';
+                position: absolute;
+                left: 3px;
+                top: 3px;
+                width: 18px;
+                height: 18px;
+                background: #fff;
+                border-radius: 50%;
+                transition: 0.3s;
+                box-shadow: 0 1px 4px rgba(0,0,0,.15);
+            }
+
+        .toggle-wrap input:checked + .toggle-track {
+            background: var(--blue);
+        }
+
+            .toggle-wrap input:checked + .toggle-track::after {
+                transform: translateX(18px);
+            }
+
+        .scan-corner {
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            border-color: #3b82f6;
+            border-style: solid;
+        }
+
+            .scan-corner.tl {
+                top: 20%;
+                left: 20%;
+                border-width: 3px 0 0 3px;
+            }
+
+            .scan-corner.tr {
+                top: 20%;
+                right: 20%;
+                border-width: 3px 3px 0 0;
+            }
+
+            .scan-corner.bl {
+                bottom: 20%;
+                left: 20%;
+                border-width: 0 0 3px 3px;
+            }
+
+            .scan-corner.br {
+                bottom: 20%;
+                right: 20%;
+                border-width: 0 3px 3px 0;
+            }
+
+        .scan-line {
+            position: absolute;
+            left: 20%;
+            right: 20%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+            animation: scanMove 2s ease-in-out infinite;
+        }
+
+        @@keyframes scanMove {
+            0% {
+                top: 20%;
+            }
+
+            50% {
+                top: 80%;
+            }
+
+            100% {
+                top: 20%;
+            }
+        }
+
+        .revenue-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .revenue-inline-card {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 20px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .top-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+            .top-table th {
+                padding: 10px 14px;
+                font-size: 10px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.7px;
+                color: var(--muted);
+                border-bottom: 1px solid var(--border);
+                text-align: left;
+            }
+
+            .top-table td {
+                padding: 10px 14px;
+                border-bottom: 1px solid var(--border);
+                color: var(--text-sub);
+            }
+
+            .top-table tr:last-child td {
+                border-bottom: none;
+            }
+
+        .date-range {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+            flex-wrap: wrap;
+        }
+
+            .date-range label {
+                font-size: 11px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                color: var(--muted);
+            }
+
+            .date-range input[type="date"] {
+                padding: 7px 10px;
+                border: 1px solid var(--border);
+                border-radius: 6px;
+                font-family: 'DM Sans', sans-serif;
+                font-size: 13px;
+                outline: none;
+                background: var(--white);
+            }
+
+        .modal-overlay[style*="flex"] {
+            display: flex !important;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .modal-sub {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--muted);
+            line-height: 1;
+            padding: 4px;
+        }
+
+            .modal-close:hover {
+                color: var(--text);
+            }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+            .form-grid.cols-2 {
+                grid-template-columns: 1fr 1fr;
+            }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg3);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            color: var(--text);
+            outline: none;
+            transition: all var(--transition);
+        }
+
+            .form-control:focus {
+                border-color: var(--blue);
+                box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+                background: var(--white);
+            }
+
+        .form-textarea {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--bg3);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            color: var(--text);
+            outline: none;
+            resize: vertical;
+            min-height: 80px;
+            transition: border-color var(--transition);
+        }
+
+            .form-textarea:focus {
+                border-color: var(--blue);
+            }
+
+        .toggle-row {
+            background: var(--bg3);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .toggle-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .img-preview {
+            width: 100%;
+            max-height: 160px;
+            object-fit: cover;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            display: none;
+            margin-bottom: 10px;
+        }
+
+        .modal-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-btn {
+            width: 100%;
+            padding: 13px;
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            transition: all var(--transition);
+        }
+
+            .modal-btn.save {
+                background: var(--blue);
+                color: #fff;
+                box-shadow: 0 4px 12px rgba(37,99,235,.25);
+            }
+
+                .modal-btn.save:hover {
+                    background: var(--blue-dark);
+                }
+
+            .modal-btn.cancel {
+                background: transparent;
+                border: 1.5px solid var(--border);
+                color: var(--muted);
+            }
+
+                .modal-btn.cancel:hover {
+                    background: var(--bg3);
+                }
+
+        .scanner-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .result-waiting {
+            text-align: center;
+            padding: 48px 24px;
+        }
+
+            .result-waiting .w-icon {
+                font-size: 44px;
+                margin-bottom: 14px;
+                color: var(--muted);
+                opacity: .4;
+            }
+
+            .result-waiting .w-title {
+                font-weight: 700;
+                font-size: 15px;
+                color: var(--text);
+            }
+
+            .result-waiting .w-sub {
+                font-size: 13px;
+                color: var(--muted);
+                margin-top: 6px;
+            }
+
+        .order-detail-card {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .order-detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+
+            .order-detail-row:last-child {
+                border-bottom: none;
+            }
+
+        .order-detail-label {
+            font-weight: 600;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .order-detail-value {
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .col-error-box {
+            display: none;
+            background: rgba(220,38,38,.08);
+            border: 1px solid rgba(220,38,38,.2);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            color: var(--red);
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+
+        .manual-entry {
+            border-top: 1px solid var(--border);
+            padding-top: 20px;
+            margin-top: 4px;
+        }
+
+        .manual-entry-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            color: var(--muted);
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .code-input {
+            width: 100%;
+            padding: 13px 14px;
+            background: var(--bg3);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            transition: border-color var(--transition);
+        }
+
+            .code-input:focus {
+                border-color: var(--blue);
+                background: var(--white);
+            }
+
+        .btn-confirm {
+            width: 100%;
+            padding: 14px;
+            background: var(--green);
+            color: #fff;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: all var(--transition);
+        }
+
+            .btn-confirm:hover {
+                background: #15803d;
+            }
+
+            .btn-confirm:disabled {
+                opacity: .55;
+                cursor: not-allowed;
+            }
+
+        .btn-scan-reset {
+            width: 100%;
+            padding: 11px;
+            background: transparent;
+            border: 1.5px solid var(--border);
+            color: var(--muted);
+            border-radius: var(--radius-sm);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+
+            .btn-scan-reset:hover {
+                background: var(--bg3);
+            }
+
+        .confirmed-box {
+            text-align: center;
+            padding: 32px 24px;
+        }
+
+            .confirmed-box .c-icon {
+                font-size: 56px;
+                margin-bottom: 12px;
+            }
+
+            .confirmed-box .c-title {
+                font-family: 'Bebas Neue', sans-serif;
+                font-size: 28px;
+                letter-spacing: 2px;
+                color: var(--green);
+                margin-bottom: 8px;
+            }
+
+            .confirmed-box .c-sub {
+                font-size: 14px;
+                color: var(--muted);
+                margin-bottom: 20px;
+            }
+
+        .error-state {
+            text-align: center;
+            padding: 32px 24px;
+        }
+
+            .error-state .e-icon {
+                font-size: 44px;
+                margin-bottom: 12px;
+                color: var(--red);
+            }
+
+            .error-state .e-title {
+                font-size: 15px;
+                font-weight: 700;
+                color: var(--red);
+                margin-bottom: 16px;
+            }
+
+        .stats-col-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+    </style>
+}
+<!-- ===== MAIN ===== -->
+    <!-- ==================== SECTION: PRODUCTS ==================== -->
+    <section class="cafe-section active" id="cafe-section-products">
+
+        <div class="admin-stats-grid">
+            <div class="admin-stat-card orange">
+                <div class="stat-icon"><i class="fas fa-box-open"></i></div>
+                <div class="stat-number" id="cafe-stat-total">0</div>
+                <div class="stat-label">Total Products</div>
+            </div>
+            <div class="admin-stat-card green">
+                <div class="stat-icon"><i class="fas fa-eye"></i></div>
+                <div class="stat-number" id="cafe-stat-active">0</div>
+                <div class="stat-label">Visible to Members</div>
+            </div>
+            <div class="admin-stat-card blue">
+                <div class="stat-icon"><i class="fas fa-cubes"></i></div>
+                <div class="stat-number" id="cafe-stat-instock">0</div>
+                <div class="stat-label">In Stock</div>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:12px;">
+            <button class="btn-primary" onclick="openProductModal()">
+                <i class="fas fa-plus"></i> Add Product
+            </button>
+            <button class="btn-outline" onclick="loadCafeProducts()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div class="admin-card-title"><i class="fas fa-mug-hot"></i> All Café Products</div>
+                <div class="admin-card-count" id="cafe-products-count">Loading…</div>
+            </div>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Image</th>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Points Cost</th>
+                            <th>Rand Value</th>
+                            <th>Visible</th>
+                            <th>Stock</th>
+                            <th>Added</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cafe-products-tbody">
+                        <tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted);">Loading products…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== SECTION: ORDERS ==================== -->
+    <section class="cafe-section" id="cafe-section-orders">
+
+        <div class="admin-stats-grid">
+            <div class="admin-stat-card gold">
+                <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                <div class="stat-number" id="cafe-order-stat-pending">0</div>
+                <div class="stat-label">Pending</div>
+            </div>
+            <div class="admin-stat-card blue">
+                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-number" id="cafe-order-stat-ready">0</div>
+                <div class="stat-label">Ready for Collection</div>
+            </div>
+            <div class="admin-stat-card green">
+                <div class="stat-icon"><i class="fas fa-shopping-bag"></i></div>
+                <div class="stat-number" id="cafe-order-stat-collected">0</div>
+                <div class="stat-label">Collected</div>
+            </div>
+            <div class="admin-stat-card red">
+                <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+                <div class="stat-number" id="cafe-order-stat-cancelled">0</div>
+                <div class="stat-label">Cancelled</div>
+            </div>
+        </div>
+
+        <div>
+            <div class="revenue-inline-card">
+                <div style="width:40px;height:40px;background:var(--green-light);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--green);font-size:18px;">
+                    <i class="fas fa-coins"></i>
+                </div>
+                <div>
+                    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);">Revenue (Collected Orders)</div>
+                    <div style="font-family:'Bebas Neue';font-size:26px;letter-spacing:1px;color:var(--green);" id="cafe-order-revenue">R0.00</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div class="admin-card-title"><i class="fas fa-box-open"></i> Café Orders</div>
+                <div class="admin-card-count" id="cafe-orders-count">Loading…</div>
+            </div>
+
+            <div class="filter-bar">
+                <button class="filter-btn active" id="cafe-order-tab-all" onclick="loadCafeOrders('all')">All</button>
+                <button class="filter-btn pending" id="cafe-order-tab-pending" onclick="loadCafeOrders('Pending')">Pending</button>
+                <button class="filter-btn ready" id="cafe-order-tab-ready" onclick="loadCafeOrders('Ready')">Ready</button>
+                <button class="filter-btn collected" id="cafe-order-tab-collected" onclick="loadCafeOrders('Collected')">Collected</button>
+                <button class="filter-btn cancelled" id="cafe-order-tab-cancelled" onclick="loadCafeOrders('Cancelled')">Cancelled</button>
+
+                <div class="date-range">
+                    <label>From</label>
+                    <input type="date" id="cafe-order-from" />
+                    <label>To</label>
+                    <input type="date" id="cafe-order-to" />
+                    <button class="btn-primary" style="padding:7px 16px;font-size:12px;box-shadow:none;" onclick="loadCafeOrders()">Apply</button>
+                    <button class="btn-ghost" onclick="document.getElementById('cafe-order-from').value='';document.getElementById('cafe-order-to').value='';loadCafeOrders();">Clear</button>
+                </div>
+            </div>
+
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Member</th>
+                            <th>Member ID</th>
+                            <th>Product</th>
+                            <th>Points</th>
+                            <th>Rand Value</th>
+                            <th>Status</th>
+                            <th>Ordered At</th>
+                            <th>Update Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cafe-orders-tbody">
+                        <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted);">Loading orders…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== SECTION: REVENUE ==================== -->
+    <section class="cafe-section" id="cafe-section-revenue">
+
+        <div class="admin-stats-grid" style="grid-template-columns:repeat(3,1fr);">
+            <div class="admin-stat-card orange">
+                <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                <div class="stat-number" id="cafe-rev-alltime">R0</div>
+                <div class="stat-label">All-Time Revenue</div>
+                <div class="stat-sub" id="cafe-rev-alltime-orders">0 orders</div>
+                <div style="font-size:11px;color:var(--purple);font-weight:600;margin-top:2px;" id="cafe-rev-alltime-pts">0 pts redeemed</div>
+            </div>
+            <div class="admin-stat-card green">
+                <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
+                <div class="stat-number" id="cafe-rev-thismonth">R0</div>
+                <div class="stat-label">This Month</div>
+                <div class="stat-sub" id="cafe-rev-thismonth-orders">0 orders</div>
+            </div>
+            <div class="admin-stat-card blue">
+                <div class="stat-icon"><i class="fas fa-history"></i></div>
+                <div class="stat-number" id="cafe-rev-lastmonth">R0</div>
+                <div class="stat-label">Last Month</div>
+                <div class="stat-sub" id="cafe-rev-lastmonth-orders">0 orders</div>
+            </div>
+        </div>
+
+        <div class="revenue-grid">
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <div class="admin-card-title"><i class="fas fa-trophy"></i> Top Products (This Month)</div>
+                </div>
+                <div style="padding:0 16px;">
+                    <table class="top-table">
+                        <thead><tr><th>#</th><th>Product</th><th>Orders</th><th>Revenue</th></tr></thead>
+                        <tbody id="cafe-top-products-tbody">
+                            <tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted);">Loading…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <div class="admin-card-title"><i class="fas fa-chart-pie"></i> Revenue by Category (All-Time)</div>
+                </div>
+                <div style="padding:0 16px;">
+                    <table class="top-table">
+                        <thead><tr><th>Category</th><th>Orders</th><th>Revenue</th></tr></thead>
+                        <tbody id="cafe-category-tbody">
+                            <tr><td colspan="3" style="text-align:center;padding:20px;color:var(--muted);">Loading…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== SECTION: COLLECTIONS ==================== -->
+    <section class="cafe-section" id="cafe-section-collections">
+
+        <div class="stats-col-grid">
+            <div class="admin-stat-card orange">
+                <div class="stat-icon"><i class="fas fa-receipt"></i></div>
+                <div class="stat-number" id="col-total">0</div>
+                <div class="stat-label">Today's Orders</div>
+            </div>
+            <div class="admin-stat-card gold">
+                <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                <div class="stat-number" id="col-pending">0</div>
+                <div class="stat-label">Pending</div>
+            </div>
+            <div class="admin-stat-card green">
+                <div class="stat-icon"><i class="fas fa-check-double"></i></div>
+                <div class="stat-number" id="col-collected">0</div>
+                <div class="stat-label">Collected</div>
+            </div>
+            <div class="admin-stat-card blue">
+                <div class="stat-icon"><i class="fas fa-coins"></i></div>
+                <div class="stat-number" id="col-revenue">R0.00</div>
+                <div class="stat-label">Revenue Today</div>
+            </div>
+        </div>
+
+        <div class="scanner-layout">
+
+            <!-- Camera Panel -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <div class="admin-card-title"><i class="fas fa-search"></i> Verify Collection</div>
+                </div>
+                <div style="padding:22px;">
+                    <div style="position:relative;background:#0f172a;border-radius:var(--radius);overflow:hidden;aspect-ratio:4/3;margin-bottom:16px;">
+                        <div id="col-camera-idle" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,0.4);gap:12px;">
+                            <i class="fas fa-camera" style="font-size:44px;"></i>
+                            <div style="font-size:14px;font-weight:600;">Camera is off</div>
+                            <div style="font-size:12px;opacity:0.6;">Press Start to scan member QR</div>
+                        </div>
+                        <video id="col-camera-feed" style="width:100%;height:100%;object-fit:cover;display:none;" playsinline autoplay muted></video>
+                        <div id="col-scan-overlay" style="display:none;position:absolute;inset:0;pointer-events:none;">
+                            <div class="scan-corner tl"></div>
+                            <div class="scan-corner tr"></div>
+                            <div class="scan-corner bl"></div>
+                            <div class="scan-corner br"></div>
+                            <div class="scan-line"></div>
+                        </div>
+                    </div>
+                    <canvas id="col-scan-canvas" style="display:none;"></canvas>
+
+                    <div style="display:flex;gap:10px;margin-bottom:20px;">
+                        <button id="col-start-btn" onclick="startColCamera()" class="btn-primary" style="flex:1;">
+                            <i class="fas fa-play"></i> Start Camera
+                        </button>
+                        <button id="col-stop-btn" onclick="stopColCamera()" style="flex:1;display:none;padding:11px 16px;background:var(--red-light);color:var(--red);border:1.5px solid rgba(220,38,38,.2);border-radius:var(--radius-sm);font-family:'DM Sans';font-size:13px;font-weight:700;cursor:pointer;">
+                            <i class="fas fa-stop"></i> Stop Camera
+                        </button>
+                    </div>
+
+                    <div class="manual-entry">
+                        <span class="manual-entry-label">Or enter code manually</span>
+                        <div style="display:flex;gap:10px;">
+                            <input type="text" id="col-code-input" class="code-input"
+                                   placeholder="e.g. LMG4K2" maxlength="6"
+                                   oninput="this.value=this.value.toUpperCase()"
+                                   onkeydown="if(event.key==='Enter') verifyCode()" />
+                            <button onclick="verifyCode()" class="btn-primary" style="white-space:nowrap;">Verify</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result Panel -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <div class="admin-card-title"><i class="fas fa-clipboard-list"></i> Order Details</div>
+                    <button class="btn-ghost" onclick="loadCollections()"><i class="fas fa-sync-alt"></i> Refresh</button>
+                </div>
+                <div style="padding:22px;">
+
+                    <!-- Waiting -->
+                    <div id="col-result-waiting" style="display:block;">
+                        <div class="result-waiting">
+                            <div class="w-icon"><i class="fas fa-ticket-alt"></i></div>
+                            <div class="w-title">Waiting for scan…</div>
+                            <div class="w-sub">Scan a member's order QR or enter the collection code.</div>
+                        </div>
+                    </div>
+
+                    <!-- Order found -->
+                    <div id="col-result-order" style="display:none;">
+                        <div style="text-align:center;margin-bottom:20px;">
+                            <div style="font-size:52px;" id="col-product-emoji">☕</div>
+                            <div style="font-family:'Bebas Neue';font-size:22px;letter-spacing:1.5px;color:var(--text);margin-top:8px;" id="col-product-name">—</div>
+                        </div>
+                        <div class="order-detail-card">
+                            <div class="order-detail-row"><span class="order-detail-label">Member</span>       <span class="order-detail-value" id="col-member-name">—</span></div>
+                            <div class="order-detail-row"><span class="order-detail-label">Member ID</span>    <span style="font-family:'Bebas Neue';font-size:15px;letter-spacing:1px;color:var(--blue);font-weight:700;" id="col-member-number">—</span></div>
+                            <div class="order-detail-row"><span class="order-detail-label">Points Spent</span> <span style="font-family:'Bebas Neue';font-size:18px;color:var(--purple);font-weight:700;" id="col-points-spent">—</span></div>
+                            <div class="order-detail-row"><span class="order-detail-label">Status</span>       <span id="col-order-status">—</span></div>
+                            <div class="order-detail-row" style="border:none;"><span class="order-detail-label">Redeemed At</span><span class="order-detail-value" id="col-redeemed-at">—</span></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Notes (optional)</label>
+                            <input type="text" id="col-admin-notes" class="form-control" placeholder="e.g. collected by cashier Thabo" />
+                        </div>
+
+                        <div id="col-error" class="col-error-box"></div>
+
+                        <button id="col-confirm-btn" onclick="confirmCollection()" class="btn-confirm">
+                            <i class="fas fa-check"></i> Confirm Collection
+                        </button>
+                        <button onclick="resetCollection()" class="btn-scan-reset">Scan Next</button>
+                    </div>
+
+                    <!-- Error -->
+                    <div id="col-result-error" style="display:none;">
+                        <div class="error-state">
+                            <div class="e-icon"><i class="fas fa-times-circle"></i></div>
+                            <div class="e-title" id="col-error-msg">—</div>
+                            <button onclick="resetCollection()" style="padding:12px 28px;background:var(--red);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'DM Sans';font-size:14px;font-weight:700;cursor:pointer;">
+                                Try Again
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Confirmed -->
+                    <div id="col-result-confirmed" style="display:none;">
+                        <div class="confirmed-box">
+                            <div class="c-icon">🎉</div>
+                            <div class="c-title">COLLECTED!</div>
+                            <div class="c-sub" id="col-confirmed-msg">—</div>
+                            <button onclick="resetCollection()" class="btn-primary">
+                                <i class="fas fa-arrow-right"></i> Next Customer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Today's Collections Table -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div class="admin-card-title"><i class="fas fa-clipboard-list"></i> Today's Orders</div>
+                <div class="admin-card-count" id="col-table-count">Loading…</div>
+            </div>
+            <div class="admin-table-wrap">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Member</th>
+                            <th>Member ID</th>
+                            <th>Product</th>
+                            <th>Points</th>
+                            <th>Code</th>
+                            <th>Status</th>
+                            <th>Redeemed</th>
+                            <th>Collected</th>
+                        </tr>
+                    </thead>
+                    <tbody id="col-table-body">
+                        <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--muted);">Loading…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+</main>
+@section Modals {
+    <!-- ==================== PRODUCT MODAL ==================== -->
+    <div id="cafe-product-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title" id="cafe-modal-title">ADD PRODUCT</div>
+                    <div class="modal-sub">Fill in the product details below.</div>
+                </div>
+                <button class="modal-close" onclick="closeProductModal()"><i class="fas fa-times"></i></button>
+            </div>
+
+            <input type="hidden" id="cafe-edit-id" value="" />
+
+            <div class="form-group">
+                <label class="form-label">Product Image</label>
+                <img id="cafe-img-preview" class="img-preview" src="" alt="Preview" />
+                <input type="file" id="cafe-img-file" accept=".jpg,.jpeg,.png,.webp"
+                       onchange="previewImage(this)"
+                       style="width:100%;padding:10px 14px;background:var(--bg3);border:1.5px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans';font-size:13px;cursor:pointer;" />
+                <div style="font-size:11px;color:var(--muted);margin-top:6px;">JPG, PNG or WEBP · max 2 MB. Leave empty to keep existing image when editing.</div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Product Name *</label>
+                <input type="text" id="cafe-name" class="form-control" placeholder="e.g. Berry Blast Smoothie" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea id="cafe-description" class="form-textarea" placeholder="Briefly describe the product…"></textarea>
+            </div>
+
+            <div class="form-grid cols-2" style="margin-bottom:16px;">
+                <div>
+                    <label class="form-label">Category *</label>
+                    <select id="cafe-category" class="form-control">
+                        <option value="">Select category</option>
+                        <option>Smoothie</option>
+                        <option>Shake</option>
+                        <option>Snack</option>
+                        <option>Drink</option>
+                        <option>Meal</option>
+                        <option>Supplement</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Emoji (optional)</label>
+                    <input type="text" id="cafe-emoji" class="form-control" placeholder="e.g. 🥤" style="font-size:20px;" />
+                </div>
+            </div>
+
+            <div class="form-grid cols-2" style="margin-bottom:16px;">
+                <div>
+                    <label class="form-label">Points Cost *</label>
+                    <input type="number" id="cafe-points" class="form-control" placeholder="e.g. 250" min="1" />
+                </div>
+                <div>
+                    <label class="form-label">Rand Value</label>
+                    <input type="number" id="cafe-rand" class="form-control" placeholder="e.g. 45.00" min="0" step="0.01" />
+                </div>
+            </div>
+
+            <div class="form-grid cols-2" style="margin-bottom:16px;">
+                <div class="toggle-row">
+                    <span class="toggle-label">Visible to Members</span>
+                    <label class="toggle-wrap"><input type="checkbox" id="cafe-isactive" checked /><span class="toggle-track"></span></label>
+                </div>
+                <div class="toggle-row">
+                    <span class="toggle-label">In Stock</span>
+                    <label class="toggle-wrap"><input type="checkbox" id="cafe-instock" checked /><span class="toggle-track"></span></label>
+                </div>
+            </div>
+
+            <div id="cafe-modal-error" class="modal-error"></div>
+
+            <div class="modal-actions">
+                <button id="cafe-save-btn" class="modal-btn save" onclick="saveProduct()">
+                    <i class="fas fa-save"></i> Save Product
+                </button>
+                <button class="modal-btn cancel" onclick="closeProductModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script src="~/Scripts/CafeAdmin.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script>
+        window.addEventListener('load', function () {
+            console.log('=== CAFE DIAGNOSTIC ===');
+            console.log('openProductModal type:', typeof openProductModal);
+            console.log('closeProductModal type:', typeof closeProductModal);
+            console.log('modal element:', document.getElementById('cafe-product-modal'));
+            var btn = document.querySelector('button[onclick="openProductModal()"]');
+            console.log('Add Product button found:', btn);
+            if (typeof openProductModal === 'function') {
+                console.log('openProductModal source:', openProductModal.toString().substring(0, 150));
+            }
+        });
+    </script>
+    <script src="~/Scripts/CafeAdmin.js?v=2"></script>
+}

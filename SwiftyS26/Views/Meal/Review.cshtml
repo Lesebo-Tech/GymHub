@@ -1,0 +1,629 @@
+@model SwiftyS26.Models.MealReviewViewModel
+@using System.Linq
+
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.PageTitle = "Review Meal";
+    ViewBag.ActivePage = "nutrition";
+}
+
+<style>
+    .meal-review-wrap {
+        max-width: 720px;
+        margin: 0 auto;
+    }
+
+    .meal-photo-preview {
+        width: 100%;
+        max-height: 320px;
+        object-fit: cover;
+        border-radius: 16px;
+        margin-bottom: 18px;
+    }
+
+    .meal-notice {
+        background: rgba(37,99,235,0.08);
+        color: #1E40AF;
+        border: 1px solid rgba(37,99,235,0.18);
+        padding: 12px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 18px;
+    }
+
+    .meal-item-card {
+        background: #fff;
+        border: 1px solid #E2E8F0;
+        border-radius: 13px;
+        padding: 16px;
+        margin-bottom: 12px;
+        position: relative;
+    }
+
+    .meal-item-name {
+        font-weight: 700;
+        font-size: 15px;
+        color: #0F172A;
+        margin-bottom: 4px;
+        padding-right: 30px;
+    }
+
+    .meal-item-ai-tag {
+        display: inline-block;
+        font-size: 9.5px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        color: #2563EB;
+        background: rgba(37,99,235,.10);
+        padding: 3px 8px;
+        border-radius: 20px;
+        margin-left: 7px;
+    }
+
+    .ai-confidence {
+        color: #64748B;
+        font-size: 11.5px;
+        margin-top: 3px;
+    }
+
+    .meal-item-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+        align-items: flex-end;
+    }
+
+    .meal-item-portion-select {
+        flex: 1;
+        width: 100%;
+        padding: 10px 12px;
+        border: 1.5px solid #E2E8F0;
+        border-radius: 9px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13.5px;
+        background: #fff;
+    }
+
+    .meal-item-qty {
+        width: 78px;
+    }
+
+    .meal-item-qty label {
+        display: block;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #64748B;
+        margin-bottom: 4px;
+    }
+
+    .meal-qty-input {
+        width: 100%;
+        padding: 10px;
+        border: 1.5px solid #E2E8F0;
+        border-radius: 9px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13.5px;
+        text-align: center;
+    }
+
+    .meal-item-remove {
+        position: absolute;
+        top: 13px;
+        right: 13px;
+        border: 0;
+        background: transparent;
+        color: #DC2626;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .nutrition-summary {
+        background: #0F172A;
+        color: #fff;
+        border-radius: 14px;
+        padding: 18px;
+        margin: 18px 0;
+    }
+
+    .nutrition-summary-title {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: .7px;
+        color: #CBD5E1;
+        font-weight: 700;
+        margin-bottom: 12px;
+    }
+
+    .nutrition-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 9px;
+    }
+
+    .nutrition-stat {
+        background: rgba(255,255,255,.08);
+        padding: 12px 8px;
+        border-radius: 10px;
+        text-align: center;
+    }
+
+    .nutrition-stat strong {
+        display: block;
+        font-size: 20px;
+        line-height: 1.1;
+    }
+
+    .nutrition-stat span {
+        display: block;
+        margin-top: 4px;
+        font-size: 10px;
+        color: #CBD5E1;
+        text-transform: uppercase;
+        font-weight: 700;
+    }
+
+    .nutrition-estimate-note {
+        font-size: 11px;
+        color: #94A3B8;
+        margin-top: 12px;
+        line-height: 1.5;
+    }
+
+    .meal-items-heading,
+    .tag-chips-label,
+    .add-food-search label {
+        font-size: 12.5px;
+        font-weight: 700;
+        color: #0F172A;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+    }
+
+    .meal-items-heading {
+        margin: 20px 0 10px;
+    }
+
+    .tag-chips-wrap {
+        margin: 18px 0;
+    }
+
+    .tag-chips-label {
+        display: block;
+        margin-bottom: 9px;
+    }
+
+    .tag-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 12px;
+        background: #EFF6FF;
+        color: #2563EB;
+        border: 1px solid #BFDBFE;
+        border-radius: 50px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        margin: 0 7px 7px 0;
+    }
+
+    .tag-chip:hover {
+        background: #DBEAFE;
+    }
+
+    .tag-chip.tag-used {
+        opacity: .4;
+        cursor: default;
+    }
+
+    .meal-empty-hint {
+        font-size: 13px;
+        color: #94A3B8;
+        padding: 17px;
+        text-align: center;
+        border: 1.5px dashed #E2E8F0;
+        border-radius: 10px;
+    }
+
+    .add-food-search {
+        position: relative;
+        margin: 20px 0;
+    }
+
+    .add-food-search label {
+        display: block;
+        margin-bottom: 6px;
+    }
+
+    #foodSearchInput {
+        width: 100%;
+        padding: 11px 14px;
+        border: 1.5px solid #E2E8F0;
+        border-radius: 10px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 14px;
+    }
+
+    #foodSuggestions {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #fff;
+        border: 1px solid #E2E8F0;
+        border-radius: 10px;
+        box-shadow: 0 6px 20px rgba(15,23,42,.12);
+        z-index: 50;
+        max-height: 240px;
+        overflow-y: auto;
+        margin-top: 4px;
+    }
+
+    .meal-btn-primary {
+        width: 100%;
+        padding: 13px 20px;
+        background: linear-gradient(135deg, #3B82F6, #1D4ED8);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        margin-top: 8px;
+    }
+
+    @@media (max-width: 680px) {
+        .nutrition-grid { grid-template-columns: repeat(2, 1fr); }
+        .meal-item-row { flex-direction: column; align-items: stretch; }
+        .meal-item-qty { width: 100%; }
+    }
+    .meal-confirm-tag {
+        display: inline-block;
+        font-size: 9.5px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: .4px;
+        color: #B45309;
+        background: #FEF3C7;
+        padding: 3px 8px;
+        border-radius: 20px;
+        margin-left: 6px;
+    }
+</style>
+
+<div class="meal-review-wrap">
+    <h2 style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;margin-bottom:6px;">Review Your Meal</h2>
+    <p style="color:#64748B;font-size:13px;margin-bottom:16px;">GymHub matched the scan against your nutrition database. Correct any food or portion before saving.</p>
+
+    <img src="@Model.PhotoUrl" class="meal-photo-preview" alt="Uploaded meal" />
+
+    @if (!string.IsNullOrEmpty(Model.AiNotice))
+    {
+        <div class="meal-notice">@Model.AiNotice</div>
+    }
+
+    @using (Html.BeginForm("Save", "Meal", FormMethod.Post, new { id = "saveMealForm" }))
+    {
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="photoUrl" value="@Model.PhotoUrl" />
+        <input type="hidden" name="mealType" value="@Model.MealType" />
+
+        <div class="meal-items-heading">Automatically matched foods</div>
+        <div id="mealItemsContainer">
+            @if (Model.Items != null && Model.Items.Any())
+            {
+                foreach (var item in Model.Items)
+                {
+                    <div class="meal-item-card" data-food-id="@item.FoodId">
+                        <button type="button" class="meal-item-remove" onclick="removeMealItem(this)">
+                            <i class="fas fa-times"></i>
+                        </button>
+
+                        <div class="meal-item-name">
+
+                            @item.FoodName
+
+                            @if (item.WasAiDetected)
+                            {
+                                <span class="meal-item-ai-tag">
+                                    AI detected
+                                </span>
+                            }
+
+                            @if (item.NeedsConfirmation)
+                            {
+                                <span class="meal-confirm-tag">
+                                    Please confirm
+                                </span>
+                            }
+
+                        </div>
+
+                        @if (item.WasAiDetected)
+                        {
+                            <div class="ai-confidence">
+
+                                Scanner detected:
+                                <strong>@item.DetectedLabel</strong>
+
+                                &nbsp;·&nbsp;
+
+                                Vision confidence:
+                                <strong>
+                                    @Math.Round(
+                                             item.AiConfidence.GetValueOrDefault() * 100,
+                                             0)%
+                                </strong>
+
+                                &nbsp;·&nbsp;
+
+                                Database match:
+                                <strong>@item.MatchScore%</strong>
+
+                            </div>
+                        }
+
+                        <input type="hidden"
+                               name="foodIds"
+                               value="@item.FoodId" />
+
+                        <div class="meal-item-row">
+                            <select name="portionIds" class="meal-item-portion-select nutrition-portion" onchange="updateTotals()">
+                                @foreach (var p in item.PortionOptions)
+                                {
+                                    <option value="@p.PortionId"
+                                            data-calories="@p.Calories"
+                                            data-protein="@p.Protein"
+                                            data-carbs="@p.Carbs"
+                                            data-fat="@p.Fat"
+                                            data-fibre="@p.Fibre"
+                                            @(p.PortionId == item.SelectedPortionId ? "selected" : "")>
+                                        @p.PortionName (@p.WeightGrams g) — @p.Calories kcal
+                                    </option>
+                                }
+                            </select>
+
+                            <div class="meal-item-qty">
+                                <label>Qty</label>
+                                <input type="number" name="quantities" value="1" min="1" max="20"
+                                       class="meal-qty-input nutrition-qty"
+                                       oninput="updateTotals()" onchange="updateTotals()" />
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="meal-empty-hint" id="emptyHint">No foods were matched automatically. Search and add an item below.</div>
+            }
+        </div>
+
+        <div class="nutrition-summary">
+            <div class="nutrition-summary-title">Estimated nutrition for this meal</div>
+            <div class="nutrition-grid">
+                <div class="nutrition-stat"><strong id="totalCalories">0</strong><span>Calories</span></div>
+                <div class="nutrition-stat"><strong id="totalProtein">0</strong><span>Protein g</span></div>
+                <div class="nutrition-stat"><strong id="totalCarbs">0</strong><span>Carbs g</span></div>
+                <div class="nutrition-stat"><strong id="totalFat">0</strong><span>Fat g</span></div>
+                <div class="nutrition-stat"><strong id="totalFibre">0</strong><span>Fibre g</span></div>
+            </div>
+            <div class="nutrition-estimate-note">These values are estimates based on the selected database portions. Image recognition may identify foods incorrectly, so review the meal before saving.</div>
+        </div>
+
+        if (Model.DetectedTags != null && Model.DetectedTags.Any())
+        {
+            <div class="tag-chips-wrap">
+                <span class="tag-chips-label">Other labels found by the scanner</span>
+                <div id="tagChipsContainer">
+                    @foreach (var tag in Model.DetectedTags)
+                    {
+                        <span class="tag-chip" data-label="@tag.Label" onclick="handleTagTap(this)">
+                            <i class="fas fa-plus" style="font-size:10px;"></i> @tag.Label
+                        </span>
+                    }
+                </div>
+            </div>
+        }
+
+        <div class="add-food-search">
+            <label>Add or correct a food</label>
+            <input type="text" id="foodSearchInput" placeholder="Start typing a food name..." autocomplete="off" />
+            <div id="foodSuggestions"></div>
+        </div>
+
+
+        <button type="submit" class="meal-btn-primary">Save Meal</button>
+    }
+</div>
+
+<script>
+    (function () {
+        var searchInput = document.getElementById('foodSearchInput');
+        var suggestionsBox = document.getElementById('foodSuggestions');
+        var debounceTimer = null;
+
+        window.updateTotals = function () {
+            var calories = 0, protein = 0, carbs = 0, fat = 0, fibre = 0;
+            var cards = document.querySelectorAll('#mealItemsContainer .meal-item-card');
+
+            Array.prototype.forEach.call(cards, function (card) {
+                var select = card.querySelector('.nutrition-portion');
+                var qtyInput = card.querySelector('.nutrition-qty');
+                if (!select || !qtyInput || select.selectedIndex < 0) return;
+
+                var option = select.options[select.selectedIndex];
+                var qty = parseInt(qtyInput.value, 10);
+                if (!qty || qty < 1) qty = 1;
+                if (qty > 20) qty = 20;
+
+                calories += (parseFloat(option.getAttribute('data-calories')) || 0) * qty;
+                protein += (parseFloat(option.getAttribute('data-protein')) || 0) * qty;
+                carbs += (parseFloat(option.getAttribute('data-carbs')) || 0) * qty;
+                fat += (parseFloat(option.getAttribute('data-fat')) || 0) * qty;
+                fibre += (parseFloat(option.getAttribute('data-fibre')) || 0) * qty;
+            });
+
+            document.getElementById('totalCalories').textContent = calories.toFixed(0);
+            document.getElementById('totalProtein').textContent = protein.toFixed(1);
+            document.getElementById('totalCarbs').textContent = carbs.toFixed(1);
+            document.getElementById('totalFat').textContent = fat.toFixed(1);
+            document.getElementById('totalFibre').textContent = fibre.toFixed(1);
+        };
+
+        window.removeMealItem = function (button) {
+            var card = button.closest('.meal-item-card');
+            if (card) card.remove();
+            showEmptyHintIfNeeded();
+            updateTotals();
+        };
+
+        window.handleTagTap = function (chipEl) {
+            if (chipEl.classList.contains('tag-used')) return;
+
+            var label = chipEl.getAttribute('data-label');
+
+            fetch('/Meal/MatchTag?label=' + encodeURIComponent(label))
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (!data.success) return;
+
+                    if (data.matched) {
+                        addItemCard(data.foodId, data.foodName, data.portions, false, null);
+                        chipEl.classList.add('tag-used');
+                    } else {
+                        searchInput.value = label;
+                        searchInput.focus();
+                        searchInput.dispatchEvent(new Event('input'));
+                        chipEl.classList.add('tag-used');
+                    }
+                });
+        };
+
+        searchInput.addEventListener('input', function () {
+            var term = this.value.trim();
+            clearTimeout(debounceTimer);
+
+            if (term.length < 2) {
+                suggestionsBox.style.display = 'none';
+                return;
+            }
+
+            debounceTimer = setTimeout(function () {
+                fetch('/Meal/SearchFoods?term=' + encodeURIComponent(term))
+                    .then(function (res) { return res.json(); })
+                    .then(function (data) {
+                        if (!data.success || !data.foods || data.foods.length === 0) {
+                            suggestionsBox.style.display = 'none';
+                            return;
+                        }
+
+                        suggestionsBox.innerHTML = '';
+                        data.foods.forEach(function (food) {
+                            var row = document.createElement('div');
+                            row.textContent = food.foodName + (food.category ? ' (' + food.category + ')' : '');
+                            row.style.cssText = 'padding:10px 14px;cursor:pointer;font-size:13.5px;border-bottom:1px solid #F1F5F9;';
+                            row.onmouseover = function () { row.style.background = '#EFF6FF'; };
+                            row.onmouseout = function () { row.style.background = '#fff'; };
+                            row.onclick = function () {
+                                fetchPortionsAndAdd(food.foodId, food.foodName);
+                                suggestionsBox.style.display = 'none';
+                                searchInput.value = '';
+                            };
+                            suggestionsBox.appendChild(row);
+                        });
+                        suggestionsBox.style.display = 'block';
+                    });
+            }, 250);
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!searchInput.contains(e.target) && !suggestionsBox.contains(e.target))
+                suggestionsBox.style.display = 'none';
+        });
+
+        function fetchPortionsAndAdd(foodId, foodName) {
+            fetch('/Meal/GetPortions?foodId=' + foodId)
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (!data.success || !data.portions || data.portions.length === 0) return;
+                    addItemCard(foodId, foodName, data.portions, false, null);
+                });
+        }
+
+        function addItemCard(foodId, foodName, portions, wasAiDetected, confidence) {
+            // Do not add the same food twice accidentally.
+            var existing = document.querySelector('#mealItemsContainer .meal-item-card[data-food-id="' + foodId + '"]');
+            if (existing) return;
+
+            var emptyHint = document.getElementById('emptyHint');
+            if (emptyHint) emptyHint.remove();
+
+            var portionOptionsHtml = portions.map(function (p) {
+                return '<option value="' + p.portionId + '" ' +
+                    'data-calories="' + (p.calories || 0) + '" ' +
+                    'data-protein="' + (p.protein || 0) + '" ' +
+                    'data-carbs="' + (p.carbs || 0) + '" ' +
+                    'data-fat="' + (p.fat || 0) + '" ' +
+                    'data-fibre="' + (p.fibre || 0) + '">' +
+                    escapeHtml(p.portionName) + ' (' + p.weightGrams + 'g) — ' + (p.calories || 0) + ' kcal</option>';
+            }).join('');
+
+            var aiTag = wasAiDetected ? '<span class="meal-item-ai-tag">AI detected</span>' : '';
+            var confidenceText = confidence != null
+                ? '<div class="ai-confidence">Vision confidence: ' + Math.round(confidence * 100) + '%</div>'
+                : '';
+
+            var itemDiv = document.createElement('div');
+            itemDiv.className = 'meal-item-card';
+            itemDiv.setAttribute('data-food-id', foodId);
+            itemDiv.innerHTML =
+                '<button type="button" class="meal-item-remove" onclick="removeMealItem(this)"><i class="fas fa-times"></i></button>' +
+                '<div class="meal-item-name">' + escapeHtml(foodName) + aiTag + '</div>' +
+                confidenceText +
+                '<input type="hidden" name="foodIds" value="' + foodId + '" />' +
+                '<div class="meal-item-row">' +
+                    '<select name="portionIds" class="meal-item-portion-select nutrition-portion" onchange="updateTotals()">' + portionOptionsHtml + '</select>' +
+                    '<div class="meal-item-qty">' +
+                        '<label>Qty</label>' +
+                        '<input type="number" name="quantities" value="1" min="1" max="20" class="meal-qty-input nutrition-qty" oninput="updateTotals()" onchange="updateTotals()" />' +
+                    '</div>' +
+                '</div>';
+
+            document.getElementById('mealItemsContainer').appendChild(itemDiv);
+            updateTotals();
+        }
+
+        function showEmptyHintIfNeeded() {
+            var container = document.getElementById('mealItemsContainer');
+            if (container.querySelectorAll('.meal-item-card').length === 0 && !document.getElementById('emptyHint')) {
+                var hint = document.createElement('div');
+                hint.className = 'meal-empty-hint';
+                hint.id = 'emptyHint';
+                hint.textContent = 'No foods in this meal. Search and add an item below.';
+                container.appendChild(hint);
+            }
+        }
+
+        function escapeHtml(value) {
+            var div = document.createElement('div');
+            div.textContent = value == null ? '' : value;
+            return div.innerHTML;
+        }
+
+        document.getElementById('saveMealForm').addEventListener('submit', function (e) {
+            var cards = document.querySelectorAll('#mealItemsContainer .meal-item-card');
+            if (cards.length === 0) {
+                e.preventDefault();
+                alert('Please add at least one food item before saving.');
+            }
+        });
+
+        updateTotals();
+    })();
+</script>

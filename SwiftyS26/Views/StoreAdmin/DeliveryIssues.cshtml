@@ -1,0 +1,124 @@
+﻿@model List<SwiftyS26.Models.DeliveryItem>
+@{Layout = Session["LoggedInAdmin"] != null ? "~/Views/Shared/_AdminLayout.cshtml" : "~/Views/Shared/_StoreStaffLayout.cshtml"; ViewBag.Title = "Delivery Issues"; ViewBag.PageTitle = "DELIVERY ISSUES"; var po = ViewBag.PurchaseOrder as SwiftyS26.Models.PurchaseOrder; var returns = ViewBag.ExistingReturns as Dictionary<int, List<SwiftyS26.Models.SupplierReturn>> ?? new Dictionary<int, List<SwiftyS26.Models.SupplierReturn>>(); bool isAdmin = ViewBag.IsAdmin;}
+<style>
+    .shell {
+        max-width: 1100px;
+        margin: auto
+    }
+
+    .head, .card, .closebar {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 15px;
+        padding: 21px;
+        margin-bottom: 15px
+    }
+
+    .head {
+        border-top: 5px solid #f59e0b
+    }
+
+    .top, .counts, .actions, .returnrow {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap
+    }
+
+        .counts span {
+            padding: 7px 10px;
+            border-radius: 8px;
+            background: #f8fafc
+        }
+
+    .returnrow {
+        margin-top: 10px;
+        padding: 12px;
+        background: #f8fafc;
+        border-radius: 9px;
+        align-items: center
+    }
+
+    .badge {
+        font-size: 11px;
+        font-weight: 800;
+        padding: 4px 9px;
+        border-radius: 20px;
+        background: #e2e8f0
+    }
+
+        .badge.Approved, .badge.Resolved {
+            background: #dcfce7;
+            color: #15803d
+        }
+
+        .badge.PendingAdminApproval {
+            background: #fef3c7;
+            color: #b45309
+        }
+
+    .btn {
+        padding: 9px 14px;
+        border: 0;
+        border-radius: 9px;
+        font-weight: 800;
+        text-decoration: none;
+        font-size: 12px
+    }
+
+    .primary {
+        background: #2563eb;
+        color: #fff
+    }
+
+    .approve {
+        background: #16a34a;
+        color: #fff
+    }
+
+    .closebar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center
+    }
+
+    .evidence {
+        width: 90px;
+        height: 70px;
+        object-fit: cover;
+        border-radius: 8px
+    }
+
+    .empty {
+        text-align: center;
+        padding: 35px;
+        color: #15803d
+    }
+</style>
+<div class="shell">
+    <div class="head"><small>GYMHUB • DISCREPANCY MANAGEMENT</small><h2>Delivery Issues</h2><span>@po.ReferenceNumber • @po.Supplier.Name</span></div>
+    @if (TempData["Success"] != null)
+    {<div class="card" style="color:#15803d">@TempData["Success"]</div>}@if (TempData["Error"] != null)
+    {<div class="card" style="color:#b91c1c">@TempData["Error"]</div>}
+    @if (!Model.Any())
+    {<div class="card empty">✓ No damaged, missing or excess items were recorded.</div>}
+    @foreach (var item in Model)
+    {
+        List<SwiftyS26.Models.SupplierReturn> rs; returns.TryGetValue(item.DeliveryItemId, out rs); rs = rs ?? new List<SwiftyS26.Models.SupplierReturn>(); int allocated = rs.Where(x => x.Reason == "Damaged" && x.Status != "Rejected").Sum(x => x.Quantity); int remaining = Math.Max(item.DamagedQty - allocated, 0);
+        <div class="card">
+            <div class="top"><div><strong>@item.Product.Name</strong><br><small>@item.Condition @(string.IsNullOrWhiteSpace(item.DamageType)?"":"• "+item.DamageType+" • "+item.DamageSeverity)</small></div>@if (!string.IsNullOrWhiteSpace(item.EvidenceImagePath))
+            {<a href="@Url.Content(item.EvidenceImagePath)" target="_blank"><img class="evidence" src="@Url.Content(item.EvidenceImagePath)"></a>}</div>
+            <div class="counts"><span>Expected <strong>@item.ExpectedQty</strong></span><span>Received <strong>@item.ReceivedQty</strong></span><span>Good <strong>@item.GoodQty</strong></span><span>Damaged <strong>@item.DamagedQty</strong></span><span>Missing <strong>@item.MissingQty</strong></span><span>Excess <strong>@item.ExcessQty</strong></span></div>
+            @if (!string.IsNullOrWhiteSpace(item.InspectionNotes))
+            {<p>@item.InspectionNotes</p>}
+            @foreach (var r in rs)
+            {<div class="returnrow"><span><strong>@r.ReferenceNumber</strong> • @r.Quantity @r.Reason • @r.RequestedResolution • R@r.EstimatedReturnValue.ToString("F2")</span><span class="badge @r.Status">@r.Status</span>@if (isAdmin && r.Status == "PendingAdminApproval")
+            {using (Html.BeginForm("ApproveSupplierReturn", "StoreAdmin", FormMethod.Post))
+                {@Html.AntiForgeryToken()<input type="hidden" name="supplierReturnId" value="@r.SupplierReturnId"><button class="btn approve">Approve Return</button>}}</div>}
+            <div class="actions" style="margin-top:14px">@if (remaining > 0)
+            {<a class="btn primary" href="@Url.Action("CreateSupplierReturn",new{deliveryItemId=item.DeliveryItemId})">Create Return (@remaining available)</a>}</div>
+        </div>}
+    @if (po.Status == "Inspected" && isAdmin)
+    {<div class="closebar"><span>Close the procurement record after all discrepancies have been handled.</span>@using (Html.BeginForm("CompletePurchaseOrder", "StoreAdmin", FormMethod.Post))
+        {@Html.AntiForgeryToken()<input type="hidden" name="purchaseOrderId" value="@po.PurchaseOrderId"><button class="btn primary">Complete Purchase Order</button>}</div>}
+</div>

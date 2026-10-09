@@ -1,0 +1,559 @@
+﻿@model List<SwiftyS26.Models.ComplaintTicket>
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.ActivePage = "complaints";
+    ViewBag.PageTitle = "My Complaints";
+}
+
+@section head {
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <style>
+        :root {
+            --blue: #2563eb;
+            --blue-dark: #1d4ed8;
+            --blue-light: #eff6ff;
+            --blue-mid: #dbeafe;
+            --green: #16a34a;
+            --green-light: #f0fdf4;
+            --red: #dc2626;
+            --red-light: #fef2f2;
+            --gold: #d97706;
+            --gold-light: #fffbeb;
+            --text: #0f172a;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --bg2: #ffffff;
+            --bg3: #f1f5f9;
+            --radius: 14px;
+            --radius-sm: 10px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,.06);
+            --shadow-md: 0 4px 16px rgba(0,0,0,.08);
+        }
+
+        /* ── Local overrides for global layout classes ── */
+        .section-header {
+            margin-bottom: 26px;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .section-title {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 28px;
+            letter-spacing: 1.5px;
+            color: var(--text);
+        }
+
+        .section-sub {
+            font-size: 13.5px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .dash-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            padding: 24px;
+            font-family: 'DM Sans', sans-serif;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+
+            .card-title i {
+                color: var(--blue);
+            }
+
+        .modal-error {
+            background: var(--red-light);
+            border: 1px solid rgba(220,38,38,.2);
+            color: var(--red);
+            padding: 12px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 14px;
+        }
+
+        /* Status card (empty state) */
+        .status-card {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .status-icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+            background: var(--bg3);
+            color: var(--muted);
+        }
+
+        .status-title {
+            font-weight: 700;
+            font-size: 15px;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+
+        .status-desc {
+            font-size: 13.5px;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+            .status-desc a {
+                color: var(--blue);
+                font-weight: 700;
+                text-decoration: none;
+            }
+
+                .status-desc a:hover {
+                    text-decoration: underline;
+                }
+
+        /* Tracker */
+        .tracker-row {
+            display: flex;
+            gap: 10px;
+        }
+
+            .tracker-row input {
+                flex: 1;
+                font-family: ui-monospace, Menlo, monospace;
+                font-size: 14px;
+                padding: 12px 14px;
+                border-radius: var(--radius-sm);
+                border: 1.5px solid var(--border);
+                background: var(--bg3);
+                letter-spacing: 0.02em;
+                color: var(--text);
+                outline: none;
+                transition: all 0.18s ease;
+            }
+
+                .tracker-row input:focus {
+                    border-color: var(--blue);
+                    box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+                    background: #fff;
+                }
+
+            .tracker-row button {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-weight: 700;
+                font-size: 13.5px;
+                padding: 0 22px;
+                border-radius: var(--radius-sm);
+                border: none;
+                cursor: pointer;
+                background: var(--blue);
+                color: #fff;
+                transition: all 0.18s ease;
+                font-family: 'DM Sans', sans-serif;
+            }
+
+                .tracker-row button:hover {
+                    background: var(--blue-dark);
+                }
+
+                .tracker-row button:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                }
+
+        .tracker-result:not(:empty) {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Status pills */
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            padding: 5px 12px;
+            border-radius: 999px;
+            white-space: nowrap;
+        }
+
+            .status-pill::before {
+                content: '';
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+            }
+
+        .pill-submitted {
+            background: var(--blue-light);
+            color: var(--blue);
+        }
+
+            .pill-submitted::before {
+                background: var(--blue);
+            }
+
+        .pill-investigating {
+            background: var(--gold-light);
+            color: var(--gold);
+        }
+
+            .pill-investigating::before {
+                background: var(--gold);
+            }
+
+        .pill-resolved {
+            background: var(--green-light);
+            color: var(--green);
+        }
+
+            .pill-resolved::before {
+                background: var(--green);
+            }
+
+        .pill-closed {
+            background: var(--bg3);
+            color: var(--muted);
+        }
+
+            .pill-closed::before {
+                background: var(--muted);
+            }
+
+        /* Complaint cards */
+        .complaint-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 4px;
+        }
+
+        .complaint-card {
+            border-radius: var(--radius-sm);
+            padding: 18px 20px;
+            cursor: pointer;
+            border: 1.5px solid var(--border);
+            background: var(--bg3);
+            transition: border-color 0.18s ease, background 0.18s ease;
+        }
+
+            .complaint-card:hover {
+                border-color: var(--blue-mid);
+                background: #fff;
+            }
+
+        .complaint-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .complaint-ref {
+            font-family: ui-monospace, Menlo, monospace;
+            font-size: 12px;
+            color: #94a3b8;
+            margin-bottom: 4px;
+        }
+
+        .complaint-cat {
+            font-weight: 700;
+            font-size: 15.5px;
+            color: var(--text);
+        }
+
+        .complaint-date {
+            font-size: 12.5px;
+            color: var(--muted);
+            margin-top: 3px;
+        }
+
+        .complaint-snippet {
+            font-size: 13.5px;
+            color: var(--text-sub, #475569);
+            margin-top: 10px;
+            line-height: 1.55;
+        }
+
+        .complaint-card-details {
+            display: none;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .complaint-card.expanded .complaint-card-details {
+            display: block;
+        }
+
+        .mini-rail {
+            list-style: none;
+            display: flex;
+            gap: 16px;
+            margin: 0 0 16px;
+            padding: 0;
+            flex-wrap: wrap;
+        }
+
+            .mini-rail li {
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+                color: #cbd2dc;
+                position: relative;
+                padding-left: 15px;
+            }
+
+                .mini-rail li::before {
+                    content: '';
+                    position: absolute;
+                    left: 0;
+                    top: 3px;
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    background: currentColor;
+                }
+
+                .mini-rail li.active {
+                    color: var(--blue);
+                }
+
+        .complaint-detail-box {
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            font-size: 13px;
+            margin-bottom: 10px;
+            line-height: 1.55;
+            background: var(--blue-light);
+            color: var(--text-sub, #334155);
+        }
+
+        .detail-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--blue);
+            margin-bottom: 4px;
+        }
+
+        .complaint-meta-row {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            font-size: 12.5px;
+            color: #94a3b8;
+            margin-top: 6px;
+        }
+
+        .empty-complaints .status-title {
+            margin-bottom: 4px;
+        }
+    </style>
+}
+
+<div class="section-header">
+    <div class="section-title">MY COMPLAINTS</div>
+    <div class="section-sub">Track a complaint by reference number, or browse your history</div>
+</div>
+
+<!-- Tracker -->
+<div class="dash-card">
+    <div class="card-title"><i class="fas fa-magnifying-glass"></i> Track by Reference Number</div>
+    <div class="tracker-row">
+        <input type="text" id="ref-input" placeholder="e.g. CMP-20260730-4821" />
+        <button id="track-btn"><i class="fas fa-magnifying-glass"></i> Track</button>
+    </div>
+    <div class="modal-error" id="tracker-error" style="display:none;"></div>
+    <div class="tracker-result" id="tracker-result"></div>
+</div>
+
+<!-- History -->
+<div class="dash-card">
+    <div class="card-title"><i class="fas fa-clock-rotate-left"></i> Complaint History (@(Model?.Count ?? 0))</div>
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="status-card empty-complaints">
+            <div class="status-icon"><i class="fas fa-inbox"></i></div>
+            <div>
+                <div class="status-title">No complaints yet</div>
+                <p class="status-desc">
+                    <a href="@Url.Action("SubmitComplaintForm", "Dashboard")">Submit your first complaint <i class="fas fa-arrow-right"></i></a>
+                </p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="complaint-list">
+            @foreach (var c in Model)
+            {
+                var pillClass = c.Status == "Under Investigation" ? "pill-investigating"
+                    : c.Status == "Resolved" ? "pill-resolved"
+                    : c.Status == "Closed" ? "pill-closed"
+                    : "pill-submitted";
+                <div class="complaint-card" onclick="this.classList.toggle('expanded')">
+                    <div class="complaint-card-top">
+                        <div>
+                            <div class="complaint-ref">@c.ReferenceNumber</div>
+                            <div class="complaint-cat">@c.Category</div>
+                            <div class="complaint-date"><i class="fas fa-calendar"></i> Submitted @c.SubmittedAtDisplay</div>
+                        </div>
+                        <span class="status-pill @pillClass">@c.Status</span>
+                    </div>
+                    <div class="complaint-snippet">@(c.Details.Length > 140 ? c.Details.Substring(0, 140) + "…" : c.Details)</div>
+
+                    <div class="complaint-card-details">
+                        <ul class="mini-rail">
+                            <li class="@(IsAtOrPast(c.Status, "Submitted") ? "active" : "")">Submitted</li>
+                            <li class="@(IsAtOrPast(c.Status, "Under Investigation") ? "active" : "")">Investigating</li>
+                            <li class="@(IsAtOrPast(c.Status, "Resolved") ? "active" : "")">Resolved</li>
+                            <li class="@(IsAtOrPast(c.Status, "Closed") ? "active" : "")">Closed</li>
+                        </ul>
+
+                        @if (!string.IsNullOrWhiteSpace(c.StaffComments))
+                        {
+                            <div class="complaint-detail-box">
+                                <div class="detail-label">Staff Comments</div>
+                                @c.StaffComments
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(c.ResolutionDetails))
+                        {
+                            <div class="complaint-detail-box">
+                                <div class="detail-label">Resolution</div>
+                                @c.ResolutionDetails
+                            </div>
+                        }
+                        <div class="complaint-meta-row">
+                            <span><i class="fas fa-rotate"></i> Last updated: @c.LastUpdatedAtDisplay</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section scripts {
+    <script>
+        var trackBtn = document.getElementById('track-btn');
+        var refInput = document.getElementById('ref-input');
+        var errorBox = document.getElementById('tracker-error');
+        var resultBox = document.getElementById('tracker-result');
+        var statusOrder = ['Submitted', 'Under Investigation', 'Resolved', 'Closed'];
+
+        function pillClassFor(status) {
+            var s = (status || '').toLowerCase();
+            if (s === 'under investigation') return 'pill-investigating';
+            if (s === 'resolved') return 'pill-resolved';
+            if (s === 'closed') return 'pill-closed';
+            return 'pill-submitted';
+        }
+
+        function miniRailHtml(status) {
+            var idx = statusOrder.indexOf(status);
+            var labels = ['Submitted', 'Investigating', 'Resolved', 'Closed'];
+            var html = '<ul class="mini-rail">';
+            labels.forEach(function (label, i) {
+                html += '<li class="' + (i <= idx ? 'active' : '') + '">' + label + '</li>';
+            });
+            html += '</ul>';
+            return html;
+        }
+
+        function doTrack() {
+            var referenceNumber = refInput.value.trim();
+            errorBox.style.display = 'none';
+            resultBox.innerHTML = '';
+
+            if (!referenceNumber) {
+                errorBox.textContent = 'Please enter a reference number.';
+                errorBox.style.display = 'block';
+                return;
+            }
+
+            trackBtn.disabled = true;
+            trackBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Tracking…';
+
+            var formData = new FormData();
+            formData.append('referenceNumber', referenceNumber);
+
+            fetch('@Url.Action("TrackComplaint", "Dashboard")', { method: 'POST', body: formData })
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    trackBtn.disabled = false;
+                    trackBtn.innerHTML = '<i class="fas fa-magnifying-glass"></i> Track';
+
+                    if (!data.success) {
+                        errorBox.textContent = data.message || 'No complaint found.';
+                        errorBox.style.display = 'block';
+                        return;
+                    }
+
+                    var html = '<div class="complaint-card-top">';
+                    html += '<div><div class="complaint-ref">' + data.referenceNumber + '</div>';
+                    html += '<div class="complaint-cat">' + data.category + '</div></div>';
+                    html += '<span class="status-pill ' + pillClassFor(data.status) + '">' + data.status + '</span>';
+                    html += '</div>';
+                    html += miniRailHtml(data.status);
+                    html += '<div class="complaint-detail-box"><div class="detail-label">Details</div>' + data.details + '</div>';
+                    if (data.staffComments) {
+                        html += '<div class="complaint-detail-box"><div class="detail-label">Staff Comments</div>' + data.staffComments + '</div>';
+                    }
+                    if (data.resolutionDetails) {
+                        html += '<div class="complaint-detail-box"><div class="detail-label">Resolution</div>' + data.resolutionDetails + '</div>';
+                    }
+                    html += '<div class="complaint-meta-row"><span>Submitted: ' + data.submittedAt + '</span><span>Last updated: ' + data.lastUpdatedAt + '</span></div>';
+
+                    resultBox.innerHTML = html;
+                })
+                .catch(function () {
+                    trackBtn.disabled = false;
+                    trackBtn.innerHTML = '<i class="fas fa-magnifying-glass"></i> Track';
+                    errorBox.textContent = 'Network error. Please try again.';
+                    errorBox.style.display = 'block';
+                });
+        }
+
+        trackBtn.addEventListener('click', doTrack);
+        refInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doTrack(); });
+    </script>
+}
+
+@functions {
+    // Order-aware helper so the server-rendered mini-rail matches the JS version used by the tracker
+    private static readonly string[] StatusOrder = { "Submitted", "Under Investigation", "Resolved", "Closed" };
+    public bool IsAtOrPast(string currentStatus, string checkStatus)
+    {
+        int currentIdx = Array.IndexOf(StatusOrder, currentStatus);
+        int checkIdx = Array.IndexOf(StatusOrder, checkStatus);
+        return currentIdx >= checkIdx;
+    }
+}

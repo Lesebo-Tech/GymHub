@@ -1,0 +1,737 @@
+﻿/* ===================== MEMBERSHIP PAGE STYLES ===================== */
+
+/* Section Header */
+.section-header {
+    margin-bottom: 20px;
+}
+
+.section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    color: #0F172A;
+    margin-bottom: 4px;
+}
+
+.section-sub {
+    font-size: 13px;
+    color: #64748B;
+    font-weight: 500;
+}
+
+/* Cards */
+.dash-card {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: all 0.2s ease;
+}
+
+    .dash-card:last-child {
+        margin-bottom: 0;
+    }
+
+    .dash-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+.card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0F172A;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+    .card-title i {
+        color: #3B82F6;
+        font-size: 18px;
+    }
+
+.card-desc {
+    font-size: 13px;
+    color: #64748B;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+/* Current Plan Card */
+.current-plan-card {
+    background: linear-gradient(135deg, #F8FAFE, rgba(37, 99, 235, 0.05));
+    border-color: rgba(59, 130, 246, 0.25);
+}
+
+.current-plan-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.current-plan-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #64748B;
+    margin-bottom: 6px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+    .current-plan-label i {
+        font-size: 12px;
+        color: #F59E0B;
+    }
+
+.current-plan-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    letter-spacing: 2px;
+    color: #3B82F6;
+    font-weight: 700;
+}
+
+.current-plan-price {
+    text-align: right;
+}
+
+.price-curr {
+    font-size: 18px;
+    color: #3B82F6;
+    font-weight: 700;
+    vertical-align: top;
+}
+
+.price-big {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    color: #0F172A;
+    letter-spacing: 1px;
+    line-height: 1;
+    font-weight: 700;
+}
+
+.price-per {
+    font-size: 14px;
+    color: #64748B;
+    font-weight: 500;
+}
+
+/* Plan Meta Grid */
+.plan-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+.plan-meta-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.plan-meta-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #64748B;
+    margin-bottom: 4px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+    .plan-meta-label i {
+        font-size: 10px;
+    }
+
+.plan-meta-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: #0F172A;
+}
+
+    .plan-meta-value.gold {
+        color: #F59E0B;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 16px;
+        letter-spacing: 1px;
+    }
+
+    .plan-meta-value.status-active {
+        color: #22C55E;
+    }
+
+    .plan-meta-value.status-suspended {
+        color: #EF4444;
+    }
+
+/* Features Grid */
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.feat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: 500;
+}
+
+    .feat.yes {
+        background: rgba(34, 197, 94, 0.08);
+        color: #0F172A;
+        border: 1px solid rgba(34, 197, 94, 0.15);
+    }
+
+        .feat.yes i {
+            color: #22C55E;
+            font-size: 14px;
+        }
+
+    .feat.no {
+        background: rgba(239, 68, 68, 0.06);
+        color: #94A3B8;
+        border: 1px solid rgba(239, 68, 68, 0.1);
+    }
+
+        .feat.no i {
+            color: #EF4444;
+            font-size: 14px;
+        }
+
+/* Plan Cards Grid */
+.plan-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.plan-option-card {
+    border: 1.5px solid #E2E8F0;
+    border-radius: 14px;
+    padding: 18px;
+    position: relative;
+    transition: all 0.25s ease;
+    background: #fff;
+}
+
+    .plan-option-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .plan-option-card.current {
+        border-color: #3B82F6;
+        background: rgba(59, 130, 246, 0.03);
+    }
+
+    .plan-option-card.popular {
+        border-color: rgba(59, 130, 246, 0.4);
+    }
+
+.plan-popular-tag {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #2563EB, #3B82F6);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 4px 14px;
+    border-radius: 50px;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.plan-option-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #64748B;
+    margin-bottom: 10px;
+}
+
+    .plan-option-badge.badge-current {
+        color: #3B82F6;
+    }
+
+    .plan-option-badge i {
+        font-size: 10px;
+    }
+
+.plan-option-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    color: #0F172A;
+    margin-bottom: 4px;
+}
+
+.plan-option-price {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    color: #3B82F6;
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+    line-height: 1;
+}
+
+    .plan-option-price span {
+        font-size: 14px;
+        color: #64748B;
+        font-family: 'DM Sans';
+        font-weight: 500;
+        letter-spacing: 0;
+    }
+
+.plan-option-features {
+    list-style: none;
+    margin-bottom: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+    .plan-option-features li {
+        font-size: 12px;
+        font-weight: 500;
+        color: #334155;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .plan-option-features li i {
+            font-size: 12px;
+            width: 16px;
+        }
+
+        .plan-option-features li.no {
+            color: #94A3B8;
+        }
+
+            .plan-option-features li.no i {
+                color: #EF4444;
+            }
+
+        .plan-option-features li i.fa-check-circle {
+            color: #22C55E;
+        }
+
+.plan-option-btn {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    font-family: 'DM Sans';
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+    .plan-option-btn.upgrade {
+        background: linear-gradient(135deg, #2563EB, #3B82F6);
+        color: #fff;
+    }
+
+        .plan-option-btn.upgrade:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+    .plan-option-btn.downgrade {
+        background: rgba(245, 158, 11, 0.1);
+        color: #D97706;
+        border: 1.5px solid rgba(245, 158, 11, 0.3);
+    }
+
+        .plan-option-btn.downgrade:hover {
+            background: #F59E0B;
+            color: #fff;
+        }
+
+    .plan-option-btn.current-btn {
+        background: rgba(59, 130, 246, 0.08);
+        color: #3B82F6;
+        border: 1.5px solid rgba(59, 130, 246, 0.2);
+        cursor: not-allowed;
+        opacity: 0.7;
+    }
+
+/* Cancel Card */
+.cancel-card {
+    border-color: rgba(239, 68, 68, 0.2) !important;
+    background: rgba(239, 68, 68, 0.02) !important;
+}
+
+.cancel-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.cancel-info {
+    flex: 1;
+}
+
+.cancel-title {
+    color: #EF4444 !important;
+    margin-bottom: 8px;
+}
+
+.cancel-desc {
+    font-size: 13px;
+    color: #64748B;
+    line-height: 1.6;
+    max-width: 560px;
+}
+
+    .cancel-desc strong {
+        color: #0F172A;
+    }
+
+    .cancel-desc i {
+        color: #3B82F6;
+        margin-right: 4px;
+    }
+
+.btn-cancel-membership {
+    padding: 12px 24px;
+    background: transparent;
+    border: 1.5px solid #EF4444;
+    color: #EF4444;
+    border-radius: 10px;
+    font-family: 'DM Sans';
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+    .btn-cancel-membership:hover {
+        background: #EF4444;
+        color: #fff;
+    }
+
+/* Status Cards */
+.status-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+}
+
+    .status-card.pending-cancel {
+        border-color: rgba(245, 158, 11, 0.3);
+        background: rgba(245, 158, 11, 0.04);
+    }
+
+    .status-card.cancelled {
+        border-color: rgba(239, 68, 68, 0.3);
+        background: rgba(239, 68, 68, 0.04);
+    }
+
+    .status-card.suspended {
+        border-color: rgba(239, 68, 68, 0.3);
+        background: rgba(239, 68, 68, 0.04);
+    }
+
+    .status-card.frozen {
+        border-color: rgba(139, 92, 246, 0.3);
+        background: rgba(139, 92, 246, 0.05);
+    }
+
+.status-icon {
+    font-size: 32px;
+}
+
+.status-card.pending-cancel .status-icon {
+    color: #F59E0B;
+}
+
+.status-card.cancelled .status-icon {
+    color: #EF4444;
+}
+
+.status-card.suspended .status-icon {
+    color: #EF4444;
+}
+
+.status-card.frozen .status-icon {
+    color: #A78BFA;
+}
+
+.status-title {
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 4px;
+}
+
+.status-card.pending-cancel .status-title {
+    color: #F59E0B;
+}
+
+.status-card.cancelled .status-title {
+    color: #EF4444;
+}
+
+.status-card.suspended .status-title {
+    color: #EF4444;
+}
+
+.status-card.frozen .status-title {
+    color: #A78BFA;
+}
+
+.status-desc {
+    font-size: 13px;
+    color: #64748B;
+    line-height: 1.5;
+}
+
+    .status-desc a {
+        color: #3B82F6;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+        .status-desc a:hover {
+            text-decoration: underline;
+        }
+
+/* Modals */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+}
+
+    .modal-overlay.open {
+        display: flex;
+    }
+
+.modal-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 32px;
+    width: 100%;
+    max-width: 460px;
+    margin: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    animation: fadeUp 0.3s ease both;
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+    .modal-icon.warning {
+        color: #EF4444;
+    }
+
+.modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    color: #0F172A;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+    .modal-title.warning {
+        color: #EF4444;
+    }
+
+.modal-body {
+    font-size: 14px;
+    color: #374151;
+    line-height: 1.6;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.modal-notice {
+    background: rgba(59, 130, 246, 0.06);
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #374151;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+    .modal-notice.warning {
+        border-color: rgba(239, 68, 68, 0.2);
+        background: rgba(239, 68, 68, 0.05);
+        color: #EF4444;
+    }
+
+.modal-error {
+    background: #FEF2F2;
+    border: 1px solid #FEE2E2;
+    border-left: 3px solid #EF4444;
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: #DC2626;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.modal-btn-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.modal-btn-confirm {
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #2563EB, #3B82F6);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-family: 'DM Sans';
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+    .modal-btn-confirm:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .modal-btn-confirm.danger {
+        background: #EF4444;
+    }
+
+        .modal-btn-confirm.danger:hover {
+            background: #DC2626;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+.modal-btn-cancel {
+    width: 100%;
+    padding: 11px;
+    background: transparent;
+    border: 1.5px solid #E2E8F0;
+    color: #64748B;
+    border-radius: 12px;
+    font-family: 'DM Sans';
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+    .modal-btn-cancel:hover {
+        border-color: #0F172A;
+        color: #0F172A;
+    }
+
+/* Responsive */
+@media (max-width: 1100px) {
+    .plan-meta-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .plan-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 900px) {
+    .plan-cards-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .features-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .current-plan-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .current-plan-price {
+        text-align: left;
+    }
+
+    .cancel-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .btn-cancel-membership {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 600px) {
+    .section-title {
+        font-size: 24px;
+    }
+
+    .dash-card {
+        padding: 16px;
+    }
+
+    .plan

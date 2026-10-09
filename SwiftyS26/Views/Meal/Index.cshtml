@@ -1,0 +1,582 @@
+﻿@model SwiftyS26.Models.MealDashboardViewModel
+@using System.Linq
+
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.PageTitle = "Meal Analysis";
+    ViewBag.ActivePage = "nutrition";
+}
+
+<style>
+    @@keyframes ma-fadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes ma-pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: .5;
+        }
+    }
+
+    @@keyframes ma-fillBar {
+        from {
+            width: 0%;
+        }
+    }
+
+    @@keyframes ma-scoreIn {
+        from {
+            stroke-dashoffset: 339.3;
+        }
+    }
+
+    .nutrition-dashboard {
+        max-width: 1180px;
+        margin: 0 auto;
+    }
+
+    .nutrition-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+        gap: 16px;
+        flex-wrap: wrap;
+        animation: ma-fadeUp .35s ease both;
+    }
+
+    .nutrition-title {
+        font-family: 'Bebas Neue',sans-serif;
+        font-size: 30px;
+        letter-spacing: 1px;
+        color: #0F172A;
+    }
+
+    .nutrition-subtitle {
+        color: #64748B;
+        margin-top: 4px;
+        font-size: 13.5px;
+    }
+
+    .scan-btn {
+        text-decoration: none;
+        padding: 12px 22px;
+        background: linear-gradient(135deg,#2563EB,#1D4ED8);
+        color: #fff;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 13.5px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 14px rgba(37,99,235,.3);
+        transition: transform .15s;
+    }
+
+        .scan-btn:hover {
+            transform: translateY(-2px);
+        }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(5,1fr);
+        gap: 14px;
+        margin-bottom: 22px;
+    }
+
+    .stat-card {
+        background: #fff;
+        border: 1px solid #E2E8F0;
+        border-radius: 14px;
+        padding: 18px;
+        position: relative;
+        overflow: hidden;
+        animation: ma-fadeUp .4s ease both;
+    }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .stat-card.cal::before {
+            background: #2563EB;
+        }
+
+        .stat-card.protein::before {
+            background: #7C3AED;
+        }
+
+        .stat-card.carbs::before {
+            background: #D97706;
+        }
+
+        .stat-card.fat::before {
+            background: #DC2626;
+        }
+
+        .stat-card.fibre::before {
+            background: #16A34A;
+        }
+
+    .stat-label {
+        color: #64748B;
+        font-size: 11px;
+        text-transform: uppercase;
+        font-weight: 700;
+        letter-spacing: .4px;
+    }
+
+    .stat-value {
+        font-family: 'Bebas Neue',sans-serif;
+        font-size: 26px;
+        color: #0F172A;
+        margin: 8px 0 2px;
+    }
+
+    .stat-target {
+        font-size: 12px;
+        color: #94A3B8;
+        margin-bottom: 10px;
+    }
+
+    .progress-track {
+        height: 7px;
+        background: #F1F5F9;
+        border-radius: 20px;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        border-radius: 20px;
+        animation: ma-fillBar 1s cubic-bezier(.34,1.2,.64,1) both;
+    }
+
+    .stat-card.cal .progress-fill {
+        background: #2563EB;
+    }
+
+    .stat-card.protein .progress-fill {
+        background: #7C3AED;
+    }
+
+    .stat-card.carbs .progress-fill {
+        background: #D97706;
+    }
+
+    .stat-card.fat .progress-fill {
+        background: #DC2626;
+    }
+
+    .stat-card.fibre .progress-fill {
+        background: #16A34A;
+    }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1.2fr .8fr;
+        gap: 18px;
+    }
+
+    .panel {
+        background: #fff;
+        border: 1px solid #E2E8F0;
+        border-radius: 14px;
+        padding: 20px;
+        margin-bottom: 18px;
+        animation: ma-fadeUp .45s ease both;
+    }
+
+    .panel-title {
+        font-size: 14px;
+        font-weight: 800;
+        margin-bottom: 14px;
+        color: #0F172A;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .panel-title i {
+            color: #2563EB;
+        }
+
+    .meal-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #F1F5F9;
+        transition: background .15s;
+    }
+
+        .meal-row:last-child {
+            border-bottom: none;
+        }
+
+        .meal-row:hover {
+            background: #FAFBFF;
+            margin: 0 -8px;
+            padding: 12px 8px;
+            border-radius: 8px;
+        }
+
+    .meal-name {
+        font-weight: 700;
+        color: #0F172A;
+        font-size: 13.5px;
+    }
+
+    .meal-meta {
+        color: #64748B;
+        font-size: 11.5px;
+        margin-top: 2px;
+    }
+
+    .meal-cal {
+        font-weight: 800;
+        color: #2563EB;
+        font-size: 13.5px;
+    }
+
+    .meal-link {
+        color: #2563EB;
+        font-weight: 700;
+        font-size: 12px;
+        text-decoration: none;
+    }
+
+    .empty-note {
+        color: #94A3B8;
+        font-size: 13px;
+        padding: 20px 0;
+        text-align: center;
+    }
+
+    .goal-badge {
+        display: inline-block;
+        background: #EFF6FF;
+        color: #2563EB;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .score-wrap {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .score-ring {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        flex-shrink: 0;
+    }
+
+        .score-ring svg {
+            transform: rotate(-90deg);
+        }
+
+        .score-ring circle {
+            fill: none;
+            stroke-width: 10;
+        }
+
+        .score-ring .bg {
+            stroke: #F1F5F9;
+        }
+
+        .score-ring .fg {
+            stroke: #2563EB;
+            stroke-linecap: round;
+            stroke-dasharray: 339.3;
+            animation: ma-scoreIn 1.1s cubic-bezier(.34,1.2,.64,1) both;
+        }
+
+    .score-center {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .score-number {
+        font-family: 'Bebas Neue',sans-serif;
+        font-size: 34px;
+        color: #0F172A;
+        line-height: 1;
+    }
+
+    .score-outof {
+        font-size: 11px;
+        color: #94A3B8;
+    }
+
+    .score-verdict {
+        font-weight: 800;
+        font-size: 14px;
+        color: #0F172A;
+        margin-bottom: 4px;
+    }
+
+    .score-message {
+        font-size: 12.5px;
+        color: #64748B;
+        line-height: 1.5;
+    }
+
+    canvas {
+        max-width: 100%;
+    }
+
+    @@media (max-width: 900px) {
+        .stats-grid {
+            grid-template-columns: repeat(2,1fr);
+        }
+
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .score-wrap {
+            flex-direction: column;
+            text-align: center;
+        }
+    }
+    .diet-btn {
+        text-decoration: none;
+        padding: 12px 22px;
+        background: #fff;
+        color: #2563EB;
+        border: 1.5px solid #2563EB;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 13.5px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: transform .15s, background .15s;
+    }
+
+        .diet-btn:hover {
+            transform: translateY(-2px);
+            background: #EFF6FF;
+            color: #2563EB;
+        }
+</style>
+
+<div class="nutrition-dashboard">
+    <div class="nutrition-header">
+        <div>
+            <h1 class="nutrition-title"><i class="fas fa-utensils" style="color:#2563EB;margin-right:8px;font-size:26px;"></i>Meal Analysis</h1>
+            <div class="nutrition-subtitle">Track today's nutrition and monitor your fitness goal.</div>
+        </div>
+        <div style="display:flex;gap:10px;">
+            <a href="@Url.Action("DietPlan", "Meal")" class="diet-btn"><i class="fas fa-calendar-week"></i> Meal Plan</a>
+            <a href="@Url.Action("Upload", "Meal")" class="scan-btn"><i class="fas fa-camera"></i> Scan New Meal</a>
+        </div>
+    </div>
+
+    @{
+        double calPct = Model.TargetCalories == 0 ? 0 : Math.Min(100, (double)(Model.TotalCalories / Model.TargetCalories * 100));
+        double proPct = Model.TargetProtein == 0 ? 0 : Math.Min(100, (double)(Model.TotalProtein / Model.TargetProtein * 100));
+        double carbPct = Model.TargetCarbs == 0 ? 0 : Math.Min(100, (double)(Model.TotalCarbs / Model.TargetCarbs * 100));
+        double fatPct = Model.TargetFat == 0 ? 0 : Math.Min(100, (double)(Model.TotalFat / Model.TargetFat * 100));
+        double fibrePct = Model.TargetFibre == 0 ? 0 : Math.Min(100, (double)(Model.TotalFibre / Model.TargetFibre * 100));
+    }
+
+    <div class="stats-grid">
+        <div class="stat-card cal">
+            <div class="stat-label">Calories</div>
+            <div class="stat-value">@Model.TotalCalories.ToString("0")</div>
+            <div class="stat-target">/ @Model.TargetCalories.ToString("0") kcal</div>
+            <div class="progress-track"><div class="progress-fill" style="width:@(calPct)%"></div></div>
+        </div>
+        <div class="stat-card protein" style="animation-delay:.04s;">
+            <div class="stat-label">Protein</div>
+            <div class="stat-value">@Model.TotalProtein.ToString("0")g</div>
+            <div class="stat-target">/ @Model.TargetProtein.ToString("0")g</div>
+            <div class="progress-track"><div class="progress-fill" style="width:@(proPct)%"></div></div>
+        </div>
+        <div class="stat-card carbs" style="animation-delay:.08s;">
+            <div class="stat-label">Carbs</div>
+            <div class="stat-value">@Model.TotalCarbs.ToString("0")g</div>
+            <div class="stat-target">/ @Model.TargetCarbs.ToString("0")g</div>
+            <div class="progress-track"><div class="progress-fill" style="width:@(carbPct)%"></div></div>
+        </div>
+        <div class="stat-card fat" style="animation-delay:.12s;">
+            <div class="stat-label">Fat</div>
+            <div class="stat-value">@Model.TotalFat.ToString("0")g</div>
+            <div class="stat-target">/ @Model.TargetFat.ToString("0")g</div>
+            <div class="progress-track"><div class="progress-fill" style="width:@(fatPct)%"></div></div>
+        </div>
+        <div class="stat-card fibre" style="animation-delay:.16s;">
+            <div class="stat-label">Fibre</div>
+            <div class="stat-value">@Model.TotalFibre.ToString("0")g</div>
+            <div class="stat-target">/ @Model.TargetFibre.ToString("0")g</div>
+            <div class="progress-track"><div class="progress-fill" style="width:@(fibrePct)%"></div></div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+
+        <div>
+            <div class="panel">
+                <div class="panel-title"><i class="fas fa-chart-line"></i> 7-Day Calorie Trend</div>
+                <canvas id="trendChart" height="90"></canvas>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title"><i class="fas fa-sun"></i> Today's Meals</div>
+                @if (Model.TodaysMeals.Any())
+                {
+                    foreach (var meal in Model.TodaysMeals)
+                    {
+                        <div class="meal-row">
+                            <div>
+                                <div class="meal-name">@meal.MealType</div>
+                                <div class="meal-meta">@meal.LoggedAt.ToString("HH:mm")</div>
+                            </div>
+                            <div class="meal-cal">@meal.TotalCalories.ToString("0") kcal</div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="empty-note"><i class="fas fa-plate-wheat" style="font-size:22px;opacity:.3;display:block;margin-bottom:8px;"></i>No meals logged today.</div>
+                }
+            </div>
+
+            <div class="panel">
+                <div class="panel-title"><i class="fas fa-clock-rotate-left"></i> Recent Meals</div>
+                @if (Model.RecentMeals.Any())
+                {
+                    foreach (var meal in Model.RecentMeals)
+                    {
+                        <div class="meal-row">
+                            <div>
+                                <div class="meal-name">@meal.MealType</div>
+                                <div class="meal-meta">@meal.LoggedAt.ToString("dd MMM yyyy HH:mm")</div>
+                            </div>
+                            <a href="@Url.Action("Summary", "Meal", new { id = meal.MealLogId })" class="meal-link">View <i class="fas fa-arrow-right" style="font-size:10px;"></i></a>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="empty-note">No meal history yet.</div>
+                }
+            </div>
+        </div>
+
+        <div>
+            <div class="panel">
+                <div class="panel-title"><i class="fas fa-award"></i> Daily Score</div>
+                <div class="score-wrap">
+                    <div class="score-ring">
+                        <svg width="120" height="120">
+                            <circle class="bg" cx="60" cy="60" r="54"></circle>
+                            <circle class="fg" cx="60" cy="60" r="54" style="stroke-dashoffset:@(339.3 - (339.3 * Model.DailyScore / 100))"></circle>
+                        </svg>
+                        <div class="score-center">
+                            <div class="score-number">@Model.DailyScore</div>
+                            <div class="score-outof">/ 100</div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="score-verdict">@Model.DailyVerdict</div>
+                        <div class="score-message">@Model.DailyMessage</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title"><i class="fas fa-bullseye"></i> Macro Split Today</div>
+                <canvas id="macroChart" height="180"></canvas>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title"><i class="fas fa-flag"></i> Current Goal</div>
+                <span class="goal-badge">@Model.GoalType</span>
+                <p style="margin-top:14px;color:#64748B;font-size:12.5px;line-height:1.5;">Daily targets are estimated from your selected fitness goal.</p>
+                <a href="@Url.Action("MyPlans", "Meal")" style="display:inline-block;margin-top:10px;color:#2563EB;font-weight:700;font-size:12.5px;text-decoration:none;">
+                    View your 7-day meal plan <i class="fas fa-arrow-right" style="font-size:10px;"></i>
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    var trendLabels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.SevenDayTrend.Select(d => d.Date.ToString("ddd"))));
+    var trendCalories = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.SevenDayTrend.Select(d => d.Calories)));
+    var targetCalories = @Model.TargetCalories;
+
+    new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+            labels: trendLabels,
+            datasets: [
+                {
+                    label: 'Calories',
+                    data: trendCalories,
+                    borderColor: '#2563EB',
+                    backgroundColor: 'rgba(37,99,235,.08)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#2563EB'
+                },
+                {
+                    label: 'Target',
+                    data: trendLabels.map(function () { return targetCalories; }),
+                    borderColor: '#CBD5E1',
+                    borderDash: [6, 6],
+                    pointRadius: 0,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            plugins: { legend: { display: true, position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    new Chart(document.getElementById('macroChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Protein', 'Carbs', 'Fat'],
+            datasets: [{
+                data: [@Model.TotalProtein, @Model.TotalCarbs, @Model.TotalFat],
+                backgroundColor: ['#7C3AED', '#D97706', '#DC2626'],
+                borderWidth: 0
+            }]
+        },
+        options: { plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11.5 } } } }, cutout: '65%' }
+    });
+</script>

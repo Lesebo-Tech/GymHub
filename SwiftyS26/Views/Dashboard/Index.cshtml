@@ -1,0 +1,756 @@
+﻿@model SwiftyS26.Models.MemberForm
+
+@{
+
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+
+    ViewBag.ActivePage = "overview";
+
+    ViewBag.PageTitle = "Overview";
+
+    string nextBillingDate = ViewBag.NextBillingDate ?? "—";
+
+    int daysRemaining = ViewBag.DaysRemaining ?? 0;
+
+}
+
+@section head {
+    <link href="~/Content/overview.css" rel="stylesheet" />
+
+}
+
+<!-- Stats Grid -->
+<div class="stats-grid-overview">
+    <div class="stat-card-overview">
+        <div class="stat-icon-overview blue">
+            <i class="fas fa-dumbbell"></i>
+        </div>
+        <div class="stat-info-overview">
+            <div class="stat-value-overview">@Model.Plan.ToUpper()</div>
+            <div class="stat-label-overview">Current Plan</div>
+        </div>
+    </div>
+    <div class="stat-card-overview">
+        <div class="stat-icon-overview green">
+            <i class="fas fa-credit-card"></i>
+        </div>
+        <div class="stat-info-overview">
+            <div class="stat-value-overview">R @Model.MonthlyFee.ToString("F2")</div>
+            <div class="stat-label-overview">Monthly Fee</div>
+        </div>
+    </div>
+    <div class="stat-card-overview">
+        <div class="stat-icon-overview orange">
+            <i class="fas fa-calendar"></i>
+        </div>
+        <div class="stat-info-overview">
+            <div class="stat-value-overview @(daysRemaining <= 7 ? "text-warning" : "")">@daysRemaining days</div>
+            <div class="stat-label-overview">Until Next Billing</div>
+        </div>
+    </div>
+    <div class="stat-card-overview">
+        <div class="stat-icon-overview @(Model.Status == "Active" ? "green" : "red")">
+            <i class="fas @(Model.Status == "Active" ? "fa-check-circle" : "fa-exclamation-circle")"></i>
+        </div>
+        <div class="stat-info-overview">
+            <div class="stat-value-overview @(Model.Status == "Active" ? "text-success" : "text-danger")">@Model.Status</div>
+            <div class="stat-label-overview">Membership Status</div>
+        </div>
+    </div>
+</div>
+
+<div class="overview-grid">
+
+    <!-- Membership Summary Card -->
+    <div class="dash-card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-id-card"></i> Membership Summary
+            </div>
+            <a class="card-action-btn" href="/Dashboard/Membership">
+
+                View Details <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+        <div class="plan-display-name">@Model.Plan.ToUpper()</div>
+        <div class="membership-meta">
+            <div class="meta-item">
+                <span class="meta-label"><i class="fas fa-calendar-alt"></i> Member Since</span>
+                <span class="meta-value">@Model.RegisteredAt.ToString("dd MMM yyyy")</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label"><i class="fas fa-qrcode"></i> Member ID</span>
+                <span class="meta-value">@Model.MemberNumber</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label"><i class="fas fa-calendar-check"></i> Next Payment</span>
+                <span class="meta-value">@nextBillingDate</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label"><i class="fas fa-flag-checkered"></i> Status</span>
+                <span class="meta-value @(Model.Status == "Active" ? "status-active" : "status-suspended")">@Model.Status</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Payments Card -->
+    <div class="dash-card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-receipt"></i> Recent Payments
+            </div>
+            <a class="card-action-btn" href="/Dashboard/Payments">
+
+                View All <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+        <div class="payment-list">
+
+            @if (Model.Payments != null && Model.Payments.Count > 0)
+
+            {
+
+                foreach (var p in Model.Payments.OrderByDescending(x => x.PaymentDate).Take(3))
+
+                {
+                    <div class="payment-item">
+                        <div class="payment-icon">
+                            <i class="fas fa-credit-card"></i>
+                        </div>
+                        <div class="payment-info">
+                            <div class="payment-desc">@p.Description</div>
+                            <div class="payment-date">@p.PaymentDate.ToString("dd MMM yyyy")</div>
+                        </div>
+                        <div class="payment-amount">R @p.Amount.ToString("F2")</div>
+                    </div>
+
+                }
+
+            }
+
+            else
+
+            {
+                <div class="empty-state">
+                    <i class="fas fa-credit-card"></i>
+                    <p>No records yet</p>
+                    <span>First debit on <strong>@nextBillingDate</strong></span>
+                </div>
+
+            }
+        </div>
+    </div>
+
+    <!-- QR Code Card -->
+    <div class="dash-card qr-preview-card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-qrcode"></i> My QR Code
+            </div>
+            
+        </div>
+        <div class="qr-preview-body">
+            <div class="qr-preview-box" id="overview-qr-wrap"></div>
+            <div class="qr-preview-details">
+                <div class="qr-prev-id">@Model.MemberNumber</div>
+                <div class="qr-prev-name">@Model.FullName</div>
+                <div class="qr-prev-plan">@Model.Plan.ToUpper() MEMBER</div>
+                
+            </div>
+        </div>
+    </div>
+    <!-- Crowd Control Card -->
+    <div class="dash-card crowd-card" id="crowdControlCard">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-users"></i> Crowd Control
+            </div>
+            <span class="cc-live-pill">
+                <span class="cc-live-dot-sm"></span> LIVE
+            </span>
+        </div>
+
+        <div class="crowd-gauge-wrap">
+            <svg viewBox="0 0 200 115" class="crowd-gauge-svg" role="img" aria-label="Gym occupancy gauge">
+                <defs>
+                    <linearGradient id="ovGaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#22C55E" />
+                        <stop offset="50%" stop-color="#F59E0B" />
+                        <stop offset="100%" stop-color="#EF4444" />
+                    </linearGradient>
+                </defs>
+                <path d="M20,100 A80,80 0 0,1 180,100"
+                      fill="none" stroke="#E2E8F0" stroke-width="14" stroke-linecap="round" />
+                <path id="ovGaugeArc"
+                      d="M20,100 A80,80 0 0,1 180,100"
+                      fill="none" stroke="url(#ovGaugeGrad)"
+                      stroke-width="14" stroke-linecap="round"
+                      stroke-dasharray="251.3" stroke-dashoffset="251.3"
+                      style="transition: stroke-dashoffset 1.1s cubic-bezier(.4,0,.2,1);" />
+                <text id="ovGaugePct" x="100" y="88"
+                      text-anchor="middle"
+                      font-family="Bebas Neue,sans-serif"
+                      font-size="28" fill="#0F172A">—</text>
+                <text x="100" y="104" text-anchor="middle"
+                      font-family="DM Sans,sans-serif"
+                      font-size="8.5" fill="#64748B" font-weight="700">OF CAPACITY</text>
+                <text x="22" y="113" text-anchor="middle"
+                      font-family="DM Sans,sans-serif"
+                      font-size="7.5" fill="#22C55E" font-weight="700">0%</text>
+                <text x="178" y="113" text-anchor="middle"
+                      font-family="DM Sans,sans-serif"
+                      font-size="7.5" fill="#EF4444" font-weight="700">100%</text>
+            </svg>
+        </div>
+
+        <div class="crowd-stats-row">
+            <div class="crowd-stat">
+                <div class="crowd-stat-val" id="ovStatIn">—</div>
+                <div class="crowd-stat-lbl">In Gym</div>
+            </div>
+            <div class="crowd-stat">
+                <div class="crowd-stat-val" id="ovStatMax">150</div>
+                <div class="crowd-stat-lbl">Capacity</div>
+            </div>
+            <div class="crowd-stat">
+                <div class="crowd-stat-val" id="ovStatFree">—</div>
+                <div class="crowd-stat-lbl">Free Spots</div>
+            </div>
+        </div>
+
+        <div class="crowd-bar-wrap">
+            <div class="crowd-bar-bg">
+                <div class="crowd-bar-fill" id="ovBarFill" style="width:0%;"></div>
+            </div>
+        </div>
+
+        <div class="crowd-suggestion" id="ovSuggestion">
+            <span class="crowd-sug-icon" id="ovSugIcon">⏳</span>
+            <span class="crowd-sug-text" id="ovSugText">Loading occupancy data...</span>
+        </div>
+
+        <button class="crowd-detail-btn" onclick="openCrowdControl(event)">
+            <i class="fas fa-chart-pie"></i> Full Analysis
+        </button>
+
+        <div class="crowd-updated" id="ovLastUpdated">Fetching data...</div>
+    </div>
+
+    <!-- Billing Info Card -->
+    <div class="dash-card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-file-invoice-dollar"></i> Billing Info
+            </div>
+        </div>
+        <div class="billing-rows">
+            <div class="billing-row">
+                <span class="billing-label"><i class="fas fa-dumbbell"></i> Plan</span>
+                <span class="billing-value">@Model.Plan.ToUpper()</span>
+            </div>
+            <div class="billing-row">
+                <span class="billing-label"><i class="fas fa-credit-card"></i> Monthly Fee</span>
+                <span class="billing-value">R @Model.MonthlyFee.ToString("F2") / month</span>
+            </div>
+            <div class="billing-row">
+                <span class="billing-label"><i class="fas fa-calendar"></i> Next Billing Date</span>
+                <span class="billing-value">@nextBillingDate</span>
+            </div>
+            <div class="billing-row">
+                <span class="billing-label"><i class="fas fa-calendar-day"></i> Billing Day</span>
+                <span class="billing-value">@Model.RegisteredAt.Day@(Model.RegisteredAt.Day == 1 ? "st" : Model.RegisteredAt.Day == 2 ? "nd" : Model.RegisteredAt.Day == 3 ? "rd" : "th") of every month</span>
+            </div>
+            <div class="billing-row">
+                <span class="billing-label"><i class="fas fa-calendar-alt"></i> Member Since</span>
+                <span class="billing-value">@Model.RegisteredAt.ToString("dd MMM yyyy")</span>
+            </div>
+            <div class="billing-row">
+                <span class="billing-label"><i class="fas fa-qrcode"></i> Member ID</span>
+                <span class="billing-value">@Model.MemberNumber</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@section scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+
+    var memberInfo = {
+
+        name:            '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(Model.FullName))',
+
+        firstName:       '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(Model.FirstName))',
+
+        memberNumber:    '@Model.MemberNumber',
+
+        plan:            '@Model.Plan',
+
+        status:          '@Model.Status',
+
+        nextBillingDate: '@nextBillingDate',
+
+        daysRemaining:   @daysRemaining
+
+    };
+    </script>
+    <script>
+
+        function openCrowdControl(e) {
+
+            e.preventDefault();
+
+            var overlay = document.getElementById('cc-overlay');
+
+            if (!overlay) {
+
+                overlay = document.createElement('div');
+
+                overlay.id = 'cc-overlay';
+
+                overlay.style.cssText = [
+
+                    'position:fixed;inset:0;z-index:9999',
+
+                    'background:rgba(0,0,0,0.55)',
+
+                    'display:flex;align-items:flex-start;justify-content:center',
+
+                    'overflow-y:auto;padding:40px 16px'
+
+                ].join(';');
+
+                overlay.innerHTML = '<div id="cc-modal" style="' + [
+
+                    'background:var(--bs-body-bg,#fff)',
+
+                    'border-radius:16px',
+
+                    'width:100%;max-width:860px',
+
+                    'padding:28px 28px 32px',
+
+                    'position:relative',
+
+                    'min-height:400px'
+
+                ].join(';') + '">' +
+
+                    '<button onclick="document.getElementById(\'cc-overlay\').remove()" style="' +
+
+                    'position:absolute;top:16px;right:16px;background:none;border:none;' +
+
+                    'font-size:22px;cursor:pointer;color:#6b7280;line-height:1' +
+
+                    '">&times;</button>' +
+
+                    '<div id="cc-modal-body"><div style="padding:60px;text-align:center;color:#9ca3af">Loading analysis...</div></div>' +
+
+                    '</div>';
+
+                document.body.appendChild(overlay);
+
+                overlay.addEventListener('click', function (ev) {
+
+                    if (ev.target === overlay) overlay.remove();
+
+                });
+
+            }
+
+            document.body.appendChild(overlay);
+
+            fetchCrowdAnalysis();
+
+        }
+
+        function fetchCrowdAnalysis() {
+
+            fetch('/Admin/GetFullOccupancyAnalysis')
+
+                .then(function (r) { return r.json(); })
+
+                .then(function (d) { renderCrowdAnalysis(d); })
+
+                .catch(function () {
+
+                    document.getElementById('cc-modal-body').innerHTML =
+
+                        '<p style="color:#ef4444;padding:40px;text-align:center">Could not load live data.</p>';
+
+                });
+
+        }
+
+        function renderCrowdAnalysis(d) {
+
+            if (!d.success) {
+
+                document.getElementById('cc-modal-body').innerHTML =
+
+                    '<p style="color:#ef4444;padding:40px;text-align:center">No data available.</p>';
+
+                return;
+
+            }
+
+            var statusColor = d.occupancyPct < 40 ? '#16a34a'
+
+                : d.occupancyPct < 65 ? '#d97706'
+
+                    : d.occupancyPct < 85 ? '#ea580c' : '#dc2626';
+
+            // Build hourly bars
+
+            var maxHourly = Math.max.apply(null, d.hourlyData.map(function (h) { return h.count; })) || 1;
+
+            var hourlyHTML = d.hourlyData.map(function (h) {
+
+                var pct = Math.round((h.count / maxHourly) * 100);
+
+                var c = pct > 75 ? '#dc2626' : pct > 50 ? '#d97706' : '#2563eb';
+
+                return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">' +
+
+                    '<span style="font-size:11px;color:#9ca3af;width:32px;text-align:right">' + h.hour + 'h</span>' +
+
+                    '<div style="flex:1;height:8px;background:#f3f4f6;border-radius:4px;overflow:hidden">' +
+
+                    '<div style="width:' + pct + '%;height:100%;background:' + c + ';border-radius:4px;transition:width .4s"></div>' +
+
+                    '</div>' +
+
+                    '<span style="font-size:11px;color:#9ca3af;width:24px">' + h.count + '</span>' +
+
+                    '</div>';
+
+            }).join('');
+
+            // Build plan breakdown bars
+
+            var maxPlan = d.planBreakdown.length ? Math.max.apply(null, d.planBreakdown.map(function (p) { return p.count })) : 1;
+
+            var planColors = { premium: '#2563eb', standard: '#16a34a', basic: '#9ca3af' };
+
+            var planHTML = d.planBreakdown.map(function (p) {
+
+                var pct = Math.round((p.count / maxPlan) * 100);
+
+                var col = planColors[p.plan] || '#9ca3af';
+
+                return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
+
+                    '<span style="font-size:12px;width:64px;color:#374151;text-transform:capitalize">' + p.plan + '</span>' +
+
+                    '<div style="flex:1;height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden">' +
+
+                    '<div style="width:' + pct + '%;height:100%;background:' + col + ';border-radius:3px"></div>' +
+
+                    '</div>' +
+
+                    '<span style="font-size:12px;color:#6b7280;width:24px">' + p.count + '</span>' +
+
+                    '</div>';
+
+            }).join('') || '<span style="font-size:13px;color:#9ca3af">No members currently inside.</span>';
+
+            // Build heatmap
+
+            var heatStops = ['#dbeafe', '#93c5fd', '#3b82f6', '#1d4ed8', '#1e3a8a'];
+
+            var allHeatVals = [];
+
+            d.heatmap.forEach(function (s) { s.days.forEach(function (v) { allHeatVals.push(v); }); });
+
+            var maxHeat = Math.max.apply(null, allHeatVals) || 1;
+
+            var heatHTML = '<div style="display:grid;grid-template-columns:52px repeat(' + d.dayLabels.length + ',1fr);gap:3px;align-items:center">';
+
+            heatHTML += '<div></div>';
+
+            d.dayLabels.forEach(function (day) {
+
+                heatHTML += '<div style="font-size:10px;color:#9ca3af;text-align:center">' + day + '</div>';
+
+            });
+
+            d.heatmap.forEach(function (slot) {
+
+                heatHTML += '<div style="font-size:10px;color:#9ca3af;text-align:right;padding-right:6px">' + slot.slot + '</div>';
+
+                slot.days.forEach(function (v) {
+
+                    var idx = Math.min(4, Math.floor((v / maxHeat) * 5));
+
+                    heatHTML += '<div title="' + v + ' check-ins" style="height:20px;border-radius:3px;background:' + heatStops[idx] + '"></div>';
+
+                });
+
+            });
+
+            heatHTML += '</div>';
+
+            // Alert banner
+
+            var alertHTML = d.showAlert
+
+                ? '<div style="display:flex;gap:10px;background:#fff7ed;border:0.5px solid #fed7aa;border-radius:10px;padding:12px 16px;margin-bottom:16px">' +
+
+                '<span style="color:#ea580c;font-size:18px">&#9888;</span>' +
+
+                '<div><div style="font-size:13px;font-weight:500;color:#c2410c">High occupancy alert</div>' +
+
+                '<div style="font-size:12px;color:#9a3412;margin-top:2px">' + d.alertMessage + '</div></div>' +
+
+                '</div>'
+
+                : '';
+
+            var avgMin = Math.round(d.avgSessionMins);
+
+            var visitDelta = d.totalVisitsToday - d.yesterdayVisits;
+
+            var deltaStr = (visitDelta >= 0 ? '+' : '') + visitDelta + ' vs yesterday';
+
+            document.getElementById('cc-modal-body').innerHTML =
+
+                '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">' +
+
+                '<div>' +
+
+                '<div style="font-size:17px;font-weight:500;color:var(--bs-body-color,#111)">Crowd analysis</div>' +
+
+                '<div style="font-size:12px;color:#9ca3af;margin-top:2px">Live data from check-in records &middot; Updated ' + d.lastUpdated + '</div>' +
+
+                '</div>' +
+
+                '<button onclick="fetchCrowdAnalysis()" style="font-size:12px;border:0.5px solid #e5e7eb;border-radius:8px;padding:5px 12px;background:none;cursor:pointer;color:#6b7280">&#8635; Refresh</button>' +
+
+                '</div>' +
+
+                alertHTML +
+
+                '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">' +
+
+                ccMetric(d.currentCount, 'In gym now', d.freeSpots + ' spots left', statusColor) +
+
+                ccMetric(d.occupancyPct + '%', 'Occupancy', d.occupancyStatus, statusColor) +
+
+                ccMetric(d.totalVisitsToday, 'Total visits today', deltaStr, '#2563eb') +
+
+                ccMetric(avgMin + ' min', 'Avg session', '7-day: ' + Math.round(d.rollingAvg7Day) + ' visits/day', '#374151') +
+
+                '</div>' +
+
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">' +
+
+                '<div style="border:0.5px solid #e5e7eb;border-radius:12px;padding:16px">' +
+
+                '<div style="font-size:11px;font-weight:500;letter-spacing:.05em;color:#9ca3af;text-transform:uppercase;margin-bottom:10px">Visits by hour — today</div>' +
+
+                hourlyHTML +
+
+                '</div>' +
+
+                '<div style="border:0.5px solid #e5e7eb;border-radius:12px;padding:16px">' +
+
+                '<div style="font-size:11px;font-weight:500;letter-spacing:.05em;color:#9ca3af;text-transform:uppercase;margin-bottom:10px">Currently inside — by plan</div>' +
+
+                planHTML +
+
+                '<div style="border-top:0.5px solid #e5e7eb;margin-top:14px;padding-top:12px">' +
+
+                '<div style="font-size:11px;font-weight:500;letter-spacing:.05em;color:#9ca3af;text-transform:uppercase;margin-bottom:8px">Session details — today</div>' +
+
+                ccRow('Checked out', d.checkedOutCount) +
+
+                ccRow('Still inside (&gt;2 h)', d.longSessionCount) +
+
+                '</div>' +
+
+                '</div>' +
+
+                '</div>' +
+
+                '<div style="border:0.5px solid #e5e7eb;border-radius:12px;padding:16px">' +
+
+                '<div style="font-size:11px;font-weight:500;letter-spacing:.05em;color:#9ca3af;text-transform:uppercase;margin-bottom:10px">Peak hour heatmap — last 7 days</div>' +
+
+                heatHTML +
+
+                '<div style="display:flex;align-items:center;gap:6px;margin-top:10px">' +
+
+                '<span style="font-size:10px;color:#9ca3af">Low</span>' +
+
+                '<div style="display:flex;gap:3px">' +
+
+                heatStops.map(function (c) { return '<div style="width:18px;height:10px;border-radius:2px;background:' + c + '"></div>'; }).join('') +
+
+                '</div>' +
+
+                '<span style="font-size:10px;color:#9ca3af">High</span>' +
+
+                '</div>' +
+
+                '</div>';
+
+        }
+
+        function ccMetric(val, label, sub, color) {
+
+            return '<div style="background:#f9fafb;border-radius:10px;padding:14px 16px">' +
+
+                '<div style="font-size:22px;font-weight:500;color:' + (color || '#111') + ';line-height:1.1">' + val + '</div>' +
+
+                '<div style="font-size:12px;color:#6b7280;margin-top:4px">' + label + '</div>' +
+
+                '<div style="font-size:11px;color:#9ca3af;margin-top:2px">' + sub + '</div>' +
+
+                '</div>';
+
+        }
+
+        function ccRow(label, val) {
+
+            return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0">' +
+
+                '<span style="color:#6b7280">' + label + '</span>' +
+
+                '<span style="color:#111;font-weight:500">' + val + '</span>' +
+
+                '</div>';
+
+        }
+
+    </script>
+    <script>
+
+        (function () {
+
+            var MAX_CAP = 150;
+
+            function loadOccupancy() {
+
+                fetch('/Admin/GetCurrentOccupancy')
+
+                    .then(function (r) { return r.json(); })
+
+                    .then(function (d) { renderOccupancy(d); })
+
+                    .catch(function () {
+
+                        document.getElementById('ovSugText').textContent = 'Unable to load occupancy data.';
+
+                        document.getElementById('ovLastUpdated').textContent = 'Error fetching data';
+
+                    });
+
+            }
+
+            function renderOccupancy(d) {
+
+                if (!d.success) {
+
+                    document.getElementById('ovSugText').textContent = 'No data available.';
+
+                    return;
+
+                }
+
+                var pct = d.occupancyPct || 0;
+
+                var inGym = d.currentCount || 0;
+
+                var free = d.freeSpots || MAX_CAP;
+
+                // Gauge arc (251.3 = full semicircle circumference)
+
+                var arc = document.getElementById('ovGaugeArc');
+
+                if (arc) {
+
+                    var offset = 251.3 - (pct / 100) * 251.3;
+
+                    arc.style.strokeDashoffset = offset;
+
+                }
+
+                // Percentage text
+
+                var pctEl = document.getElementById('ovGaugePct');
+
+                if (pctEl) pctEl.textContent = inGym === 0 ? '0%' : pct + '%';
+
+                // Stats
+
+                var statIn = document.getElementById('ovStatIn');
+
+                var statFree = document.getElementById('ovStatFree');
+
+                if (statIn) statIn.textContent = inGym;
+
+                if (statFree) statFree.textContent = free;
+
+                // Bar
+
+                var bar = document.getElementById('ovBarFill');
+
+                if (bar) bar.style.width = pct + '%';
+
+                // Suggestion
+
+                var icon = document.getElementById('ovSugIcon');
+
+                var text = document.getElementById('ovSugText');
+
+                if (pct === 0) {
+
+                    if (icon) icon.textContent = '✅';
+
+                    if (text) text.textContent = 'No members currently checked in.';
+
+                } else if (pct < 40) {
+
+                    if (icon) icon.textContent = '✅';
+
+                    if (text) text.textContent = 'Great time to train — gym is quiet!';
+
+                } else if (pct < 65) {
+
+                    if (icon) icon.textContent = '🟡';
+
+                    if (text) text.textContent = 'Moderate — most equipment available.';
+
+                } else if (pct < 85) {
+
+                    if (icon) icon.textContent = '🟠';
+
+                    if (text) text.textContent = 'Getting busy — expect some waits.';
+
+                } else {
+
+                    if (icon) icon.textContent = '🔴';
+
+                    if (text) text.textContent = 'Near full — consider visiting later.';
+
+                }
+
+                // Last updated
+
+                var upd = document.getElementById('ovLastUpdated');
+
+                if (upd) upd.textContent = 'Updated ' + (d.lastUpdated || '--:--');
+
+            }
+
+            // Load immediately, then every 60 seconds
+
+            loadOccupancy();
+
+            setInterval(loadOccupancy, 60000);
+
+        })();
+    </script>
+
+}

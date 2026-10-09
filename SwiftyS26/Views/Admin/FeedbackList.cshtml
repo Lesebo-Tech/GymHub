@@ -1,0 +1,236 @@
+﻿@model List<SwiftyS26.Models.Feedback>
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewBag.Title = "Feedback";
+    var categories = ViewBag.Categories as string[] ?? new string[0];
+    string currentFilter = ViewBag.CurrentFilter as string;
+}
+
+@section Styles {
+    <style>
+        .feedback-filter-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .filter-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 7px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            background: var(--white);
+            transition: all var(--transition);
+        }
+
+            .filter-chip:hover {
+                background: var(--bg3);
+            }
+
+            .filter-chip.active {
+                background: var(--blue);
+                color: #fff;
+                border-color: var(--blue);
+            }
+
+        .category-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+
+        .category-pill-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .category-pill-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .category-pill-count {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .category-pill-rating {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 20px;
+            color: var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .star-display {
+            color: var(--gold);
+            font-size: 13px;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+            .star-display .empty {
+                color: var(--border);
+            }
+
+        .feedback-comments {
+            max-width: 340px;
+            font-size: 13px;
+            color: var(--text-sub);
+            line-height: 1.4;
+        }
+
+        .rating-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+            .rating-badge.high {
+                background: var(--green-light);
+                color: var(--green);
+            }
+
+            .rating-badge.mid {
+                background: var(--gold-light);
+                color: var(--gold);
+            }
+
+            .rating-badge.low {
+                background: var(--red-light);
+                color: var(--red);
+            }
+    </style>
+}
+
+<!-- ===== MAIN ===== -->
+    <div class="page-content">
+
+        <!-- STAT CARDS -->
+        <div class="admin-stats-grid">
+            <div class="admin-stat-card blue">
+                <div class="stat-icon"><i class="fas fa-comment-dots"></i></div>
+                <div class="stat-number">@ViewBag.TotalFeedback</div>
+                <div class="stat-label">Total Feedback</div>
+            </div>
+            <div class="admin-stat-card gold">
+                <div class="stat-icon"><i class="fas fa-star"></i></div>
+                <div class="stat-number">@ViewBag.AverageRating <span style="font-size:16px;">/5</span></div>
+                <div class="stat-label">Average Rating</div>
+            </div>
+            <div class="admin-stat-card green">
+                <div class="stat-icon"><i class="fas fa-thumbs-up"></i></div>
+                <div class="stat-number">@ViewBag.PositiveCount</div>
+                <div class="stat-label">4–5 Star Reviews</div>
+            </div>
+            <div class="admin-stat-card red">
+                <div class="stat-icon"><i class="fas fa-triangle-exclamation"></i></div>
+                <div class="stat-number">@ViewBag.NegativeCount</div>
+                <div class="stat-label">1–2 Star Reviews</div>
+            </div>
+        </div>
+
+        <!-- CATEGORY BREAKDOWN -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div class="admin-card-title"><i class="fas fa-chart-simple"></i> Average Rating by Category</div>
+            </div>
+            <div style="padding:18px 22px;">
+                <div class="category-breakdown">
+                    @foreach (var item in (List<SwiftyS26.Models.CategoryAverageStat>)ViewBag.CategoryAverages)
+                    {
+                        <div class="category-pill-card">
+                            <div>
+                                <div class="category-pill-name">@item.Category</div>
+                                <div class="category-pill-count">@item.Count review@(item.Count == 1 ? "" : "s")</div>
+                            </div>
+                            <div class="category-pill-rating">
+                                <i class="fas fa-star" style="font-size:14px;"></i> @item.Average
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- FILTER CHIPS -->
+        <div class="feedback-filter-row">
+            <a class="filter-chip @(string.IsNullOrEmpty(currentFilter) ? "active" : "")"
+               href="@Url.Action("FeedbackList", "Admin")">All</a>
+            @foreach (var cat in categories)
+            {
+                <a class="filter-chip @(currentFilter == cat ? "active" : "")"
+                   href="@Url.Action("FeedbackList", "Admin", new { categoryFilter = cat })">@cat</a>
+            }
+        </div>
+
+        <!-- TABLE -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div class="admin-card-title"><i class="fas fa-list"></i> Feedback</div>
+                <div class="admin-card-count">@(Model?.Count ?? 0) result@(Model != null && Model.Count == 1 ? "" : "s")</div>
+            </div>
+
+            <div class="admin-table-wrap">
+                @if (Model == null || !Model.Any())
+                {
+                    <div style="padding:48px 20px;text-align:center;color:var(--muted);font-size:13px;">
+                        No feedback matches this filter.
+                    </div>
+                }
+                else
+                {
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Member</th>
+                                <th>Category</th>
+                                <th>Rating</th>
+                                <th>Comments</th>
+                                <th>Submitted</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var f in Model)
+                            {
+                                var ratingClass = f.Rating >= 4 ? "high" : f.Rating == 3 ? "mid" : "low";
+                                <tr>
+                                    <td>
+                                        <div class="member-name">@(f.Member != null ? f.Member.FullName : "—")</div>
+                                        <div class="member-email">@(f.Member != null ? f.Member.MemberNumber : "")</div>
+                                    </td>
+                                    <td>@f.Category</td>
+                                    <td>
+                                        <span class="rating-badge @ratingClass">
+                                            <i class="fas fa-star"></i> @f.Rating/5
+                                        </span>
+                                        <div class="star-display" style="margin-top:4px;">@f.StarDisplay</div>
+                                    </td>
+                                    <td class="feedback-comments">@f.Comments</td>
+                                    <td class="member-date">@f.SubmittedAt.ToString("dd MMM yyyy")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+
+    </div><!-- /page-content -->
+</main>

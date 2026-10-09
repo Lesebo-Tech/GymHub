@@ -1,0 +1,1137 @@
+﻿@model SwiftyS26.Models.MemberTrainerHubViewModel
+@using SwiftyS26.Models
+@using System.Linq
+@{ Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.ActivePage = "trainer";
+    ViewBag.PageTitle = "My Trainer";
+
+    var upcomingSessions = Model.UpcomingSessions ?? new List<TrainingSession>();
+    var workoutPrograms = Model.WorkoutPrograms ?? new List<WorkoutProgram>();
+
+    var t = Model.Assignment?.Trainer;
+
+    string initials = "";
+    if (t != null && !string.IsNullOrWhiteSpace(t.FullName))
+    {
+        foreach (var p in t.FullName.Split(' '))
+        {
+            if (!string.IsNullOrWhiteSpace(p)) { initials += p[0]; }
+        }
+    }
+
+    var avail = (t?.Availabilities ?? new List<TrainerAvailability>())
+                    .Where(a => a.IsAvailable).ToList(); }
+
+@section head {
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <style>
+        :root {
+            --blue: #2563EB;
+            --blue-bright: #3B82F6;
+            --blue-light: rgba(59,130,246,.08);
+            --green: #22C55E;
+            --green-light: rgba(34,197,94,.08);
+            --red: #EF4444;
+            --red-light: rgba(239,68,68,.08);
+            --gold: #F59E0B;
+            --gold-light: rgba(245,158,11,.10);
+            --border: #E2E8F0;
+            --text: #0F172A;
+            --muted: #64748B;
+            --muted2: #94A3B8;
+            --surface: #FFF;
+            --surface2: #F8FAFE;
+            --radius: 10px;
+            --radius-lg: 14px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,.06);
+            --shadow-md: 0 4px 16px rgba(0,0,0,.08);
+        }
+
+        .pg-wrap {
+            max-width: 1060px;
+        }
+
+        .pg-header {
+            margin-bottom: 28px;
+        }
+
+        .pg-title {
+            font-size: 30px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .pg-sub {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .pg-alert {
+            padding: 12px 16px;
+            border-radius: var(--radius);
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+
+            .pg-alert.success {
+                background: var(--green-light);
+                border: 1px solid rgba(34,197,94,.25);
+                color: #16A34A;
+            }
+
+            .pg-alert.danger {
+                background: var(--red-light);
+                border: 1px solid rgba(239,68,68,.25);
+                color: var(--red);
+            }
+
+        .pg-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .pg-card-head {
+            padding: 15px 22px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pg-card-title {
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .pg-card-body {
+            padding: 22px;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3,1fr);
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+
+        .stat-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+        }
+
+        .stat-val {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--blue);
+        }
+
+        .stat-lbl {
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .trainer-hero {
+            display: flex;
+            gap: 22px;
+            flex-wrap: wrap;
+        }
+
+        .trainer-avatar-lg {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg,var(--blue),var(--blue-bright));
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .trainer-name {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .trainer-code {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 10px;
+        }
+
+        .trainer-meta {
+            display: flex;
+            gap: 14px;
+            flex-wrap: wrap;
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 10px;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 40px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-blue {
+            background: var(--blue-light);
+            color: var(--blue);
+        }
+
+        .badge-green {
+            background: var(--green-light);
+            color: #16A34A;
+        }
+
+        .badge-gold {
+            background: var(--gold-light);
+            color: #B45309;
+        }
+
+        .badge-red {
+            background: var(--red-light);
+            color: var(--red);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg,var(--blue),var(--blue-bright));
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--radius);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+            .btn-primary:hover {
+                opacity: .9;
+                color: #fff;
+            }
+
+        .btn-secondary {
+            border: 1px solid var(--border);
+            padding: 10px 18px;
+            border-radius: var(--radius);
+            text-decoration: none;
+            color: var(--muted);
+            background: #fff;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+            .btn-secondary:hover {
+                background: var(--surface2);
+            }
+
+        .btn-danger {
+            border: 1px solid rgba(239,68,68,.3);
+            color: var(--red);
+            background: #fff;
+            padding: 10px 18px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+            .btn-danger:hover {
+                background: var(--red-light);
+            }
+
+        .btn-view {
+            border: 1px solid var(--blue);
+            color: var(--blue);
+            background: #fff;
+            padding: 8px 16px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+            .btn-view:hover {
+                background: var(--blue-light);
+            }
+
+        .pg-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+            .pg-table th {
+                padding: 10px 14px;
+                text-align: left;
+                font-size: 11px;
+                text-transform: uppercase;
+                color: var(--muted2);
+                background: var(--surface2);
+            }
+
+            .pg-table td {
+                padding: 14px;
+                border-bottom: 1px solid var(--border);
+                font-size: 13px;
+            }
+
+            .pg-table tr:last-child td {
+                border-bottom: none;
+            }
+
+        .no-trainer {
+            text-align: center;
+            padding: 50px 20px;
+        }
+
+        .no-trainer-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: var(--blue-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin: 0 auto 20px;
+        }
+
+        .goal-chip {
+            background: var(--gold-light);
+            border: 1px solid rgba(245,158,11,.2);
+            color: #92400E;
+            padding: 8px 14px;
+            border-radius: 8px;
+            display: inline-block;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .avail-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .avail-pill {
+            background: var(--blue-light);
+            color: var(--blue);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .avail-pill-time {
+            display: block;
+            margin-top: 3px;
+            color: var(--muted);
+            font-size: 10px;
+        }
+
+        .tip-box {
+            background: var(--blue-light);
+            border: 1px solid rgba(59,130,246,.2);
+            padding: 12px 16px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .program-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill,minmax(320px,1fr));
+            gap: 18px;
+        }
+
+        .prog-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+            .prog-card:hover {
+                box-shadow: var(--shadow-md);
+                border-color: #c7d7f9;
+            }
+
+        .prog-card-header {
+            padding: 16px 18px 14px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface2);
+        }
+
+        .prog-name {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .prog-meta-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .prog-card-body {
+            padding: 16px 18px;
+            flex: 1;
+        }
+
+        .prog-desc {
+            font-size: 12.5px;
+            color: var(--muted);
+            line-height: 1.55;
+            margin-bottom: 12px;
+        }
+
+        .sec-label {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--muted2);
+            letter-spacing: .6px;
+            margin: 14px 0 8px;
+        }
+
+        .ex-collapse {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height .35s ease;
+        }
+
+            .ex-collapse.open {
+                max-height: 3000px;
+            }
+
+        .ex-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .ex-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 11px 14px;
+            background: #fff;
+        }
+
+        .ex-num {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--blue-light);
+            color: var(--blue);
+            font-size: 11px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .ex-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .ex-name {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .ex-meta {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 2px;
+        }
+
+        .ex-dur {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--blue);
+            background: var(--blue-light);
+            border-radius: 5px;
+            padding: 3px 8px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .prog-banner {
+            border-radius: 10px;
+            padding: 14px 16px;
+            text-align: center;
+            margin-top: 12px;
+        }
+
+            .prog-banner.warn {
+                background: #FFF8F0;
+                border: 1px solid rgba(245,158,11,.3);
+                color: #92400E;
+            }
+
+            .prog-banner.info {
+                background: var(--blue-light);
+                border: 1px solid rgba(59,130,246,.2);
+                color: var(--blue);
+            }
+
+        .prog-banner-icon {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .prog-banner-title {
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .prog-banner-sub {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .hist-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .hist-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+        }
+
+            .hist-item:last-child {
+                border-bottom: none;
+            }
+
+        .hist-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+            .hist-dot.completed {
+                background: var(--green);
+            }
+
+            .hist-dot.absent {
+                background: var(--red);
+            }
+
+        .hist-date {
+            color: var(--muted);
+            flex: 1;
+        }
+
+        .hist-dur {
+            color: var(--muted2);
+            font-size: 11px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.45);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+            .modal-overlay.open {
+                display: flex;
+            }
+
+        .modal-box {
+            background: #fff;
+            border-radius: var(--radius-lg);
+            padding: 28px 26px;
+            max-width: 440px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,.18);
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .modal-sub {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 16px;
+        }
+
+        .modal-textarea {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 13px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 90px;
+            outline: none;
+            box-sizing: border-box;
+            line-height: 1.5;
+        }
+
+            .modal-textarea:focus {
+                border-color: var(--blue);
+                box-shadow: 0 0 0 3px rgba(59,130,246,.12);
+            }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 16px;
+        }
+
+        .modal-char-hint {
+            font-size: 11px;
+            color: var(--muted2);
+            margin-top: 5px;
+            text-align: right;
+        }
+
+        @@media(max-width:640px) {
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+
+            .trainer-hero {
+                flex-direction: column;
+            }
+
+            .program-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+}
+
+<div class="pg-wrap">
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="pg-alert success"><i class="fas fa-check-circle"></i> @TempData["Success"]</div>}
+    @if (TempData["Error"] != null)
+    {
+        <div class="pg-alert danger"><i class="fas fa-exclamation-circle"></i> @TempData["Error"]</div>}
+
+    <div class="pg-header">
+        <div class="pg-title">My Trainer</div>
+        <div class="pg-sub">Manage your personal trainer and sessions</div>
+    </div>
+
+    @if (Model.Assignment == null)
+    {
+        if (Model.FitnessProfile == null)
+        {
+            <div class="tip-box">
+                <strong>Tip:</strong> Set up your <a href="@Url.Action("FitnessGoals","Dashboard")">fitness profile</a> first so we can match you with the right trainer.
+            </div> }
+        <div class="pg-card">
+            <div class="pg-card-body">
+                <div class="no-trainer">
+                    <div class="no-trainer-icon">🏋️</div>
+                    <h3 style="margin:0 0 8px;">No trainer assigned yet</h3>
+                    <p style="color:var(--muted);font-size:13px;margin:0 0 20px;">Find a personal trainer that matches your fitness goal.</p>
+                    @if (Model.FitnessProfile != null)
+                    {
+                        <div style="margin-bottom:20px;">
+                            <span class="goal-chip">🎯 Goal: @Model.FitnessProfile.GoalType</span>
+                        </div>}
+                    <a href="@Url.Action("FindTrainer","Dashboard")" class="btn-primary">
+                        <i class="fas fa-search"></i> Find Trainer
+                    </a>
+                </div>
+            </div>
+        </div> }
+    else
+    {
+        <div class="stats-row">
+            <div class="stat-card">
+                <div class="stat-val">@upcomingSessions.Count</div>
+                <div class="stat-lbl">Upcoming Sessions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val">@workoutPrograms.Count</div>
+                <div class="stat-lbl">Workout Programs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val">@((DateTime.Today - Model.Assignment.AssignedDate).Days)</div>
+                <div class="stat-lbl">Days Together</div>
+            </div>
+        </div>
+
+        <div class="pg-card">
+            <div class="pg-card-head">
+                <span class="pg-card-title">Your Trainer</span>
+                <span class="badge badge-green">Assigned</span>
+            </div>
+            <div class="pg-card-body">
+                <div class="trainer-hero">
+                    <div class="trainer-avatar-lg">@initials</div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="trainer-name">@(t?.FullName ?? "")</div>
+                        <div class="trainer-code">@(t?.TrainerCode ?? "")</div>
+                        <div class="trainer-meta">
+                            <span><i class="fas fa-medal"></i> @(t?.Specialization ?? "")</span>
+                            <span><i class="fas fa-star"></i> @(t?.ExperienceLevel ?? "")</span>
+                        </div>
+                        <div style="margin-bottom:12px;">
+                            <span class="badge badge-blue">@(t?.Specialization ?? "")</span>
+                            @if (Model.FitnessProfile != null)
+                            {
+                                <span class="badge badge-gold" style="margin-left:6px;">Goal: @Model.FitnessProfile.GoalType</span>}
+                        </div>
+                        <div style="font-size:13px;color:var(--muted);line-height:2;">
+                            <div><i class="fas fa-phone" style="width:16px;"></i> @(t?.PhoneNumber ?? "")</div>
+                            <div><i class="fas fa-envelope" style="width:16px;"></i> @(t?.Email ?? "")</div>
+                        </div>
+                        <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;">
+                            <a href="@Url.Action("BookSession","Dashboard")" class="btn-primary">
+                                <i class="fas fa-plus"></i> Book Session
+                            </a>
+                            <a href="@Url.Action("TrainerProfile","Dashboard", new { id = t?.TrainerId ?? 0 })" class="btn-secondary">
+                                <i class="fas fa-user"></i> View Profile
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        if (avail.Any())
+        {
+            <div class="pg-card">
+                <div class="pg-card-head"><span class="pg-card-title">Trainer Availability</span></div>
+                <div class="pg-card-body">
+                    <div class="avail-row">
+                        @foreach (var a in avail)
+                        {
+                            <div class="avail-pill">
+                                @a.DayOfWeek
+                                <span class="avail-pill-time">@a.StartTime – @a.EndTime</span>
+                            </div>}
+                    </div>
+                </div>
+            </div>}
+
+        <div class="pg-card">
+            <div class="pg-card-head"><span class="pg-card-title">Upcoming Sessions</span></div>
+            @if (upcomingSessions.Any())
+            {
+                <table class="pg-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in upcomingSessions)
+                        {
+                            <tr>
+                                <td>@s.SessionDate.ToString("dd MMM yyyy")</td>
+                                <td>@s.TimeSlot</td>
+                                <td>@s.SessionType</td>
+                                <td><span class="badge badge-blue">@s.Status</span></td>
+                            </tr>
+}
+                    </tbody>
+                </table> }
+            else
+            {
+                <div class="pg-card-body" style="color:var(--muted);font-size:13px;">No upcoming sessions booked.</div>}
+        </div>
+
+        if (workoutPrograms.Any())
+        {
+            <div class="pg-card">
+                <div class="pg-card-head">
+                    <span class="pg-card-title">Workout Programs</span>
+                    <span class="badge badge-blue">@workoutPrograms.Count program@(workoutPrograms.Count != 1 ? "s" : "")</span>
+                </div>
+                <div class="pg-card-body">
+                    <div class="program-grid">
+
+                        @foreach (var wp in workoutPrograms)
+                        {
+                            var exercises = wp.ProgramExercises?.ToList() ?? new List<ProgramExercise>();
+                            var programStart = wp.StartDate.Date;
+                            var programExpiry = programStart.AddDays(7);
+                            bool isActive = DateTime.Today >= programStart && DateTime.Today < programExpiry;
+                            int daysLeft = isActive ? (int)(programExpiry - DateTime.Today).TotalDays : 0;
+
+                            <div class="prog-card" id="card-@wp.WorkoutProgramId">
+
+                                <div class="prog-card-header">
+                                    <div class="prog-name">@wp.ProgramName</div>
+                                    <div class="prog-meta-row">
+                                        <span>
+                                            <i class="fas fa-calendar-alt"></i>
+                                            @wp.StartDate.ToString("dd MMM yyyy")
+                                            @if (wp.EndDate.HasValue)
+                                            {
+                                                <text> – @wp.EndDate.Value.ToString("dd MMM yyyy")</text> }
+                                            else
+                                            {
+                                                <text> – Ongoing</text>}
+                                        </span>
+                                        <span><i class="fas fa-dumbbell"></i> @exercises.Count ex@(exercises.Count != 1 ? "s" : "")</span>
+                                        @if (isActive)
+                                        {
+                                            <span class="badge badge-green" style="font-size:10px;">@daysLeft day@(daysLeft != 1 ? "s" : "") left</span> }
+                                        else if (DateTime.Today >= programExpiry)
+                                        {
+                                            <span class="badge badge-red" style="font-size:10px;">Expired</span> }
+                                        else
+                                        {
+                                            <span class="badge" style="background:#f1f5fd;color:var(--muted);font-size:10px;">Starts @programStart.ToString("dd MMM")</span>}
+                                    </div>
+                                </div>
+
+                                <div class="prog-card-body">
+
+                                    @if (!string.IsNullOrWhiteSpace(wp.Description))
+                                    {
+                                        <div class="prog-desc">@wp.Description</div>}
+
+                                    @if (exercises.Any())
+                                    {
+                                        <button class="btn-view" onclick="toggleProgram(@wp.WorkoutProgramId, this)">
+                                            <i class="fas fa-list"></i> View Program
+                                        </button>
+
+                                        <div class="ex-collapse" id="exCollapse-@wp.WorkoutProgramId">
+
+                                            @if (isActive)
+                                            {
+                                                <div class="sec-label" style="margin-top:14px;">
+                                                    Today's Exercises — @DateTime.Today.ToString("dddd, dd MMM yyyy")
+                                                </div>
+
+                                                <div class="ex-list">
+                                                    @for (int i = 0; i < exercises.Count; i++)
+                                                    {
+                                                        var ex = exercises[i];
+                                                        <div class="ex-item">
+                                                            <div class="ex-num">@(i + 1)</div>
+                                                            <div class="ex-info">
+                                                                <div class="ex-name">@ex.ExerciseName</div>
+                                                                <div class="ex-meta">
+                                                                    @if (ex.Sets > 0 && ex.Reps > 0)
+                                                                    {@(ex.Sets + " sets × " + ex.Reps + " reps") }
+                                                                    else if (ex.Sets > 0)
+                                                                    { @(ex.Sets + " sets") }
+                                                                    else if (ex.Reps > 0)
+                                                                    { @(ex.Reps + " reps")}
+                                                                </div>
+                                                            </div>
+                                                            @if (ex.DurationMinutes > 0)
+                                                            {
+                                                                <div class="ex-dur">@ex.DurationMinutes min</div>}
+                                                        </div>}
+                                                </div>
+
+                                                <div style="margin-top:16px;">
+                                                    <button class="btn-danger" onclick="openAbsentModal(@wp.WorkoutProgramId)">
+                                                        <i class="fas fa-user-slash"></i> I'm Not Available Today
+                                                    </button>
+                                                </div> }
+                                            else if (DateTime.Today >= programExpiry)
+                                            {
+                                                <div class="prog-banner warn">
+                                                    <div class="prog-banner-icon">⏰</div>
+                                                    <div class="prog-banner-title">Program Period Ended</div>
+                                                    <div class="prog-banner-sub">
+                                                        Active @programStart.ToString("dd MMM") – @programExpiry.AddDays(-1).ToString("dd MMM yyyy"). Ask your trainer to assign a new program.
+                                                    </div>
+                                                </div>
+
+                                                <div class="sec-label" style="margin-top:14px;">All Exercises (Reference)</div>
+                                                <div class="ex-list">
+                                                    @for (int i = 0; i < exercises.Count; i++)
+                                                    {
+                                                        var ex = exercises[i];
+                                                        <div class="ex-item" style="opacity:.6;">
+                                                            <div class="ex-num">@(i + 1)</div>
+                                                            <div class="ex-info">
+                                                                <div class="ex-name">@ex.ExerciseName</div>
+                                                                <div class="ex-meta">
+                                                                    @if (ex.Sets > 0 && ex.Reps > 0)
+                                                                    {@(ex.Sets + " sets × " + ex.Reps + " reps") }
+                                                                    else if (ex.Sets > 0)
+                                                                    { @(ex.Sets + " sets") }
+                                                                    else if (ex.Reps > 0)
+                                                                    { @(ex.Reps + " reps")}
+                                                                </div>
+                                                            </div>
+                                                            @if (ex.DurationMinutes > 0)
+                                                            {
+                                                                <div class="ex-dur">@ex.DurationMinutes min</div>}
+                                                        </div>}
+                                                </div> }
+                                            else
+                                            {
+                                                <div class="prog-banner info">
+                                                    <div class="prog-banner-icon">📅</div>
+                                                    <div class="prog-banner-title">Program Not Started Yet</div>
+                                                    <div class="prog-banner-sub">Begins @programStart.ToString("dd MMM yyyy").</div>
+                                                </div>
+
+                                                <div class="sec-label" style="margin-top:14px;">Exercises (Preview)</div>
+                                                <div class="ex-list">
+                                                    @for (int i = 0; i < exercises.Count; i++)
+                                                    {
+                                                        var ex = exercises[i];
+                                                        <div class="ex-item" style="opacity:.6;">
+                                                            <div class="ex-num">@(i + 1)</div>
+                                                            <div class="ex-info">
+                                                                <div class="ex-name">@ex.ExerciseName</div>
+                                                                <div class="ex-meta">
+                                                                    @if (ex.Sets > 0 && ex.Reps > 0)
+                                                                    {@(ex.Sets + " sets × " + ex.Reps + " reps") }
+                                                                    else if (ex.Sets > 0)
+                                                                    { @(ex.Sets + " sets") }
+                                                                    else if (ex.Reps > 0)
+                                                                    { @(ex.Reps + " reps")}
+                                                                </div>
+                                                            </div>
+                                                            @if (ex.DurationMinutes > 0)
+                                                            {
+                                                                <div class="ex-dur">@ex.DurationMinutes min</div>}
+                                                        </div>}
+                                                </div>}
+
+                                        </div> }
+                                    else
+                                    {
+                                        <div style="font-size:12px;color:var(--muted2);margin-top:8px;">
+                                            <i class="fas fa-info-circle"></i> No exercises assigned yet.
+                                        </div>}
+
+                                    <div class="sec-label" style="margin-top:18px;">Recent Activity</div>
+                                    <ul class="hist-list" id="histList-@wp.WorkoutProgramId">
+                                        <li class="hist-item" style="color:var(--muted2);font-size:12px;">Loading...</li>
+                                    </ul>
+
+                                </div>
+                            </div>}
+
+                    </div>
+                </div>
+            </div>}
+    }
+
+</div>
+
+<div class="modal-overlay" id="absentModal">
+    <div class="modal-box">
+        <div class="modal-title">🚫 Mark as Not Available</div>
+        <div class="modal-sub">Let your trainer know you cannot do today's workout. Please give a brief reason.</div>
+        <textarea class="modal-textarea" id="absentNote" placeholder="e.g. Feeling unwell, travelling, rest day..." oninput="updateCharCount(this)" maxlength="300"></textarea>
+        <div class="modal-char-hint" id="absentCharHint">0 / 300</div>
+        <div class="modal-actions">
+            <button class="btn-secondary" onclick="closeAbsentModal()"><i class="fas fa-times"></i> Cancel</button>
+            <button class="btn-danger" id="absentSubmitBtn" onclick="submitAbsent()"><i class="fas fa-user-slash"></i> Confirm Absence</button>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+        function toggleProgram(pid, btn) {
+            var panel = document.getElementById('exCollapse-' + pid);
+            var open = panel.classList.toggle('open');
+            btn.innerHTML = open
+                ? '<i class="fas fa-chevron-up"></i> Hide Program'
+                : '<i class="fas fa-list"></i> View Program';
+        }
+
+        var _absentPid = null;
+
+        function openAbsentModal(pid) {
+            _absentPid = pid;
+            document.getElementById('absentNote').value = '';
+            document.getElementById('absentCharHint').textContent = '0 / 300';
+            document.getElementById('absentModal').classList.add('open');
+            setTimeout(function () { document.getElementById('absentNote').focus(); }, 100);
+        }
+
+        function closeAbsentModal() {
+            document.getElementById('absentModal').classList.remove('open');
+            _absentPid = null;
+        }
+
+        function updateCharCount(el) {
+            document.getElementById('absentCharHint').textContent = el.value.length + ' / 300';
+        }
+
+        function submitAbsent() {
+            if (!_absentPid) return;
+            var note = document.getElementById('absentNote').value.trim();
+            if (note.length < 5) {
+                showToast('Please enter a reason (at least 5 characters).', 'danger');
+                return;
+            }
+            var btn = document.getElementById('absentSubmitBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            ajaxPost('@Url.Action("MarkAbsent","Dashboard")', {
+                workoutProgramId: _absentPid,
+                notes: note
+            }, function (data) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-user-slash"></i> Confirm Absence';
+                closeAbsentModal();
+                if (data.success) {
+                    showToast('Absence recorded. Your trainer has been notified.', 'success');
+                    loadHistory(_absentPid);
+                } else {
+                    showToast(data.message || 'Could not submit absence.', 'danger');
+                }
+            });
+        }
+
+        function loadHistory(pid) {
+            fetch('@Url.Action("GetProgramSessionLogs","Dashboard")?workoutProgramId=' + pid)
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var list = document.getElementById('histList-' + pid);
+                    if (!list) return;
+                    if (!data.success || !data.logs || !data.logs.length) {
+                        list.innerHTML = '<li class="hist-item" style="color:var(--muted2);font-size:12px;">No activity logged yet.</li>';
+                        return;
+                    }
+                    list.innerHTML = data.logs.map(function (l) {
+                        var cls  = l.status === 'Completed' ? 'completed' : 'absent';
+                        var icon = l.status === 'Completed' ? '&#9989;' : '&#128683;';
+                        var dur  = l.duration > 0 ? ' &middot; ' + fmtTime(l.duration) : '';
+                        return '<li class="hist-item">' +
+                            '<span class="hist-dot ' + cls + '"></span>' +
+                            '<span class="hist-date">' + icon + ' ' + l.date + '</span>' +
+                            '<span class="hist-dur">' + l.status + dur + '</span>' +
+                            '</li>';
+                    }).join('');
+                })
+                .catch(function () {
+                    var list = document.getElementById('histList-' + pid);
+                    if (list) list.innerHTML = '<li class="hist-item" style="color:var(--muted2);">Could not load history.</li>';
+                });
+        }
+
+        var __token = '@Html.AntiForgeryToken()';
+        function getToken() {
+            var d = document.createElement('div');
+            d.innerHTML = __token;
+            return d.querySelector('input[name="__RequestVerificationToken"]').value;
+        }
+
+        function ajaxPost(url, data, cb) {
+            data['__RequestVerificationToken'] = getToken();
+            var body = Object.keys(data).map(function (k) {
+                return encodeURIComponent(k) + '=' + encodeURIComponent(data[k] || '');
+            }).join('&');
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body
+            })
+            .then(function (r) { return r.json(); })
+            .then(cb)
+            .catch(function () { showToast('Network error. Please try again.', 'danger'); });
+        }
+
+        function fmtTime(s) {
+            return Math.floor(s / 60).toString().padStart(2, '0') + ':' + (s % 60).toString().padStart(2, '0');
+        }
+
+        function showToast(msg, type) {
+            var el = document.createElement('div');
+            el.className = 'pg-alert ' + (type || 'success');
+            el.innerHTML = '<i class="fas fa-' + (type === 'danger' ? 'exclamation-circle' : 'check-circle') + '"></i> ' + msg;
+            el.style.cssText = 'position:fixed;top:18px;right:22px;z-index:9999;min-width:300px;box-shadow:0 4px 16px rgba(0,0,0,.12);';
+            document.body.appendChild(el);
+            setTimeout(function () {
+                el.style.transition = 'opacity .5s';
+                el.style.opacity = '0';
+                setTimeout(function () { el.remove(); }, 500);
+            }, 4000);
+        }
+
+        document.querySelectorAll('.pg-alert').forEach(function (el) {
+            setTimeout(function () {
+                el.style.transition = 'opacity .5s';
+                el.style.opacity = '0';
+                setTimeout(function () { el.style.display = 'none'; }, 500);
+            }, 5000);
+        });
+
+        document.getElementById('absentModal').addEventListener('click', function (e) {
+            if (e.target === this) closeAbsentModal();
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            @foreach (var wp in workoutPrograms)
+            {
+                <text>loadHistory(@wp.WorkoutProgramId);</text>
+            }
+        });
+    </script>
+}

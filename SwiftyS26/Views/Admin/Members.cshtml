@@ -1,0 +1,68 @@
+﻿@model List<SwiftyS26.Models.MemberForm>
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    var totalMembers = (int)(ViewBag.TotalMembers ?? 0);
+    var activeMembers = (int)(ViewBag.ActiveMembers ?? 0);
+    var members = Model ?? new List<SwiftyS26.Models.MemberForm>();
+}
+
+<div class="admin-stats-grid">
+    <div class="admin-stat-card blue">
+        <div class="stat-icon"><i class="fas fa-users"></i></div>
+        <div class="stat-number">@totalMembers</div>
+        <div class="stat-label">Total Members</div>
+    </div>
+    <div class="admin-stat-card green">
+        <div class="stat-icon"><i class="fas fa-user-check"></i></div>
+        <div class="stat-number">@activeMembers</div>
+        <div class="stat-label">Active</div>
+    </div>
+    <div class="admin-stat-card red">
+        <div class="stat-icon"><i class="fas fa-user-times"></i></div>
+        <div class="stat-number">@(totalMembers - activeMembers)</div>
+        <div class="stat-label">Inactive</div>
+    </div>
+</div>
+
+<div class="admin-card">
+    <div class="admin-card-header">
+        <div class="admin-card-title"><i class="fas fa-users"></i> All Members</div>
+        <div class="admin-card-count">@members.Count records</div>
+    </div>
+    <div class="search-bar">
+        <input type="text" id="memberSearch"
+               placeholder="Search by name, email or member ID..."
+               oninput="filterTable('memberSearch','membersTable')" />
+    </div>
+    <div class="admin-table-wrap">
+        <table class="admin-table" id="membersTable">
+            <thead>
+                <tr>
+                    <th>Member ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Plan</th>
+                    <th>Monthly Fee</th>
+                    <th>Status</th>
+                    <th>Registered</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var m in members)
+                {
+                    <tr>
+                        <td class="member-id">@m.MemberNumber</td>
+                        <td class="member-name">@m.FullName</td>
+                        <td class="member-email">@m.Email</td>
+                        <td class="member-phone">@m.Phone</td>
+                        <td><span class="plan-badge plan-@m.Plan.ToLower()">@m.Plan</span></td>
+                        <td class="member-fee">R @m.MonthlyFee.ToString("F2")</td>
+                        <td><span class="status-badge status-@m.Status.ToLower()">@m.Status</span></td>
+                        <td class="member-date">@m.RegisteredAt.ToString("dd MMM yyyy")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

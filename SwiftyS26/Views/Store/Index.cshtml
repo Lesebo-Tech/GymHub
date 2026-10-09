@@ -1,0 +1,622 @@
+﻿@model IEnumerable<SwiftyS26.Models.Product>
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.PageTitle = "Gym Store";
+    ViewBag.ActivePage = "store";
+    var categories = ViewBag.Categories as string[] ?? new string[0];
+    var currentCategory = ViewBag.CurrentCategory as string;
+    var initialCartCount = (int)(ViewBag.CartCount ?? 0);
+}
+<!-- Paste this inside the <style> block, replacing everything -->
+<style>
+  /* ─── Base ─── */
+  .st-header h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 27px;
+    letter-spacing: 1.8px;
+    color: var(--sb-text-primary, #0F172A);
+  }
+  .st-header h2 i {
+    color: #2563EB;
+    margin-right: 10px;
+    transition: transform 0.3s ease;
+  }
+  .st-header h2:hover i {
+    transform: rotate(-8deg) scale(1.05);
+  }
+
+  .st-toolbar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .st-search input {
+    width: 100%;
+    padding: 12px 18px;
+    border: 1.5px solid rgba(0, 0, 0, 0.06);
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    outline: none;
+    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    background: #fff;
+  }
+  .st-search input:focus {
+    border-color: #2563EB;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.08), 0 2px 16px rgba(37, 99, 235, 0.04);
+    transform: scale(1.01);
+  }
+
+  /* ─── Category Tabs (Slide indicator) ─── */
+  .st-cat-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+    position: relative;
+  }
+  .st-cat-tab {
+    padding: 8px 20px;
+    border-radius: 40px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12.5px;
+    font-weight: 600;
+    text-decoration: none;
+    color: #94A3B8;
+    background: transparent;
+    border: none;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .st-cat-tab::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    width: 0;
+    height: 2.5px;
+    background: #2563EB;
+    border-radius: 40px;
+    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform: translateX(-50%);
+  }
+  .st-cat-tab:hover {
+    color: #0F172A;
+  }
+  .st-cat-tab:hover::after {
+    width: 60%;
+  }
+  .st-cat-tab.active {
+    color: #2563EB;
+    font-weight: 700;
+  }
+  .st-cat-tab.active::after {
+    width: 80%;
+  }
+
+  /* ─── Grid ─── */
+  .st-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 24px;
+    margin-top: 10px;
+  }
+
+  /* ─── Interactive Card ─── */
+  .st-card {
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.02);
+    display: flex;
+    flex-direction: column;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform-style: preserve-3d;
+    perspective: 800px;
+    cursor: default;
+  }
+  .st-card:hover {
+    transform: translateY(-6px) scale(1.01) rotateX(1deg);
+    box-shadow: 0 20px 60px rgba(37, 99, 235, 0.06), 0 4px 20px rgba(0, 0, 0, 0.02);
+    border-color: rgba(37, 99, 235, 0.08);
+  }
+
+  .st-card-img {
+    width: 100%;
+    height: 160px;
+    object-fit: cover;
+    background: #F1F5F9;
+    transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transform: scale(1);
+  }
+  .st-card:hover .st-card-img {
+    transform: scale(1.04);
+    filter: brightness(0.98) saturate(1.02);
+  }
+  .st-card-img-placeholder {
+    width: 100%;
+    height: 160px;
+    background: #F1F5F9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #CBD5E1;
+    font-size: 30px;
+    transition: all 0.4s ease;
+  }
+  .st-card:hover .st-card-img-placeholder {
+    background: #E2E8F0;
+    transform: scale(1.02);
+  }
+
+  .st-card-body {
+    padding: 18px 20px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 1;
+  }
+
+  .st-card-cat {
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #94A3B8;
+    transition: color 0.3s ease;
+  }
+  .st-card:hover .st-card-cat {
+    color: #2563EB;
+  }
+
+  .st-card-name {
+    font-weight: 700;
+    font-size: 15px;
+    color: #0F172A;
+    line-height: 1.3;
+    transition: color 0.3s ease;
+  }
+  .st-card:hover .st-card-name {
+    color: #1E293B;
+  }
+
+  .st-card-price {
+    font-size: 18px;
+    font-weight: 800;
+    color: #2563EB;
+    margin-top: 4px;
+    letter-spacing: -0.3px;
+    transition: all 0.3s ease;
+  }
+  .st-card:hover .st-card-price {
+    transform: scale(1.02);
+  }
+
+  /* Pulsing stock badge for low stock */
+  .st-stock-badge {
+    display: inline-block;
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    padding: 3px 14px;
+    border-radius: 40px;
+    width: fit-content;
+    margin-top: 4px;
+    transition: all 0.3s ease;
+  }
+  .st-stock-badge.InStock {
+    background: rgba(22, 163, 74, 0.10);
+    color: #16A34A;
+  }
+  .st-stock-badge.LowStock {
+    background: rgba(217, 119, 6, 0.10);
+    color: #D97706;
+    animation: pulseLowStock 2s ease-in-out infinite;
+  }
+  @@keyframes pulseLowStock {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(0.97); }
+  }
+  .st-stock-badge.OutOfStock {
+    background: rgba(220, 38, 38, 0.08);
+    color: #DC2626;
+  }
+  .st-stock-badge.NearExpiry {
+    background: rgba(124, 58, 237, 0.08);
+    color: #7C3AED;
+  }
+
+  .st-card-footer {
+    padding: 4px 20px 20px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .st-qty-input {
+    width: 52px;
+    padding: 10px 4px;
+    border: 1.5px solid rgba(0, 0, 0, 0.06);
+    border-radius: 10px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    background: #FAFAFA;
+    transition: all 0.3s ease;
+  }
+  .st-qty-input:focus {
+    border-color: #2563EB;
+    outline: none;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.06);
+    transform: scale(1.02);
+  }
+
+  .st-add-btn {
+    flex: 1;
+    padding: 10px 14px;
+    background: #2563EB;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 12.5px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.15);
+    position: relative;
+    overflow: hidden;
+  }
+  /* Ripple effect */
+  .st-add-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .st-add-btn:hover:not(:disabled)::after {
+    opacity: 1;
+  }
+  .st-add-btn:hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 32px rgba(37, 99, 235, 0.25);
+    background: #1D4ED8;
+  }
+  .st-add-btn:active:not(:disabled) {
+    transform: scale(0.94);
+    transition-duration: 0.08s;
+  }
+  .st-add-btn:disabled {
+    background: #CBD5E1;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+  .st-add-btn.st-add-success {
+    background: linear-gradient(135deg, #16A34A, #15803D) !important;
+    box-shadow: 0 4px 24px rgba(22, 163, 74, 0.30) !important;
+    transform: scale(1.02);
+  }
+
+  /* ─── Floating Buttons (Magnetic hover) ─── */
+  .floating-cart-btn {
+    position: fixed;
+    z-index: 400;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 14px 24px;
+    color: #fff;
+    border-radius: 999px;
+    text-decoration: none;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    box-shadow: 0 8px 32px rgba(37, 99, 235, 0.25), 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    right: 32px;
+    border: none;
+    will-change: transform;
+  }
+  .floating-cart-btn:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 16px 56px rgba(37, 99, 235, 0.35);
+  }
+  .fab-cart {
+    top: 148px;
+    background: linear-gradient(135deg, #2563EB, #1D4ED8);
+  }
+  .fab-orders {
+    top: 84px;
+    background: linear-gradient(135deg, #334155, #1E293B);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.20);
+  }
+  .fab-orders:hover {
+    box-shadow: 0 16px 56px rgba(0, 0, 0, 0.30);
+  }
+  .floating-cart-badge {
+    background: #DC2626;
+    color: #fff;
+    font-size: 10.5px;
+    font-weight: 800;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 6px;
+    box-shadow: 0 2px 12px rgba(220, 38, 38, 0.30);
+    transition: transform 0.3s ease;
+  }
+  .floating-cart-btn:hover .floating-cart-badge {
+    transform: scale(1.1);
+  }
+
+  /* ─── Animations ─── */
+  @@keyframes cardPop {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.025); box-shadow: 0 24px 64px rgba(37, 99, 235, 0.08); }
+    100% { transform: scale(1); }
+  }
+  .st-card-pop {
+    animation: cardPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  @@keyframes badgeBounce {
+    0% { transform: scale(1); }
+    30% { transform: scale(1.6); }
+    50% { transform: scale(0.8); }
+    70% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+  }
+  .st-badge-bounce {
+    animation: badgeBounce 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .st-flyer {
+    position: fixed;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #2563EB, #1D4ED8);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    z-index: 999;
+    pointer-events: none;
+    box-shadow: 0 8px 32px rgba(37, 99, 235, 0.5);
+    transition: transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.65s ease;
+  }
+
+  /* ─── Responsive ─── */
+  @@media (max-width: 700px) {
+    .st-grid { grid-template-columns: 1fr; gap: 18px; }
+    .st-card-img, .st-card-img-placeholder { height: 185px; }
+    .floating-cart-btn {
+      top: auto;
+      right: 18px;
+      width: 56px;
+      height: 56px;
+      padding: 0;
+      gap: 0;
+      border-radius: 999px;
+    }
+    .fab-cart { bottom: calc(18px + env(safe-area-inset-bottom)); }
+    .fab-orders { bottom: calc(18px + env(safe-area-inset-bottom) + 56px + 12px); }
+    .floating-cart-label { display: none; }
+    .floating-cart-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+    }
+    .st-cat-tabs {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .st-cat-tabs::-webkit-scrollbar { display: none; }
+  }
+  @@media (min-width: 701px) {
+    .floating-cart-label { display: inline; }
+  }
+</style>
+
+<div class="st-header">
+    <h2><i class="fas fa-store" style="color:#2563EB; margin-right:8px;"></i>Gym Store</h2>
+</div>
+
+<!-- My Orders — floating, stacked above the cart button -->
+<a href="@Url.Action("MyOrders", "Store")" class="floating-cart-btn fab-orders" id="floatingOrdersBtn" title="My Orders">
+    <i class="fas fa-receipt"></i>
+    <span class="floating-cart-label">Orders</span>
+</a>
+
+<!-- Floating cart button — fixed position, stays on screen at all times -->
+<a href="@Url.Action("Cart", "Store")" class="floating-cart-btn fab-cart" id="floatingCartBtn" title="View Cart">
+    <i class="fas fa-shopping-cart"></i>
+    <span class="floating-cart-label">Cart</span>
+    <span class="floating-cart-badge @(initialCartCount > 0 ? "" : "hidden")" id="cartBadge">@initialCartCount</span>
+</a>
+
+@if (TempData["Success"] != null)
+{
+    <div style="background:#F0FDF4;color:#16A34A;border:1px solid rgba(22,163,74,.2);padding:12px 16px;border-radius:10px;margin-bottom:16px;font-size:13px;font-weight:600;">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div style="background:#FEF2F2;color:#DC2626;border:1px solid rgba(220,38,38,.2);padding:12px 16px;border-radius:10px;margin-bottom:16px;font-size:13px;font-weight:600;">@TempData["Error"]</div>
+}
+
+<div class="st-toolbar">
+    <form method="get" class="st-search">
+        <input type="text" name="search" value="@ViewBag.CurrentSearch" placeholder="Search products..." />
+    </form>
+</div>
+
+<div class="st-cat-tabs" style="margin-bottom:20px;">
+    <a href="@Url.Action("Index", "Store")" class="st-cat-tab @(string.IsNullOrEmpty(currentCategory) ? "active" : "")">All</a>
+    @foreach (var cat in categories)
+    {
+        <a href="@Url.Action("Index", "Store", new { category = cat })" class="st-cat-tab @(currentCategory == cat ? "active" : "")">@cat</a>
+    }
+</div>
+
+@if (!Model.Any())
+{
+    <div class="st-empty">
+        <i class="fas fa-box-open" style="font-size:32px;opacity:.3;display:block;margin-bottom:12px;"></i>
+        No products found.
+    </div>
+}
+else
+{
+    <div class="st-grid">
+        @foreach (var p in Model)
+        {
+            <div class="st-card">
+                @if (!string.IsNullOrEmpty(p.ImagePath))
+                {
+                    <img src="@p.ImagePath" class="st-card-img" alt="@p.Name" />
+                }
+                else
+                {
+                    <div class="st-card-img-placeholder"><i class="fas fa-box"></i></div>
+                }
+                <div class="st-card-body">
+                    <div class="st-card-cat">@p.Category</div>
+                    <div class="st-card-name">@p.Name</div>
+                    @if (p.IsOnPromotion)
+                    {
+                        <div class="st-card-price" style="display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;">
+                            <span style="text-decoration:line-through; color:#94A3B8; font-size:13px; font-weight:600;">R@(p.NormalPrice.ToString("F2"))</span>
+                            <span>R@(p.DisplayPrice.ToString("F2"))</span>
+                        </div>
+                        <span style="display:inline-block; background:#F5F3FF; color:#7C3AED; font-size:10px; font-weight:700; padding:2px 9px; border-radius:20px; margin-bottom:6px; width:fit-content;">
+                            <i class="fas fa-tag"></i> @(p.ActivePromotion?.DiscountPercent)% OFF
+                        </span>
+                    }
+                    else
+                    {
+                        <div class="st-card-price">R@(p.NormalPrice.ToString("F2"))</div>
+                    }
+                    <span class="st-stock-badge @p.StockStatus">@p.StockStatusDisplay</span>
+                </div>
+                <div class="st-card-footer">
+                    @using (Html.BeginForm("AddToCart", "Store", FormMethod.Post, new { @class = "st-add-form" }))
+                    {
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="productId" value="@p.ProductId" />
+                        <input type="number" name="quantity" value="1" min="1" class="st-qty-input" @(p.IsPurchasable ? "" : "disabled") />
+                        <button type="submit" class="st-add-btn" @(p.IsPurchasable ? "" : "disabled")>
+                            @(p.IsPurchasable ? "Add to Cart" : "Unavailable")
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@section scripts {
+    <script>
+        (function () {
+            var cartCount = @initialCartCount;
+            var badge = document.getElementById('cartBadge');
+            var cartBtn = document.getElementById('floatingCartBtn');
+
+            function updateBadge() {
+                badge.textContent = cartCount > 99 ? '99+' : cartCount;
+                badge.classList.toggle('hidden', cartCount <= 0);
+                badge.classList.remove('st-badge-bounce');
+                void badge.offsetWidth;
+                badge.classList.add('st-badge-bounce');
+            }
+
+            function flyToCart(startEl) {
+                var startRect = startEl.getBoundingClientRect();
+                var endRect = cartBtn.getBoundingClientRect();
+                var flyer = document.createElement('div');
+                flyer.className = 'st-flyer';
+                flyer.innerHTML = '<i class="fas fa-dumbbell"></i>';
+                flyer.style.left = (startRect.left + startRect.width / 2 - 11) + 'px';
+                flyer.style.top = (startRect.top + startRect.height / 2 - 11) + 'px';
+                document.body.appendChild(flyer);
+
+                requestAnimationFrame(function () {
+                    var dx = (endRect.left + endRect.width / 2) - (startRect.left + startRect.width / 2);
+                    var dy = (endRect.top + endRect.height / 2) - (startRect.top + startRect.height / 2);
+                    flyer.style.transform = 'translate(' + dx + 'px, ' + dy + 'px) scale(0.15)';
+                    flyer.style.opacity = '0';
+                });
+
+                setTimeout(function () { flyer.remove(); }, 600);
+            }
+
+            document.querySelectorAll('.st-add-form').forEach(function (form) {
+                form.addEventListener('submit', function (e) {
+                    var btn = form.querySelector('.st-add-btn');
+                    if (btn.disabled) return;
+                    e.preventDefault();
+
+                    var card = form.closest('.st-card');
+                    var qtyInput = form.querySelector('input[name="quantity"]');
+                    var qty = parseInt(qtyInput.value, 10) || 1;
+                    var originalHtml = btn.innerHTML;
+                    var formData = new FormData(form);
+
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                    fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'same-origin'
+                    })
+                        .then(function (res) {
+                            if (!res.ok) throw new Error('Add to cart failed');
+
+                            flyToCart(btn);
+                            card.classList.add('st-card-pop');
+                            setTimeout(function () { card.classList.remove('st-card-pop'); }, 400);
+
+                            btn.classList.add('st-add-success');
+                            btn.innerHTML = '<i class="fas fa-check"></i> Added!';
+
+                            cartCount += qty;
+                            updateBadge();
+
+                            setTimeout(function () {
+                                btn.classList.remove('st-add-success');
+                                btn.innerHTML = originalHtml;
+                                btn.disabled = false;
+                            }, 1100);
+                        })
+                        .catch(function () {
+                            btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Try again';
+                            setTimeout(function () {
+                                btn.innerHTML = originalHtml;
+                                btn.disabled = false;
+                            }, 1500);
+                        });
+                });
+            });
+        })();
+    </script>
+}

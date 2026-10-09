@@ -1,0 +1,211 @@
+﻿@model SwiftyS26.Models.WorkoutSummaryVm
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.ActivePage = "workout";
+    ViewBag.PageTitle = "Workout Summary";
+
+    var session = Model.Session;
+    var dur = TimeSpan.FromSeconds(session.TotalDurationSeconds);
+    string planName = ViewBag.PlanName ?? "—";
+    string catName = ViewBag.CategoryName ?? "—";
+    int planId = ViewBag.PlanId ?? 0;
+}
+
+@section head {
+    <link href="~/Content/workout.css" rel="stylesheet" />
+}
+
+<!-- Back Navigation -->
+<div class="back-nav">
+    <a href="@Url.Action("History", "Workout")" class="back-link">
+        <i class="fas fa-arrow-left"></i> Back to Workout History
+    </a>
+</div>
+
+<!-- Summary Hero -->
+<div class="summary-hero">
+    <div class="summary-hero-content">
+        <div class="summary-trophy">
+            <i class="fas fa-trophy"></i>
+        </div>
+        <div class="summary-info">
+            <h1 class="summary-title">@planName</h1>
+            <p class="summary-meta">
+                <i class="fas fa-calendar-alt"></i> @session.StartedAt.ToString("dddd, dd MMMM yyyy")
+                &nbsp;<i class="fas fa-tag"></i> @catName
+            </p>
+        </div>
+        <span class="session-badge @(session.Status == "Completed" ? "completed" : "in-progress")">
+            @session.Status
+        </span>
+    </div>
+</div>
+
+<div class="workout-summary-body">
+
+    <!-- Key Stats -->
+    <div class="stats-grid-workout">
+        <div class="stat-card-workout">
+            <div class="stat-icon-workout blue">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-info-workout">
+                <div class="stat-value-workout">
+                    @if (dur.Hours > 0)
+                    {
+                        @dur.Hours<span class="stat-unit">h</span>
+                    }
+                    @dur.Minutes<span class="stat-unit">m</span>
+                    @dur.Seconds<span class="stat-unit">s</span>
+                </div>
+                <div class="stat-label-workout">Duration</div>
+            </div>
+        </div>
+        <div class="stat-card-workout">
+            <div class="stat-icon-workout green">
+                <i class="fas fa-dumbbell"></i>
+            </div>
+            <div class="stat-info-workout">
+                <div class="stat-value-workout">@session.ExercisesCompleted</div>
+                <div class="stat-label-workout">Exercises Done</div>
+            </div>
+        </div>
+        <div class="stat-card-workout">
+            <div class="stat-icon-workout orange">
+                <i class="fas fa-fire"></i>
+            </div>
+            <div class="stat-info-workout">
+                <div class="stat-value-workout">~@session.CaloriesBurned</div>
+                <div class="stat-label-workout">Calories Burned</div>
+            </div>
+        </div>
+        <div class="stat-card-workout">
+            <div class="stat-icon-workout purple">
+                <i class="fas fa-bolt"></i>
+            </div>
+            <div class="stat-info-workout">
+                <div class="stat-value-workout">@Model.CurrentStreak</div>
+                <div class="stat-label-workout">Day Streak</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="workout-summary-grid">
+
+        <!-- Exercise Log -->
+        <div class="dash-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-list-check"></i> Exercise Log
+                </div>
+                <div class="card-sub">Track your performance</div>
+            </div>
+
+            <div class="exercise-log-list">
+                @foreach (var log in Model.Logs)
+                {
+                    <div class="log-item @(log.Skipped ? "skipped" : "")">
+                        <div class="log-order">@log.OrderIndex</div>
+                        <div class="log-details">
+                            <div class="log-name">@(log.Exercise?.Name ?? "—")</div>
+                            <div class="log-metrics">
+                                @if (log.SetsCompleted > 0)
+                                {
+                                    <span><i class="fas fa-layer-group"></i> @log.SetsCompleted sets</span>
+                                }
+                                @if (log.RepsCompleted > 0)
+                                {
+                                    <span><i class="fas fa-arrows-rotate"></i> @log.RepsCompleted reps</span>
+                                }
+                                @if (log.DurationSeconds > 0)
+                                {
+                                    <span><i class="fas fa-clock"></i> @log.DurationSeconds sec</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="log-status">
+                            @if (log.Skipped)
+                            {
+                                <span class="status-badge skipped">
+                                    <i class="fas fa-forward-step"></i> Skipped
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="status-badge completed">
+                                    <i class="fas fa-check"></i> Completed
+                                </span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Badges & Progress -->
+        <div class="dash-card">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-medal"></i> Achievements
+                </div>
+                <div class="card-sub">Your hard work pays off</div>
+            </div>
+
+            @if (Model.NewBadges != null && Model.NewBadges.Any())
+            {
+                <div class="badges-earned">
+                    <div class="badges-earned-label">
+                        <i class="fas fa-star"></i> New Badges Earned
+                    </div>
+                    <div class="badges-grid">
+                        @foreach (var b in Model.NewBadges)
+                        {
+                            <div class="badge-item earned">
+                                <i class="@b.IconClass"></i>
+                                <span>@b.BadgeName</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <div class="progress-overview">
+                <div class="progress-item">
+                    <div class="progress-label">
+                        <i class="fas fa-dumbbell"></i> Total Workouts
+                    </div>
+                    <div class="progress-value">@Model.TotalWorkouts</div>
+                </div>
+                <div class="progress-item">
+                    <div class="progress-label">
+                        <i class="fas fa-bolt"></i> Current Streak
+                    </div>
+                    <div class="progress-value">@Model.CurrentStreak days</div>
+                </div>
+                <div class="progress-item">
+                    <div class="progress-label">
+                        <i class="fas fa-fire"></i> Est. Total Calories
+                    </div>
+                    <div class="progress-value">~@(Model.TotalWorkouts * 150) cal</div>
+                </div>
+            </div>
+
+            <div class="summary-actions">
+                <a href="@Url.Action("Index", "Workout")" class="btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Back to Hub
+                </a>
+                <a href="@Url.Action("Start", "Workout", new { planId = planId })" class="btn-primary">
+                    <i class="fas fa-rotate-right"></i> Repeat Workout
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        console.log('Workout summary loaded for session @session.SessionId');
+    </script>
+}

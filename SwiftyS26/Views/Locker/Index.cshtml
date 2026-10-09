@@ -1,0 +1,1015 @@
+﻿@model IEnumerable<SwiftyS26.Models.Locker>
+
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.PageTitle = "Locker Reservation";
+    ViewBag.ActivePage = "lockers";
+
+    int? myLockerId = ViewBag.MyActiveReservationLockerId;
+    var history = ViewBag.MyHistory as List<SwiftyS26.Models.LockerReservation> ?? new List<SwiftyS26.Models.LockerReservation>();
+    var openFaultIds = ViewBag.OpenFaultLockerIds as List<int> ?? new List<int>();
+
+    int availableCount = Model.Count(l => l.IsReservable);
+    int faultyCount = Model.Count(l => l.OperationalStatus != "InService");
+}
+
+<style>
+    .lk-page-header {
+        margin-bottom: 18px;
+    }
+
+        .lk-page-header h2 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 26px;
+            letter-spacing: 1px;
+            color: var(--sb-text-primary, #0F172A);
+            margin-bottom: 4px;
+        }
+
+        .lk-page-header p {
+            font-size: 13.5px;
+            color: var(--sb-text-secondary, #64748B);
+        }
+
+    /* ===== TABS ===== */
+    .lk-tabs {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid rgba(0,0,0,.07);
+    }
+
+    .lk-tab {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--sb-text-secondary, #64748B);
+        padding: 10px 16px;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        transition: color .15s, border-color .15s;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+
+        .lk-tab:hover {
+            color: var(--sb-text-primary, #0F172A);
+        }
+
+        .lk-tab.active {
+            color: #2563EB;
+            border-bottom-color: #2563EB;
+        }
+
+    .lk-tab-count {
+        background: rgba(37,99,235,.1);
+        color: #2563EB;
+        font-size: 10.5px;
+        padding: 1px 7px;
+        border-radius: 50px;
+    }
+
+    .lk-panel {
+        display: none;
+    }
+
+        .lk-panel.active {
+            display: block;
+        }
+
+    .lk-stat-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 22px;
+    }
+
+    .lk-availability {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(22,163,74,.08);
+        color: #16A34A;
+        border: 1px solid rgba(22,163,74,.2);
+        padding: 7px 14px;
+        border-radius: 50px;
+        font-size: 12.5px;
+        font-weight: 700;
+    }
+
+        .lk-availability.none {
+            background: rgba(148,163,184,.12);
+            color: #64748B;
+            border-color: rgba(148,163,184,.25);
+        }
+
+        .lk-availability.faulty {
+            background: rgba(217,119,6,.1);
+            color: #D97706;
+            border-color: rgba(217,119,6,.25);
+        }
+
+    .lk-alert {
+        padding: 12px 16px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 20px;
+    }
+
+    .lk-alert-error {
+        background: rgba(239,68,68,.08);
+        color: #DC2626;
+        border: 1px solid rgba(239,68,68,.2);
+    }
+
+    .lk-alert-success {
+        background: rgba(22,163,74,.08);
+        color: #16A34A;
+        border: 1px solid rgba(22,163,74,.2);
+    }
+
+    .lk-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 18px;
+    }
+
+    /* ===== TILE ===== */
+    .lk-tile {
+        background: #fff;
+        border: 1px solid rgba(0,0,0,.07);
+        border-radius: 14px;
+        padding: 18px 16px 16px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,.04);
+        transition: transform .18s, box-shadow .18s;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .lk-tile::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .lk-tile.mine::before {
+            background: #2563EB;
+        }
+
+        .lk-tile.occupied::before {
+            background: #94A3B8;
+        }
+
+        .lk-tile.available::before {
+            background: #16A34A;
+        }
+
+        .lk-tile.faulty::before {
+            background: #D97706;
+        }
+
+        .lk-tile.available:hover, .lk-tile.mine:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 22px rgba(0,0,0,.09);
+        }
+
+    /* ===== MINI LOCKER ===== */
+    .lk-mini-scene {
+        perspective: 700px;
+        display: flex;
+        justify-content: center;
+        margin-bottom: 14px;
+    }
+
+    .lk-mini-body {
+        position: relative;
+        width: 76px;
+        height: 100px;
+        border-radius: 6px;
+        transform-style: preserve-3d;
+    }
+
+    .lk-mini-interior {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(160deg, #1e293b, #0f172a);
+        border-radius: 6px;
+        box-shadow: inset 0 4px 14px rgba(0,0,0,.7);
+        overflow: hidden;
+    }
+
+    .lk-mini-shelf {
+        position: absolute;
+        top: 30px;
+        left: 6px;
+        right: 6px;
+        height: 3px;
+        background: linear-gradient(#475569, #334155);
+        border-radius: 1px;
+        box-shadow: 0 2px 5px rgba(0,0,0,.6);
+    }
+
+    .lk-mini-door {
+        position: absolute;
+        inset: 0;
+        border-radius: 6px;
+        transform-origin: left center;
+        transform: rotateY(0deg);
+        transition: transform .55s cubic-bezier(.5,.05,.2,1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 9px;
+        backface-visibility: hidden;
+    }
+
+    .lk-tile.available .lk-mini-door {
+        background: linear-gradient(145deg,#cbd5e1 0%,#94a3b8 45%,#b6c2d1 100%);
+        box-shadow: 0 5px 14px rgba(0,0,0,.18), inset 0 0 0 1.5px rgba(255,255,255,.35);
+    }
+
+    .lk-tile.occupied .lk-mini-door {
+        background: linear-gradient(145deg,#e2e8f0 0%,#cbd5e1 45%,#e2e8f0 100%);
+        filter: grayscale(.35);
+        box-shadow: 0 4px 10px rgba(0,0,0,.12), inset 0 0 0 1.5px rgba(255,255,255,.4);
+    }
+
+    .lk-tile.mine .lk-mini-door {
+        background: linear-gradient(145deg,#bfdbfe 0%,#93c5fd 45%,#dbeafe 100%);
+        box-shadow: 0 5px 14px rgba(37,99,235,.22), inset 0 0 0 1.5px rgba(255,255,255,.5);
+    }
+
+    .lk-tile.faulty .lk-mini-door {
+        background: linear-gradient(145deg,#fed7aa 0%,#fdba74 45%,#ffedd5 100%);
+        box-shadow: 0 5px 14px rgba(217,119,6,.2), inset 0 0 0 1.5px rgba(255,255,255,.45);
+    }
+
+    .lk-tile.available:hover .lk-mini-door {
+        transform: rotateY(-32deg);
+    }
+
+    .lk-tile.mine .lk-mini-door {
+        transform: rotateY(-105deg);
+    }
+
+    /* a faulty door hangs slightly ajar and crooked — reads as "broken" */
+    .lk-tile.faulty .lk-mini-door {
+        transform: rotateY(-14deg) rotateZ(-2deg);
+    }
+
+    .lk-mini-vents {
+        width: 62%;
+        margin-top: 6px;
+    }
+
+        .lk-mini-vents span {
+            display: block;
+            height: 2.5px;
+            margin-bottom: 4px;
+            border-radius: 1px;
+            background: rgba(51,65,85,.3);
+        }
+
+    .lk-mini-plate {
+        background: #0f172a;
+        color: #f1f5f9;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 11px;
+        letter-spacing: 1px;
+        padding: 1px 8px;
+        border-radius: 3px;
+    }
+
+    .lk-mini-lock {
+        position: absolute;
+        bottom: 11px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: linear-gradient(145deg,#f8fafc,#cbd5e1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        color: #475569;
+        box-shadow: 0 2px 4px rgba(0,0,0,.25);
+    }
+
+    .lk-tile.available .lk-mini-lock {
+        color: #16a34a;
+        background: linear-gradient(145deg,#f0fdf4,#bbf7d0);
+    }
+
+    .lk-tile.mine .lk-mini-lock {
+        color: #2563eb;
+        background: linear-gradient(145deg,#eff6ff,#bfdbfe);
+    }
+
+    .lk-tile.faulty .lk-mini-lock {
+        color: #D97706;
+        background: linear-gradient(145deg,#fffbeb,#fde68a);
+    }
+
+    .lk-tile-number {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 19px;
+        letter-spacing: .5px;
+        color: var(--sb-text-primary, #0F172A);
+        margin-bottom: 2px;
+    }
+
+    .lk-tile-location {
+        font-size: 11.5px;
+        color: var(--sb-text-secondary, #64748B);
+        margin-bottom: 10px;
+        min-height: 14px;
+    }
+
+    .lk-tile-badge {
+        display: inline-block;
+        font-size: 9.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .6px;
+        padding: 3px 10px;
+        border-radius: 50px;
+        margin-bottom: 11px;
+    }
+
+        .lk-tile-badge.mine {
+            background: rgba(37,99,235,.1);
+            color: #2563EB;
+        }
+
+        .lk-tile-badge.occupied {
+            background: rgba(148,163,184,.15);
+            color: #64748B;
+        }
+
+        .lk-tile-badge.available {
+            background: rgba(22,163,74,.1);
+            color: #16A34A;
+        }
+
+        .lk-tile-badge.faulty {
+            background: rgba(217,119,6,.12);
+            color: #D97706;
+        }
+
+    .lk-tile-btn {
+        display: block;
+        width: 100%;
+        padding: 9px 12px;
+        border-radius: 8px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 12.5px;
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+        border: none;
+        transition: transform .15s;
+    }
+
+        .lk-tile-btn:hover:not(.disabled) {
+            transform: translateY(-1px);
+        }
+
+        .lk-tile-btn.mine {
+            background: linear-gradient(135deg,#3B82F6,#1D4ED8);
+            color: #fff;
+        }
+
+        .lk-tile-btn.available {
+            background: rgba(22,163,74,.1);
+            color: #16A34A;
+        }
+
+        .lk-tile-btn.disabled {
+            background: var(--sb-surface,#F1F5F9);
+            color: #94A3B8;
+            cursor: not-allowed;
+        }
+
+    .lk-report-link {
+        display: block;
+        width: 100%;
+        margin-top: 7px;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--sb-text-secondary, #64748B);
+        text-decoration: underline;
+        padding: 2px;
+    }
+
+        .lk-report-link:hover {
+            color: #D97706;
+        }
+
+        .lk-report-link.reported {
+            color: #D97706;
+            text-decoration: none;
+            cursor: default;
+        }
+
+    .lk-empty {
+        text-align: center;
+        padding: 50px 20px;
+        color: var(--sb-text-secondary, #64748B);
+        font-size: 13.5px;
+    }
+
+    /* ===== HISTORY ===== */
+    .lk-hist-card {
+        background: #fff;
+        border: 1px solid rgba(0,0,0,.07);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    }
+
+    .lk-hist-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
+
+        .lk-hist-table th {
+            padding: 11px 16px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .7px;
+            color: var(--sb-text-secondary, #64748B);
+            background: var(--sb-surface, #F1F5F9);
+            border-bottom: 1px solid rgba(0,0,0,.07);
+            text-align: left;
+        }
+
+        .lk-hist-table td {
+            padding: 13px 16px;
+            border-bottom: 1px solid rgba(0,0,0,.05);
+            color: #334155;
+        }
+
+        .lk-hist-table tr:last-child td {
+            border-bottom: none;
+        }
+
+    .lk-hist-locker {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 15px;
+        letter-spacing: .5px;
+        color: #2563EB;
+        background: rgba(37,99,235,.08);
+        padding: 3px 10px;
+        border-radius: 5px;
+        display: inline-block;
+    }
+
+    .lk-hist-sub {
+        font-size: 11.5px;
+        color: var(--sb-text-secondary, #64748B);
+    }
+
+    .lk-hist-tag {
+        display: inline-block;
+        font-size: 9.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .5px;
+        padding: 3px 9px;
+        border-radius: 50px;
+    }
+
+        .lk-hist-tag.self {
+            background: rgba(22,163,74,.1);
+            color: #16A34A;
+        }
+
+        .lk-hist-tag.staff {
+            background: rgba(217,119,6,.12);
+            color: #D97706;
+        }
+
+    /* ===== REPORT MODAL ===== */
+    .lk-modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(15,23,42,.55);
+        backdrop-filter: blur(3px);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+        .lk-modal.open {
+            display: flex;
+        }
+
+    .lk-modal-box {
+        background: #fff;
+        border-radius: 16px;
+        padding: 28px;
+        max-width: 460px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 50px rgba(0,0,0,.25);
+    }
+
+    .lk-modal-title {
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 22px;
+        letter-spacing: 1px;
+        color: var(--sb-text-primary, #0F172A);
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .lk-modal-sub {
+        font-size: 12.5px;
+        color: var(--sb-text-secondary, #64748B);
+        margin-bottom: 20px;
+    }
+
+    .lk-form-group {
+        margin-bottom: 16px;
+    }
+
+        .lk-form-group label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            color: var(--sb-text-secondary, #64748B);
+            margin-bottom: 6px;
+        }
+
+    .lk-input, .lk-select, .lk-textarea {
+        width: 100%;
+        padding: 11px 13px;
+        background: var(--sb-surface, #F8FAFC);
+        border: 1.5px solid rgba(0,0,0,.1);
+        border-radius: 9px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13px;
+        color: var(--sb-text-primary, #0F172A);
+        outline: none;
+        transition: border-color .15s, box-shadow .15s;
+    }
+
+        .lk-input:focus, .lk-select:focus, .lk-textarea:focus {
+            border-color: #2563EB;
+            box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+            background: #fff;
+        }
+
+    .lk-textarea {
+        min-height: 90px;
+        resize: vertical;
+    }
+
+    /* severity picker */
+    .lk-sev-row {
+        display: flex;
+        gap: 8px;
+    }
+
+    .lk-sev-opt {
+        flex: 1;
+    }
+
+        .lk-sev-opt input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .lk-sev-opt label {
+            display: block;
+            text-align: center;
+            cursor: pointer;
+            padding: 10px 6px;
+            border-radius: 9px;
+            border: 1.5px solid rgba(0,0,0,.1);
+            background: #fff;
+            font-size: 11.5px;
+            font-weight: 700;
+            text-transform: none;
+            letter-spacing: 0;
+            color: var(--sb-text-secondary, #64748B);
+            transition: all .15s;
+            margin: 0;
+        }
+
+            .lk-sev-opt label small {
+                display: block;
+                font-weight: 500;
+                font-size: 10px;
+                opacity: .75;
+                margin-top: 2px;
+            }
+
+        .lk-sev-opt input:checked + label.minor {
+            border-color: #64748B;
+            background: rgba(100,116,139,.08);
+            color: #475569;
+        }
+
+        .lk-sev-opt input:checked + label.major {
+            border-color: #D97706;
+            background: rgba(217,119,6,.08);
+            color: #D97706;
+        }
+
+        .lk-sev-opt input:checked + label.critical {
+            border-color: #DC2626;
+            background: rgba(220,38,38,.08);
+            color: #DC2626;
+        }
+
+    .lk-note {
+        background: rgba(37,99,235,.05);
+        border: 1px solid rgba(37,99,235,.15);
+        border-radius: 9px;
+        padding: 11px 13px;
+        margin-bottom: 18px;
+        font-size: 11.5px;
+        color: #1D4ED8;
+        line-height: 1.5;
+    }
+
+        .lk-note.warn {
+            background: rgba(217,119,6,.06);
+            border-color: rgba(217,119,6,.2);
+            color: #B45309;
+        }
+
+    .lk-modal-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .lk-modal-btn {
+        flex: 1;
+        padding: 12px;
+        border-radius: 9px;
+        font-family: 'DM Sans', sans-serif;
+        font-size: 13.5px;
+        font-weight: 700;
+        cursor: pointer;
+        border: none;
+        transition: transform .15s;
+    }
+
+        .lk-modal-btn.submit {
+            background: #D97706;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(217,119,6,.25);
+        }
+
+            .lk-modal-btn.submit:hover {
+                transform: translateY(-1px);
+            }
+
+        .lk-modal-btn.cancel {
+            background: transparent;
+            border: 1.5px solid rgba(0,0,0,.1);
+            color: var(--sb-text-secondary, #64748B);
+        }
+</style>
+
+<div class="lk-page-header">
+    <h2><i class="fas fa-lock" style="color:#2563EB; margin-right:8px;"></i>Locker Reservation</h2>
+    <p>Select an available locker to reserve, or manage your current locker below.</p>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="lk-alert lk-alert-error">@TempData["Error"]</div>
+}
+@if (TempData["Success"] != null)
+{
+    <div class="lk-alert lk-alert-success">@TempData["Success"]</div>
+}
+
+<!-- ===== TABS ===== -->
+<div class="lk-tabs">
+    <button class="lk-tab active" data-tab="lockers" onclick="lkSwitchTab('lockers')">
+        <i class="fas fa-lock"></i> Lockers
+    </button>
+    <button class="lk-tab" data-tab="history" onclick="lkSwitchTab('history')">
+        <i class="fas fa-clock-rotate-left"></i> My History
+        @if (history.Any())
+        {
+            <span class="lk-tab-count">@history.Count</span>
+        }
+    </button>
+</div>
+
+<!-- ===== TAB: LOCKERS ===== -->
+<div class="lk-panel active" id="lk-panel-lockers">
+
+    @if (Model.Any())
+    {
+        <div class="lk-stat-row">
+            <div class="lk-availability @(availableCount == 0 ? "none" : "")">
+                <i class="fas @(availableCount > 0 ? "fa-lock-open" : "fa-circle-info")"></i>
+                @if (availableCount > 0)
+                {
+                    <text>@availableCount of @Model.Count() lockers available</text>
+                }
+                else
+                {
+                    <text>No lockers available right now</text>
+                }
+            </div>
+            @if (faultyCount > 0)
+            {
+                <div class="lk-availability faulty">
+                    <i class="fas fa-screwdriver-wrench"></i>
+                    @faultyCount under repair
+                </div>
+            }
+        </div>
+    }
+
+    <div class="lk-grid">
+        @foreach (var locker in Model)
+        {
+            bool isMine = myLockerId.HasValue && myLockerId.Value == locker.LockerId;
+            bool isFaulty = locker.OperationalStatus != "InService";
+            bool alreadyReported = openFaultIds.Contains(locker.LockerId);
+
+            // "mine" wins over "faulty" — if it's their locker they still
+            // need the manage button even while it's being repaired.
+            string state = isMine ? "mine"
+                         : isFaulty ? "faulty"
+                         : locker.IsOccupied ? "occupied"
+                         : "available";
+
+            <div class="lk-tile @state">
+
+                <div class="lk-mini-scene">
+                    <div class="lk-mini-body">
+                        <div class="lk-mini-interior">
+                            <div class="lk-mini-shelf"></div>
+                        </div>
+                        <div class="lk-mini-door">
+                            <div class="lk-mini-plate">@locker.LockerNumber</div>
+                            <div class="lk-mini-vents">
+                                <span></span><span></span><span></span>
+                            </div>
+                            <div class="lk-mini-lock">
+                                <i class="fas @(state == "available" ? "fa-lock-open" : state == "faulty" ? "fa-screwdriver-wrench" : "fa-lock")"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lk-tile-number">Locker @locker.LockerNumber</div>
+                <div class="lk-tile-location">@locker.Location</div>
+
+                @if (isMine)
+                {
+                    <span class="lk-tile-badge mine">Your Locker</span>
+                    <a href="@Url.Action("Unlock", "Locker", new { id = locker.LockerId })" class="lk-tile-btn mine">Unlock / Manage</a>
+                }
+                else if (isFaulty)
+                {
+                    <span class="lk-tile-badge faulty">@locker.OperationalStatusDisplay</span>
+                    <button class="lk-tile-btn disabled" disabled>Unavailable</button>
+                }
+                else if (locker.IsOccupied)
+                {
+                    <span class="lk-tile-badge occupied">Occupied</span>
+                    <button class="lk-tile-btn disabled" disabled>Unavailable</button>
+                }
+                else
+                {
+                    <span class="lk-tile-badge available">Available</span>
+                    <a href="@Url.Action("Reserve", "Locker", new { id = locker.LockerId })" class="lk-tile-btn available">Reserve</a>
+                }
+
+                @* Anyone can report any locker — you don't have to be holding
+                    it to notice the door is hanging off. *@
+                @if (alreadyReported)
+                {
+                    <span class="lk-report-link reported">
+                        <i class="fas fa-flag"></i> Already reported
+                    </span>
+                }
+                else
+                {
+                    <button type="button" class="lk-report-link"
+                            onclick="lkOpenReport(@locker.LockerId, '@Html.Raw(System.Web.HttpUtility.JavaScriptStringEncode(locker.LockerNumber))', @(isMine ? "true" : "false"))">
+                        <i class="fas fa-flag"></i> Report a problem
+                    </button>
+                }
+            </div>
+        }
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="lk-empty">
+            <i class="fas fa-box-open" style="font-size:28px; display:block; margin-bottom:10px; opacity:.4;"></i>
+            No lockers have been set up yet.
+        </div>
+    }
+</div>
+
+<!-- ===== TAB: HISTORY ===== -->
+<div class="lk-panel" id="lk-panel-history">
+    @if (!history.Any())
+    {
+        <div class="lk-empty">
+            <i class="fas fa-clock-rotate-left" style="font-size:28px; display:block; margin-bottom:10px; opacity:.4;"></i>
+            You haven't used any lockers yet.
+        </div>
+    }
+    else
+    {
+        <div class="lk-hist-card">
+            <table class="lk-hist-table">
+                <thead>
+                    <tr>
+                        <th>Locker</th>
+                        <th>Reserved</th>
+                        <th>Ended</th>
+                        <th>Duration</th>
+                        <th>Ended By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in history)
+                    {
+                        string duration = "—";
+                        if (r.EndedAt.HasValue)
+                        {
+                            var span = r.EndedAt.Value - r.ReservedAt;
+                            if (span.TotalHours >= 24)
+                            {
+                                duration = $"{(int)span.TotalDays}d {span.Hours}h";
+                            }
+                            else if (span.TotalMinutes >= 60)
+                            {
+                                duration = $"{(int)span.TotalHours}h {span.Minutes}m";
+                            }
+                            else
+                            {
+                                duration = $"{(int)span.TotalMinutes}m";
+                            }
+                        }
+
+                        <tr>
+                            <td>
+                                <span class="lk-hist-locker">@(r.Locker?.LockerNumber)</span>
+                                <div class="lk-hist-sub" style="margin-top:4px;">@(r.Locker?.Location)</div>
+                            </td>
+                            <td class="lk-hist-sub">@r.ReservedAt.ToString("dd MMM yyyy, HH:mm")</td>
+                            <td class="lk-hist-sub">@(r.EndedAt.HasValue ? r.EndedAt.Value.ToString("dd MMM yyyy, HH:mm") : "—")</td>
+                            <td>@duration</td>
+                            <td>
+                                @if (r.WasForceReleased)
+                                {
+                                    <span class="lk-hist-tag staff">Staff</span>
+                                    if (!string.IsNullOrEmpty(r.ForceReleaseReason))
+                                    {
+                                        <div class="lk-hist-sub" style="margin-top:4px;">@r.ForceReleaseReason</div>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="lk-hist-tag self">You</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- ===== REPORT A PROBLEM MODAL ===== -->
+<div class="lk-modal" id="lkReportModal">
+    <div class="lk-modal-box">
+        <div class="lk-modal-title">
+            <i class="fas fa-flag" style="color:#D97706;"></i> Report a Problem
+        </div>
+        <div class="lk-modal-sub">Locker <strong id="lkReportLockerNumber"></strong></div>
+
+        <div class="lk-note" id="lkReportHoldingNote" style="display:none;">
+            <i class="fas fa-triangle-exclamation"></i>
+            You're currently holding this locker. If your belongings are inside and you can't
+            get them out, mark this as <strong>Critical</strong> and speak to reception —
+            staff can arrange access.
+        </div>
+
+        @using (Html.BeginForm("Report", "LockerFault", FormMethod.Post, new { enctype = "multipart/form-data", id = "lkReportForm" }))
+        {
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="lockerId" id="lkReportLockerId" />
+
+            <div class="lk-form-group">
+                <label>What's wrong? <span style="color:#DC2626">*</span></label>
+                <select name="faultType" class="lk-select" required>
+                    <option value="">Select a problem</option>
+                    <option value="Jammed">Jammed / won't open</option>
+                    <option value="LockFaulty">Lock or PIN pad faulty</option>
+                    <option value="DoorDamaged">Door damaged</option>
+                    <option value="WontClose">Won't stay closed</option>
+                    <option value="Other">Something else</option>
+                </select>
+            </div>
+
+            <div class="lk-form-group">
+                <label>How serious is it? <span style="color:#DC2626">*</span></label>
+                <div class="lk-sev-row">
+                    <div class="lk-sev-opt">
+                        <input type="radio" name="severity" id="sevMinor" value="Minor" required />
+                        <label for="sevMinor" class="minor">Minor<small>Still usable</small></label>
+                    </div>
+                    <div class="lk-sev-opt">
+                        <input type="radio" name="severity" id="sevMajor" value="Major" />
+                        <label for="sevMajor" class="major">Major<small>Can't use it</small></label>
+                    </div>
+                    <div class="lk-sev-opt">
+                        <input type="radio" name="severity" id="sevCritical" value="Critical" />
+                        <label for="sevCritical" class="critical">Critical<small>Stuff stuck inside</small></label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lk-form-group">
+                <label>Describe the problem <span style="color:#DC2626">*</span></label>
+                <textarea name="description" class="lk-textarea" required minlength="10"
+                          placeholder="e.g. The door won't latch shut — it swings open on its own."></textarea>
+            </div>
+
+            <div class="lk-form-group">
+                <label>Photo (optional)</label>
+                <input type="file" name="photoFile" accept="image/*" class="lk-input" style="padding:9px;" />
+            </div>
+
+            <div class="lk-note">
+                <i class="fas fa-circle-info"></i>
+                Staff will review your report and decide what happens next. Reporting a locker
+                doesn't take it out of service on its own — we'll check it first.
+            </div>
+
+            <div class="lk-modal-actions">
+                <button type="submit" class="lk-modal-btn submit"><i class="fas fa-flag"></i> Submit Report</button>
+                <button type="button" class="lk-modal-btn cancel" onclick="lkCloseReport()">Cancel</button>
+            </div>
+        }
+    </div>
+</div>
+
+<script>
+    function lkSwitchTab(tab) {
+        document.querySelectorAll('.lk-panel').forEach(function (p) { p.classList.remove('active'); });
+        document.querySelectorAll('.lk-tab').forEach(function (b) { b.classList.remove('active'); });
+        document.getElementById('lk-panel-' + tab).classList.add('active');
+        document.querySelector('.lk-tab[data-tab="' + tab + '"]').classList.add('active');
+    }
+
+    function lkOpenReport(lockerId, lockerNumber, isMine) {
+        document.getElementById('lkReportLockerId').value = lockerId;
+        document.getElementById('lkReportLockerNumber').textContent = lockerNumber;
+        document.getElementById('lkReportHoldingNote').style.display = isMine ? 'block' : 'none';
+        document.getElementById('lkReportForm').reset();
+        document.getElementById('lkReportLockerId').value = lockerId; // reset() clears it
+        document.getElementById('lkReportModal').classList.add('open');
+    }
+
+    function lkCloseReport() {
+        document.getElementById('lkReportModal').classList.remove('open');
+    }
+
+    document.getElementById('lkReportModal').addEventListener('click', function (e) {
+        if (e.target === this) lkCloseReport();
+    });
+</script>

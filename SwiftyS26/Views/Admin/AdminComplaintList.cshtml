@@ -1,0 +1,375 @@
+﻿@model List<SwiftyS26.Models.ComplaintTicket>
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewBag.Title = "Complaints";
+    var statuses = ViewBag.Statuses as string[] ?? new string[0];
+    string currentFilter = ViewBag.CurrentFilter as string;
+}
+
+@section Styles {
+    <style>
+        .complaint-filter-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .filter-chip {
+            display: inline-flex;
+            align-items: center;
+            padding: 7px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            background: var(--white);
+            transition: all var(--transition);
+        }
+
+            .filter-chip:hover {
+                background: var(--bg3);
+            }
+
+            .filter-chip.active {
+                background: var(--blue);
+                color: #fff;
+                border-color: var(--blue);
+            }
+
+        .status-badge.status-submitted {
+            background: var(--blue-light);
+            color: var(--blue);
+        }
+
+        .status-badge.status-investigating {
+            background: var(--gold-light);
+            color: var(--gold);
+        }
+
+        .status-badge.status-resolved {
+            background: var(--green-light);
+            color: var(--green);
+        }
+
+        .status-badge.status-closed {
+            background: var(--purple-light);
+            color: var(--purple);
+        }
+
+        .complaint-ref {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            color: var(--muted);
+        }
+
+        .complaint-row {
+            cursor: pointer;
+        }
+
+        .complaint-detail-row td {
+            padding: 0;
+            display: none;
+            background: var(--bg3);
+        }
+
+        .complaint-detail-row.open td {
+            display: table-cell;
+            padding: 20px 22px;
+        }
+
+        .complaint-detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @@media (max-width: 780px) {
+            .complaint-detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .complaint-detail-box {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            font-size: 13px;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .complaint-detail-label {
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .evidence-link {
+            color: var(--blue);
+            font-weight: 600;
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        .complaint-update-form label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            margin: 0 0 5px;
+            color: var(--text);
+        }
+
+        .complaint-update-form .optional-tag {
+            font-weight: 400;
+            color: var(--muted);
+        }
+
+        .complaint-update-form select,
+        .complaint-update-form textarea {
+            width: 100%;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 13px;
+            padding: 9px 11px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            margin-bottom: 12px;
+        }
+
+        .complaint-update-form textarea {
+            min-height: 70px;
+            resize: vertical;
+        }
+
+        .save-msg {
+            font-size: 12px;
+            margin-top: 8px;
+            display: none;
+            font-weight: 600;
+        }
+
+            .save-msg.ok {
+                color: var(--green);
+            }
+
+            .save-msg.err {
+                color: var(--red);
+            }
+    </style>
+}
+
+<!-- ===== MAIN ===== -->
+
+    <div class="page-content">
+
+        <!-- STAT CARDS -->
+        <div class="admin-stats-grid">
+            <div class="admin-stat-card blue">
+                <div class="stat-icon"><i class="fas fa-comment-dots"></i></div>
+                <div class="stat-number">@ViewBag.TotalComplaints</div>
+                <div class="stat-label">Total</div>
+            </div>
+            <div class="admin-stat-card blue">
+                <div class="stat-icon"><i class="fas fa-paper-plane"></i></div>
+                <div class="stat-number">@ViewBag.SubmittedCount</div>
+                <div class="stat-label">Submitted</div>
+            </div>
+            <div class="admin-stat-card gold">
+                <div class="stat-icon"><i class="fas fa-magnifying-glass"></i></div>
+                <div class="stat-number">@ViewBag.InvestigatingCount</div>
+                <div class="stat-label">Investigating</div>
+            </div>
+            <div class="admin-stat-card green">
+                <div class="stat-icon"><i class="fas fa-circle-check"></i></div>
+                <div class="stat-number">@ViewBag.ResolvedCount</div>
+                <div class="stat-label">Resolved</div>
+            </div>
+            <div class="admin-stat-card purple">
+                <div class="stat-icon"><i class="fas fa-lock"></i></div>
+                <div class="stat-number">@ViewBag.ClosedCount</div>
+                <div class="stat-label">Closed</div>
+            </div>
+        </div>
+
+        <!-- FILTER CHIPS -->
+        <div class="complaint-filter-row">
+            <a class="filter-chip @(string.IsNullOrEmpty(currentFilter) ? "active" : "")"
+               href="@Url.Action("AdminComplaintList", "Admin")">All</a>
+            @foreach (var s in statuses)
+            {
+                <a class="filter-chip @(currentFilter == s ? "active" : "")"
+                   href="@Url.Action("AdminComplaintList", "Admin", new { statusFilter = s })">@s</a>
+            }
+        </div>
+
+        <!-- TABLE -->
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <div class="admin-card-title"><i class="fas fa-list"></i> Complaints</div>
+                <div class="admin-card-count">@(Model?.Count ?? 0) result@(Model != null && Model.Count == 1 ? "" : "s")</div>
+            </div>
+
+            <div class="admin-table-wrap">
+                @if (Model == null || !Model.Any())
+                {
+                    <div style="padding:48px 20px;text-align:center;color:var(--muted);font-size:13px;">
+                        No complaints match this filter.
+                    </div>
+                }
+                else
+                {
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Reference</th>
+                                <th>Member</th>
+                                <th>Category</th>
+                                <th>Submitted</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var c in Model)
+                            {
+                                var badgeClass = c.Status == "Under Investigation" ? "status-investigating"
+                                    : c.Status == "Resolved" ? "status-resolved"
+                                    : c.Status == "Closed" ? "status-closed"
+                                    : "status-submitted";
+                                <tr class="complaint-row" onclick="toggleRow(@c.ComplaintId)">
+                                    <td class="complaint-ref">@c.ReferenceNumber</td>
+                                    <td>
+                                        <div class="member-name">@(c.Member != null ? c.Member.FullName : "—")</div>
+                                        <div class="member-email">@(c.Member != null ? c.Member.MemberNumber : "")</div>
+                                    </td>
+                                    <td>@c.Category</td>
+                                    <td class="member-date">@c.SubmittedAt.ToString("dd MMM yyyy")</td>
+                                    <td><span class="status-badge @badgeClass" id="pill-@c.ComplaintId">@c.Status</span></td>
+                                </tr>
+                                <tr class="complaint-detail-row" id="detail-@c.ComplaintId">
+                                    <td colspan="5">
+                                        <div class="complaint-detail-grid">
+                                            <div>
+                                                <div class="complaint-detail-box">
+                                                    <div class="complaint-detail-label">Complaint Details</div>
+                                                    @c.Details
+                                                </div>
+                                                @if (c.HasEvidence)
+                                                {
+                                                    <div class="complaint-detail-box">
+                                                        <div class="complaint-detail-label">Evidence</div>
+                                                        <a class="evidence-link" href="@c.EvidenceFilePath" target="_blank" onclick="event.stopPropagation()">
+                                                            <i class="fas fa-paperclip"></i> @c.EvidenceFileName
+                                                        </a>
+                                                    </div>
+                                                }
+                                                @if (!string.IsNullOrWhiteSpace(c.ResolutionDetails))
+                                                {
+                                                    <div class="complaint-detail-box">
+                                                        <div class="complaint-detail-label">Current Resolution</div>
+                                                        @c.ResolutionDetails
+                                                    </div>
+                                                }
+                                            </div>
+                                            <div class="complaint-update-form" onclick="event.stopPropagation()">
+                                                <label>Status</label>
+                                                <select id="status-@c.ComplaintId">
+                                                    @foreach (var s in statuses)
+                                                    {
+                                                        if (s == c.Status)
+                                                        {
+                                                            <option value="@s" selected>@s</option>
+                                                        }
+                                                        else
+                                                        {
+                                                            <option value="@s">@s</option>
+                                                        }
+                                                    }
+                                                </select>
+
+                                                <label>Staff Comments</label>
+                                                <textarea id="comments-@c.ComplaintId" placeholder="Visible to the member">@c.StaffComments</textarea>
+
+                                                <label>Resolution Details <span class="optional-tag">(required to mark Resolved)</span></label>
+                                                <textarea id="resolution-@c.ComplaintId" placeholder="What was done to resolve this?">@c.ResolutionDetails</textarea>
+
+                                                <button class="btn-primary" onclick="saveComplaint(@c.ComplaintId, event)">
+                                                    <i class="fas fa-floppy-disk"></i> Save Update
+                                                </button>
+                                                <div class="save-msg" id="msg-@c.ComplaintId"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+
+    </div><!-- /page-content -->
+</main>
+@section Scripts {
+    <script>
+        var badgeClassMap = {
+            'Submitted': 'status-submitted',
+            'Under Investigation': 'status-investigating',
+            'Resolved': 'status-resolved',
+            'Closed': 'status-closed'
+        };
+
+        function toggleRow(id) {
+            document.getElementById('detail-' + id).classList.toggle('open');
+        }
+
+        function saveComplaint(id, evt) {
+            var status = document.getElementById('status-' + id).value;
+            var comments = document.getElementById('comments-' + id).value;
+            var resolution = document.getElementById('resolution-' + id).value;
+            var msg = document.getElementById('msg-' + id);
+            var btn = evt.currentTarget;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+            msg.style.display = 'none';
+
+            var formData = new FormData();
+            formData.append('complaintId', id);
+            formData.append('status', status);
+            formData.append('staffComments', comments);
+            formData.append('resolutionDetails', resolution);
+
+            fetch('@Url.Action("UpdateComplaintStatus", "Admin")', { method: 'POST', body: formData })
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-floppy-disk"></i> Save Update';
+                    msg.style.display = 'block';
+
+                    if (data.success) {
+                        msg.className = 'save-msg ok';
+                        msg.innerHTML = '<i class="fas fa-check"></i> Saved';
+                        var pill = document.getElementById('pill-' + id);
+                        pill.textContent = status;
+                        pill.className = 'status-badge ' + (badgeClassMap[status] || 'status-submitted');
+                    } else {
+                        msg.className = 'save-msg err';
+                        msg.textContent = data.message || 'Could not save.';
+                    }
+                })
+                .catch(function () {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-floppy-disk"></i> Save Update';
+                    msg.style.display = 'block';
+                    msg.className = 'save-msg err';
+                    msg.textContent = 'Network error. Please try again.';
+                });
+        }
+    </script>
+    }

@@ -1,0 +1,669 @@
+﻿@model List<SwiftyS26.Models.StoreOrder>
+@using System.Linq
+@using System.Collections.Generic
+
+@{
+    Layout = Session["LoggedInAdmin"] != null
+        ? "~/Views/Shared/_AdminLayout.cshtml"
+        : "~/Views/Shared/_StoreStaffLayout.cshtml";
+
+    ViewBag.Title = "Fulfil Orders";
+    ViewBag.PageTitle = "FULFIL ORDERS";
+    ViewBag.ActiveNav = "storeorders";
+
+    var orders = Model ?? new List<SwiftyS26.Models.StoreOrder>();
+
+    var readyQrImages =
+        ViewBag.ReadyQrImages as Dictionary<int, string>
+        ?? new Dictionary<int, string>();
+}
+
+<style>
+    @@keyframes ord-fade-up {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .ord-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 15px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+        .ord-header h2 {
+            margin: 0;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 28px;
+            letter-spacing: 1px;
+            color: #0f172a;
+        }
+
+        .ord-header p {
+            margin: 4px 0 0;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+    .ord-header-actions {
+        display: flex;
+        gap: 9px;
+        flex-wrap: wrap;
+    }
+
+    .ord-button {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        gap: 7px;
+        padding: 10px 15px;
+        border: 0;
+        border-radius: 9px;
+        background: #2563eb;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+        .ord-button.green {
+            background: #16a34a;
+        }
+
+        .ord-button.light {
+            border: 1px solid #dbe3ef;
+            background: #fff;
+            color: #334155;
+        }
+
+        .ord-button.small {
+            padding: 8px 11px;
+            font-size: 11px;
+        }
+
+    .ord-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        margin-bottom: 15px;
+        padding: 12px 15px;
+        border-radius: 10px;
+        font-size: 12.5px;
+        font-weight: 650;
+        line-height: 1.5;
+    }
+
+        .ord-alert.success {
+            border: 1px solid #bbf7d0;
+            background: #f0fdf4;
+            color: #15803d;
+        }
+
+        .ord-alert.error {
+            border: 1px solid #fecaca;
+            background: #fef2f2;
+            color: #b91c1c;
+        }
+
+    .ord-stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(150px, 1fr));
+        gap: 13px;
+        margin-bottom: 20px;
+    }
+
+    .ord-stat {
+        padding: 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 13px;
+        background: #fff;
+    }
+
+    .ord-stat-label {
+        color: #64748b;
+        font-size: 10.5px;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .ord-stat-value {
+        display: block;
+        margin-top: 6px;
+        color: #0f172a;
+        font-size: 25px;
+        font-weight: 850;
+    }
+
+    .ord-list {
+        display: grid;
+        gap: 14px;
+    }
+
+    .ord-card {
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        background: #fff;
+        animation: ord-fade-up .3s ease both;
+    }
+
+    .ord-card-main {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 225px;
+        min-height: 225px;
+    }
+
+    .ord-information {
+        padding: 19px 21px;
+    }
+
+    .ord-card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 15px;
+        flex-wrap: wrap;
+    }
+
+    .ord-reference {
+        font-family: 'Bebas Neue', sans-serif;
+        color: #0f172a;
+        font-size: 19px;
+        letter-spacing: .6px;
+    }
+
+    .ord-member {
+        margin-top: 3px;
+        color: #64748b;
+        font-size: 12px;
+    }
+
+    .ord-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 850;
+        text-transform: uppercase;
+    }
+
+        .ord-badge.Paid,
+        .ord-badge.Preparing {
+            background: #eff6ff;
+            color: #2563eb;
+        }
+
+        .ord-badge.ReadyForPickup {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+    .ord-items {
+        margin-bottom: 16px;
+        padding: 12px 14px;
+        border: 1px solid #edf2f7;
+        border-radius: 9px;
+        background: #f8fafc;
+    }
+
+    .ord-item {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 7px 0;
+        border-bottom: 1px solid #e2e8f0;
+        color: #334155;
+        font-size: 12.5px;
+    }
+
+        .ord-item:last-child {
+            border-bottom: 0;
+        }
+
+        .ord-item strong {
+            color: #0f172a;
+        }
+
+    .ord-meta {
+        display: flex;
+        gap: 18px;
+        flex-wrap: wrap;
+        color: #64748b;
+        font-size: 11.5px;
+    }
+
+        .ord-meta i {
+            margin-right: 4px;
+            color: #2563eb;
+        }
+
+    .ord-ready-message {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-top: 15px;
+        padding: 11px 13px;
+        border: 1px solid #bbf7d0;
+        border-radius: 9px;
+        background: #f0fdf4;
+        color: #15803d;
+        font-size: 12px;
+        font-weight: 650;
+    }
+
+    .ord-qr-panel {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 17px;
+        border-left: 1px solid #e2e8f0;
+        background: #f8fafc;
+        text-align: center;
+    }
+
+    .ord-qr-label {
+        margin-bottom: 9px;
+        color: #0f172a;
+        font-size: 11px;
+        font-weight: 850;
+        text-transform: uppercase;
+    }
+
+    .ord-qr-image {
+        width: 145px;
+        height: 145px;
+        padding: 7px;
+        border: 1px solid #dbe3ef;
+        border-radius: 10px;
+        background: #fff;
+        object-fit: contain;
+    }
+
+    .ord-qr-help {
+        max-width: 180px;
+        margin-top: 9px;
+        color: #64748b;
+        font-size: 10px;
+        line-height: 1.4;
+    }
+
+    .ord-qr-actions {
+        display: flex;
+        justify-content: center;
+        margin-top: 10px;
+    }
+
+    .ord-pickup-panel {
+        color: #16a34a;
+        text-align: center;
+    }
+
+        .ord-pickup-panel i {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 31px;
+        }
+
+        .ord-pickup-panel strong {
+            display: block;
+            font-size: 12px;
+        }
+
+        .ord-pickup-panel span {
+            display: block;
+            margin-top: 5px;
+            color: #64748b;
+            font-size: 10.5px;
+        }
+
+    .ord-empty {
+        padding: 55px 20px;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        background: #fff;
+        color: #64748b;
+        text-align: center;
+    }
+
+        .ord-empty i {
+            display: block;
+            margin-bottom: 10px;
+            color: #16a34a;
+            font-size: 31px;
+        }
+
+    @@media (max-width: 1000px) {
+        .ord-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @@media (max-width: 720px) {
+        .ord-card-main {
+            grid-template-columns: 1fr;
+        }
+
+        .ord-qr-panel {
+            border-top: 1px solid #e2e8f0;
+            border-left: 0;
+        }
+
+        .ord-header-actions {
+            width: 100%;
+        }
+
+            .ord-header-actions .ord-button {
+                flex: 1;
+            }
+    }
+
+    @@media (max-width: 520px) {
+        .ord-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .ord-header-actions {
+            flex-direction: column;
+        }
+
+            .ord-header-actions .ord-button {
+                width: 100%;
+            }
+    }
+</style>
+
+<div class="ord-header">
+    <div>
+        <h2>
+            <i class="fas fa-boxes-packing"
+               style="color:#2563eb;"></i>
+            Fulfil Orders
+        </h2>
+
+        <p>
+            Prepare paid orders, verify readiness and manage member collection.
+        </p>
+    </div>
+
+    <div class="ord-header-actions">
+        <a href="@Url.Action("ScanReadyOrder", "StoreAdmin")"
+           class="ord-button green">
+            <i class="fas fa-camera"></i>
+            Scan to Mark Ready
+        </a>
+
+        <a href="@Url.Action("ScanPickup", "StoreAdmin")"
+           class="ord-button">
+            <i class="fas fa-qrcode"></i>
+            Scan for Pickup
+        </a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="ord-alert success">
+        <i class="fas fa-circle-check"></i>
+        <div>@TempData["Success"]</div>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="ord-alert error">
+        <i class="fas fa-circle-exclamation"></i>
+        <div>@TempData["Error"]</div>
+    </div>
+}
+
+<div class="ord-stats">
+    <div class="ord-stat">
+        <span class="ord-stat-label">Preparing</span>
+        <strong class="ord-stat-value" style="color:#2563eb;">
+            @ViewBag.PreparingCount
+        </strong>
+    </div>
+
+    <div class="ord-stat">
+        <span class="ord-stat-label">Ready for Pickup</span>
+        <strong class="ord-stat-value" style="color:#16a34a;">
+            @ViewBag.ReadyCount
+        </strong>
+    </div>
+
+    <div class="ord-stat">
+        <span class="ord-stat-label">Deadline Approaching</span>
+        <strong class="ord-stat-value" style="color:#d97706;">
+            @ViewBag.ApproachingDeadlineCount
+        </strong>
+    </div>
+
+    <div class="ord-stat">
+        <span class="ord-stat-label">Uncollected Review</span>
+        <strong class="ord-stat-value" style="color:#dc2626;">
+            @ViewBag.UncollectedReviewCount
+        </strong>
+    </div>
+</div>
+
+@if (!orders.Any())
+{
+    <div class="ord-empty">
+        <i class="fas fa-circle-check"></i>
+        <strong>No orders currently require fulfilment.</strong>
+    </div>
+}
+else
+{
+    <div class="ord-list">
+        @{
+            int cardIndex = 0;
+        }
+
+        @foreach (var order in orders)
+        {
+            cardIndex++;
+
+            var items = order.Items != null
+                ? order.Items.ToList()
+                : new List<SwiftyS26.Models.StoreOrderItem>();
+
+            string readyQrImage = null;
+
+            if (readyQrImages.ContainsKey(order.StoreOrderId))
+            {
+                readyQrImage = readyQrImages[order.StoreOrderId];
+            }
+
+            <article class="ord-card"
+                     style="animation-delay:@((cardIndex * 0.04).ToString("0.00"))s;">
+                <div class="ord-card-main">
+                    <div class="ord-information">
+                        <div class="ord-card-top">
+                            <div>
+                                <div class="ord-reference">
+                                    @order.ReferenceNumber
+                                </div>
+
+                                <div class="ord-member">
+                                    @(order.Member != null
+                                        ? order.Member.FullName
+                                        : "Unknown member")
+                                    · @order.CreatedAt.ToString("dd MMM yyyy HH:mm")
+                                </div>
+                            </div>
+
+                            <span class="ord-badge @order.Status">
+                                <i class="fas fa-circle"
+                                   style="font-size:6px;"></i>
+                                @order.Status
+                            </span>
+                        </div>
+
+                        <div class="ord-items">
+                            @if (!items.Any())
+                            {
+                                <div style="color:#64748b;font-size:12px;">
+                                    No items were found.
+                                </div>
+                            }
+                            else
+                            {
+                                foreach (var item in items)
+                                {
+                                    <div class="ord-item">
+                                        <strong>
+                                            @(item.Product != null
+                                                ? item.Product.Name
+                                                : "Unavailable product")
+                                        </strong>
+
+                                        <span>&times;@item.Quantity</span>
+                                    </div>
+                                }
+                            }
+                        </div>
+
+                        <div class="ord-meta">
+                            <span>
+                                <i class="fas fa-money-bill"></i>
+                                Paid: @("R" + order.FinalTotal.ToString("F2"))
+                            </span>
+
+                            <span>
+                                <i class="fas fa-box"></i>
+                                Stock:
+                                @(order.IsPickupStockReserved
+                                    ? "Reserved"
+                                    : "Not reserved")
+                            </span>
+
+                            @if (order.PaidAt.HasValue)
+                            {
+                                <span>
+                                    <i class="fas fa-credit-card"></i>
+                                    @order.PaidAt.Value.ToString("dd MMM HH:mm")
+                                </span>
+                            }
+                        </div>
+
+                        @if (order.Status == "ReadyForPickup")
+                        {
+                            <div class="ord-ready-message">
+                                <i class="fas fa-hourglass-half"></i>
+
+                                <div>
+                                    Awaiting collection.
+
+                                    @if (order.PickupDeadline.HasValue)
+                                    {
+                                        <span>
+                                            Deadline:
+                                            @order.PickupDeadline.Value.ToString(
+                                                     "dd MMM yyyy HH:mm")
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <aside class="ord-qr-panel">
+                        @if (order.Status == "Paid" ||
+                             order.Status == "Preparing")
+                        {
+                            if (!string.IsNullOrWhiteSpace(readyQrImage))
+                            {
+                                <div class="ord-qr-label">
+                                    Preparation QR
+                                </div>
+
+                                <img class="ord-qr-image"
+                                     src="data:image/png;base64,@readyQrImage"
+                                     alt="Preparation QR for @order.ReferenceNumber" />
+
+                                <div class="ord-qr-help">
+                                    Scan this internal QR after all order items
+                                    have been prepared.
+                                </div>
+
+                                <div class="ord-qr-actions">
+                                    @using (Html.BeginForm(
+                                        "RegenerateReadyQr",
+                                        "StoreAdmin",
+                                        FormMethod.Post))
+                                    {
+                                        @Html.AntiForgeryToken()
+
+                                        <input type="hidden"
+                                               name="orderId"
+                                               value="@order.StoreOrderId" />
+
+                                        <button type="submit"
+                                                class="ord-button light small"
+                                                onclick="return confirm('Generate a new QR code? The current code will stop working.');">
+                                            <i class="fas fa-rotate"></i>
+                                            Regenerate
+                                        </button>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div style="color:#dc2626;font-size:12px;font-weight:700;">
+                                    <i class="fas fa-triangle-exclamation"></i>
+                                    Preparation QR unavailable
+                                </div>
+
+                                <div class="ord-qr-actions">
+                                    @using (Html.BeginForm(
+                                        "RegenerateReadyQr",
+                                        "StoreAdmin",
+                                        FormMethod.Post))
+                                    {
+                                        @Html.AntiForgeryToken()
+
+                                        <input type="hidden"
+                                               name="orderId"
+                                               value="@order.StoreOrderId" />
+
+                                        <button type="submit"
+                                                class="ord-button light small">
+                                            <i class="fas fa-rotate"></i>
+                                            Generate QR
+                                        </button>
+                                    }
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="ord-pickup-panel">
+                                <i class="fas fa-circle-check"></i>
+                                <strong>Ready for Pickup</strong>
+                                <span>
+                                    Use the member’s collection QR when handing
+                                    over the order.
+                                </span>
+                            </div>
+                        }
+                    </aside>
+                </div>
+            </article>
+        }
+    </div>
+}

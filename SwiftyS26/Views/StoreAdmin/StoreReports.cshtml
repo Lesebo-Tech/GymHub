@@ -1,0 +1,709 @@
+﻿@model SwiftyS26.ViewModels.StoreReportsDashboardViewModel
+@using System
+
+@{
+    Layout = Session["LoggedInAdmin"] != null
+        ? "~/Views/Shared/_AdminLayout.cshtml"
+        : "~/Views/Shared/_StoreStaffLayout.cshtml";
+
+    ViewBag.Title = "Store Reports";
+    ViewBag.PageTitle = "STORE REPORTS";
+
+    decimal collectionRate =
+        Model != null ? Model.CollectionSuccessRate : 0m;
+
+    decimal uncollectedRate =
+        Model != null ? Model.UncollectedRate : 0m;
+
+    if (collectionRate < 0)
+    {
+        collectionRate = 0;
+    }
+
+    if (collectionRate > 100)
+    {
+        collectionRate = 100;
+    }
+
+    if (uncollectedRate < 0)
+    {
+        uncollectedRate = 0;
+    }
+
+    if (uncollectedRate > 100)
+    {
+        uncollectedRate = 100;
+    }
+}
+
+<style>
+    @@keyframes sr-fade-up {
+        from {
+            opacity: 0;
+            transform: translateY(9px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .sr-page {
+        max-width: 1550px;
+        margin: 0 auto;
+    }
+
+    .sr-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 21px;
+        flex-wrap: wrap;
+    }
+
+    .sr-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .sr-title-icon {
+        color: #2563eb;
+        font-size: 29px;
+    }
+
+    .sr-title h2 {
+        margin: 0;
+        color: #0f172a;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 30px;
+        letter-spacing: 1px;
+    }
+
+    .sr-subtitle {
+        margin: 4px 0 0;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .sr-generated {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 9px 13px;
+        border: 1px solid #dbe3ef;
+        border-radius: 9px;
+        color: #64748b;
+        background: #fff;
+        font-size: 11.5px;
+        font-weight: 700;
+    }
+
+    .sr-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        padding: 12px 15px;
+        margin-bottom: 16px;
+        border: 1px solid;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .sr-alert-success {
+        color: #15803d;
+        background: #f0fdf4;
+        border-color: #bbf7d0;
+    }
+
+    .sr-alert-error {
+        color: #b91c1c;
+        background: #fef2f2;
+        border-color: #fecaca;
+    }
+
+    .sr-financial-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(190px, 1fr));
+        gap: 13px;
+        margin-bottom: 18px;
+    }
+
+    .sr-financial-card {
+        position: relative;
+        overflow: hidden;
+        min-height: 120px;
+        padding: 18px;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        background: #fff;
+        animation: sr-fade-up .3s ease both;
+    }
+
+        .sr-financial-card::after {
+            content: '';
+            position: absolute;
+            right: -25px;
+            bottom: -25px;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: currentColor;
+            opacity: .045;
+        }
+
+    .sr-financial-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        margin-bottom: 11px;
+        border-radius: 10px;
+        font-size: 15px;
+    }
+
+    .sr-revenue {
+        color: #2563eb;
+    }
+
+        .sr-revenue .sr-financial-icon {
+            color: #2563eb;
+            background: #eff6ff;
+        }
+
+    .sr-discount {
+        color: #16a34a;
+    }
+
+        .sr-discount .sr-financial-icon {
+            color: #16a34a;
+            background: #f0fdf4;
+        }
+
+    .sr-refund {
+        color: #dc2626;
+    }
+
+        .sr-refund .sr-financial-icon {
+            color: #dc2626;
+            background: #fef2f2;
+        }
+
+    .sr-financial-label {
+        display: block;
+        color: #64748b;
+        font-size: 10.5px;
+        font-weight: 800;
+        letter-spacing: .4px;
+        text-transform: uppercase;
+    }
+
+    .sr-financial-value {
+        display: block;
+        margin-top: 4px;
+        color: #0f172a;
+        font-size: 25px;
+        font-weight: 900;
+    }
+
+    .sr-stat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(150px, 1fr));
+        gap: 12px;
+        margin-bottom: 19px;
+    }
+
+    .sr-stat-card {
+        padding: 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 13px;
+        background: #fff;
+        animation: sr-fade-up .32s ease both;
+    }
+
+    .sr-stat-label {
+        color: #64748b;
+        font-size: 10.5px;
+        font-weight: 800;
+        letter-spacing: .35px;
+        text-transform: uppercase;
+    }
+
+    .sr-stat-value {
+        margin-top: 6px;
+        color: #0f172a;
+        font-size: 24px;
+        font-weight: 900;
+    }
+
+    .sr-stat-detail {
+        margin-top: 3px;
+        color: #94a3b8;
+        font-size: 10.5px;
+    }
+
+    .sr-section-title {
+        margin: 0 0 11px;
+        color: #0f172a;
+        font-size: 15px;
+        font-weight: 900;
+    }
+
+    .sr-report-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(230px, 1fr));
+        gap: 14px;
+        margin-bottom: 19px;
+    }
+
+    .sr-report-card {
+        position: relative;
+        display: flex;
+        min-height: 210px;
+        padding: 20px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        border-radius: 15px;
+        color: #334155;
+        background: #fff;
+        text-decoration: none;
+        transition: .22s ease;
+        animation: sr-fade-up .35s ease both;
+        flex-direction: column;
+    }
+
+        .sr-report-card:hover {
+            border-color: #bfdbfe;
+            color: #334155;
+            box-shadow: 0 14px 35px rgba(37, 99, 235, .1);
+            text-decoration: none;
+            transform: translateY(-3px);
+        }
+
+    .sr-report-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 45px;
+        height: 45px;
+        margin-bottom: 15px;
+        border-radius: 12px;
+        color: #2563eb;
+        background: #eff6ff;
+        font-size: 19px;
+    }
+
+    .sr-report-name {
+        color: #0f172a;
+        font-size: 16px;
+        font-weight: 900;
+    }
+
+    .sr-report-description {
+        margin-top: 7px;
+        color: #64748b;
+        font-size: 12px;
+        line-height: 1.55;
+    }
+
+    .sr-report-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: auto;
+        padding-top: 17px;
+        color: #2563eb;
+        font-size: 11.5px;
+        font-weight: 900;
+    }
+
+    .sr-analysis-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(280px, 1fr));
+        gap: 14px;
+    }
+
+    .sr-analysis-card {
+        padding: 18px;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        background: #fff;
+    }
+
+    .sr-analysis-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #0f172a;
+        font-size: 13px;
+        font-weight: 900;
+    }
+
+        .sr-analysis-title i {
+            color: #2563eb;
+        }
+
+    .sr-rate-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 16px;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+        .sr-rate-row strong {
+            color: #0f172a;
+        }
+
+    .sr-progress {
+        height: 9px;
+        margin-top: 7px;
+        overflow: hidden;
+        border-radius: 20px;
+        background: #e2e8f0;
+    }
+
+    .sr-progress-bar {
+        height: 100%;
+        border-radius: 20px;
+    }
+
+    .sr-progress-success {
+        background: #16a34a;
+    }
+
+    .sr-progress-danger {
+        background: #dc2626;
+    }
+
+    .sr-time-value {
+        margin-top: 13px;
+        color: #0f172a;
+        font-size: 30px;
+        font-weight: 900;
+    }
+
+        .sr-time-value span {
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+    .sr-time-description {
+        margin-top: 5px;
+        color: #64748b;
+        font-size: 11.5px;
+        line-height: 1.5;
+    }
+
+    @@media (max-width: 1050px) {
+        .sr-stat-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .sr-report-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 760px) {
+        .sr-financial-grid,
+        .sr-analysis-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 520px) {
+        .sr-header {
+            flex-direction: column;
+        }
+
+        .sr-generated {
+            width: 100%;
+            box-sizing: border-box;
+            justify-content: center;
+        }
+
+        .sr-stat-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="sr-page">
+    <div class="sr-header">
+        <div>
+            <div class="sr-title">
+                <i class="fas fa-chart-column sr-title-icon"></i>
+                <h2>Store Reports and Audit</h2>
+            </div>
+
+            <p class="sr-subtitle">
+                Review store orders, collection outcomes and inventory
+                movements from one reporting centre.
+            </p>
+        </div>
+
+        <div class="sr-generated">
+            <i class="fas fa-clock"></i>
+
+            Generated
+            @Model.GeneratedAt.ToString("dd MMM yyyy, HH:mm")
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="sr-alert sr-alert-success">
+            <i class="fas fa-circle-check"></i>
+            <span>@TempData["Success"]</span>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="sr-alert sr-alert-error">
+            <i class="fas fa-circle-exclamation"></i>
+            <span>@TempData["Error"]</span>
+        </div>
+    }
+
+    <div class="sr-financial-grid">
+        <div class="sr-financial-card sr-revenue">
+            <div class="sr-financial-icon">
+                <i class="fas fa-coins"></i>
+            </div>
+
+            <span class="sr-financial-label">
+                Recorded store revenue
+            </span>
+
+            <strong class="sr-financial-value">
+                @("R" + Model.TotalStoreRevenue.ToString("N2"))
+            </strong>
+        </div>
+
+        <div class="sr-financial-card sr-discount">
+            <div class="sr-financial-icon">
+                <i class="fas fa-crown"></i>
+            </div>
+
+            <span class="sr-financial-label">
+                Premium discounts granted
+            </span>
+
+            <strong class="sr-financial-value">
+                @("R" + Model.TotalDiscountsGranted.ToString("N2"))
+            </strong>
+        </div>
+
+        <div class="sr-financial-card sr-refund">
+            <div class="sr-financial-icon">
+                <i class="fas fa-money-bill-transfer"></i>
+            </div>
+
+            <span class="sr-financial-label">
+                Return refunds recorded
+            </span>
+
+            <strong class="sr-financial-value">
+                @("R" + Model.TotalRefunds.ToString("N2"))
+            </strong>
+        </div>
+    </div>
+
+    <div class="sr-stat-grid">
+        <div class="sr-stat-card">
+            <div class="sr-stat-label">Total orders</div>
+            <div class="sr-stat-value">@Model.TotalOrders</div>
+            <div class="sr-stat-detail">All store-order records</div>
+        </div>
+
+        <div class="sr-stat-card">
+            <div class="sr-stat-label">Collected orders</div>
+            <div class="sr-stat-value">@Model.CollectedOrders</div>
+            <div class="sr-stat-detail">Successfully handed to members</div>
+        </div>
+
+        <div class="sr-stat-card">
+            <div class="sr-stat-label">Ready for pickup</div>
+            <div class="sr-stat-value">@Model.ReadyForPickupOrders</div>
+            <div class="sr-stat-detail">Currently awaiting collection</div>
+        </div>
+
+        <div class="sr-stat-card">
+            <div class="sr-stat-label">Uncollected orders</div>
+            <div class="sr-stat-value">@Model.UncollectedOrders</div>
+            <div class="sr-stat-detail">All uncollected outcomes</div>
+        </div>
+
+        <div class="sr-stat-card">
+            <div class="sr-stat-label">Collection events</div>
+            <div class="sr-stat-value">@Model.TotalCollectionEvents</div>
+            <div class="sr-stat-detail">Recorded audit timeline entries</div>
+        </div>
+
+        <div class="sr-stat-card">
+            <div class="sr-stat-label">Inventory movements</div>
+            <div class="sr-stat-value">@Model.TotalInventoryMovements</div>
+            <div class="sr-stat-detail">Recorded stock changes</div>
+        </div>
+    </div>
+
+    <h3 class="sr-section-title">
+        Reporting Registers
+    </h3>
+
+    <div class="sr-report-grid">
+        <a class="sr-report-card"
+           href="@Url.Action("OrderHistory", "StoreAdmin")">
+
+            <div class="sr-report-icon">
+                <i class="fas fa-receipt"></i>
+            </div>
+
+            <div class="sr-report-name">
+                Order History
+            </div>
+
+            <div class="sr-report-description">
+                View every store order with member information, products,
+                payment references, premium discounts, totals and final
+                order status.
+            </div>
+
+            <div class="sr-report-footer">
+                <span>@Model.TotalOrders records</span>
+
+                <span>
+                    Open report
+                    <i class="fas fa-arrow-right"></i>
+                </span>
+            </div>
+        </a>
+
+        <a class="sr-report-card"
+           href="@Url.Action("CollectionHistory", "StoreAdmin")">
+
+            <div class="sr-report-icon">
+                <i class="fas fa-box-open"></i>
+            </div>
+
+            <div class="sr-report-name">
+                Collection History
+            </div>
+
+            <div class="sr-report-description">
+                Audit ready dates, collection deadlines, reminders,
+                signatures, staff handling, completed pickups and
+                uncollected outcomes.
+            </div>
+
+            <div class="sr-report-footer">
+                <span>
+                    @Model.CollectedOrders collected
+                </span>
+
+                <span>
+                    Open report
+                    <i class="fas fa-arrow-right"></i>
+                </span>
+            </div>
+        </a>
+
+        <a class="sr-report-card"
+           href="@Url.Action(
+               "InventoryMovementHistory",
+               "StoreAdmin")">
+
+            <div class="sr-report-icon">
+                <i class="fas fa-boxes-stacked"></i>
+            </div>
+
+            <div class="sr-report-name">
+                Inventory Movement History
+            </div>
+
+            <div class="sr-report-description">
+                Trace every stock increase and decrease back to its order,
+                supplier delivery, return, exchange, write-off or manual
+                adjustment.
+            </div>
+
+            <div class="sr-report-footer">
+                <span>
+                    @Model.TotalInventoryMovements movements
+                </span>
+
+                <span>
+                    Open report
+                    <i class="fas fa-arrow-right"></i>
+                </span>
+            </div>
+        </a>
+    </div>
+
+    <h3 class="sr-section-title">
+        Collection Performance
+    </h3>
+
+    <div class="sr-analysis-grid">
+        <div class="sr-analysis-card">
+            <div class="sr-analysis-title">
+                <i class="fas fa-chart-pie"></i>
+                Collection Outcomes
+            </div>
+
+            <div class="sr-rate-row">
+                <span>Successful collection rate</span>
+                <strong>
+                    @Model.CollectionSuccessRate.ToString("N2")%
+                </strong>
+            </div>
+
+            <div class="sr-progress">
+                <div class="sr-progress-bar sr-progress-success"
+                     style="width:@collectionRate.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%;">
+                </div>
+            </div>
+
+            <div class="sr-rate-row">
+                <span>Uncollected rate</span>
+                <strong>
+                    @Model.UncollectedRate.ToString("N2")%
+                </strong>
+            </div>
+
+            <div class="sr-progress">
+                <div class="sr-progress-bar sr-progress-danger"
+                     style="width:@uncollectedRate.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)%;">
+                </div>
+            </div>
+        </div>
+
+        <div class="sr-analysis-card">
+            <div class="sr-analysis-title">
+                <i class="fas fa-stopwatch"></i>
+                Average Collection Time
+            </div>
+
+            <div class="sr-time-value">
+                @Model.AverageCollectionHours.ToString("N1")
+                <span>hours</span>
+            </div>
+
+            <div class="sr-time-description">
+                Average elapsed time between an order being marked ready
+                and the member successfully collecting it.
+            </div>
+        </div>
+    </div>
+</div>

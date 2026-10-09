@@ -1,0 +1,358 @@
+﻿@model SwiftyS26.ViewModels.UncollectedOrdersPageViewModel
+@using System.Linq
+
+@{
+    Layout = Session["LoggedInAdmin"] != null
+        ? "~/Views/Shared/_AdminLayout.cshtml"
+        : "~/Views/Shared/_StoreStaffLayout.cshtml";
+
+    ViewBag.Title = "Uncollected Orders";
+    ViewBag.PageTitle = "UNCOLLECTED ORDERS";
+}
+
+<style>
+    .uo-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+        .uo-head h2 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 28px;
+            letter-spacing: 1px;
+            margin: 0;
+            color: #0f172a;
+        }
+
+        .uo-head p {
+            margin: 4px 0 0;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+    .uo-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 10px 16px;
+        border: 0;
+        border-radius: 9px;
+        font-weight: 800;
+        font-size: 12.5px;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+        .uo-btn.primary {
+            background: #2563eb;
+            color: #fff;
+        }
+
+        .uo-btn.light {
+            background: #fff;
+            color: #334155;
+            border: 1px solid #dbe3ef;
+        }
+
+    .uo-alert {
+        padding: 12px 15px;
+        border-radius: 10px;
+        margin-bottom: 14px;
+        font-weight: 700;
+        font-size: 13px;
+    }
+
+        .uo-alert.ok {
+            background: #f0fdf4;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+        }
+
+        .uo-alert.bad {
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+
+    .uo-stats {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(150px, 1fr));
+        gap: 12px;
+        margin-bottom: 18px;
+    }
+
+    .uo-stat {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 13px;
+        padding: 16px;
+    }
+
+        .uo-stat span {
+            display: block;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+        }
+
+        .uo-stat strong {
+            display: block;
+            font-size: 25px;
+            margin-top: 6px;
+            color: #0f172a;
+        }
+
+    .uo-filter {
+        display: grid;
+        grid-template-columns: 2fr 1fr auto;
+        gap: 10px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 13px;
+        padding: 14px;
+        margin-bottom: 18px;
+    }
+
+    .uo-input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px 12px;
+        border: 1px solid #dbe3ef;
+        border-radius: 8px;
+        background: #fff;
+        color: #0f172a;
+        font-size: 13px;
+    }
+
+    .uo-table-wrap {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        overflow: auto;
+    }
+
+    .uo-table {
+        width: 100%;
+        min-width: 1050px;
+        border-collapse: collapse;
+        font-size: 12.5px;
+    }
+
+        .uo-table th {
+            padding: 11px 13px;
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 10px;
+            text-transform: uppercase;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .uo-table td {
+            padding: 13px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+
+        .uo-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+    .uo-ref {
+        font-weight: 900;
+        color: #0f172a;
+    }
+
+    .uo-muted {
+        color: #64748b;
+        font-size: 11.5px;
+        margin-top: 3px;
+    }
+
+    .uo-badge {
+        display: inline-flex;
+        padding: 4px 9px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+        .uo-badge.ready {
+            background: #eff6ff;
+            color: #2563eb;
+        }
+
+        .uo-badge.review {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .uo-badge.pending {
+            background: #faf5ff;
+            color: #9333ea;
+        }
+
+        .uo-badge.done {
+            background: #f0fdf4;
+            color: #16a34a;
+        }
+
+    .uo-empty {
+        text-align: center;
+        padding: 55px 20px;
+        color: #64748b;
+    }
+
+    @@media (max-width: 1000px) {
+        .uo-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @@media (max-width: 650px) {
+        .uo-filter {
+            grid-template-columns: 1fr;
+        }
+
+        .uo-stats {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="uo-head">
+    <div>
+        <h2><i class="fas fa-clock-rotate-left" style="color:#2563eb"></i> Manage Uncollected Orders</h2>
+        <p>Monitor collection deadlines, released stock and cases requiring Admin resolution.</p>
+    </div>
+
+    @using (Html.BeginForm("ProcessDueUncollectedOrders", "StoreAdmin", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+        <button class="uo-btn primary" type="submit"><i class="fas fa-rotate"></i> Process Due Orders</button>
+    }
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="uo-alert ok">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="uo-alert bad">@TempData["Error"]</div>
+}
+
+<div class="uo-stats">
+    <div class="uo-stat">
+        <span>Approaching deadline</span>
+        <strong>@Model.ApproachingDeadlineCount</strong>
+    </div>
+    <div class="uo-stat">
+        <span>Overdue</span>
+        <strong>@Model.OverdueCount</strong>
+    </div>
+    <div class="uo-stat">
+        <span>Awaiting review</span>
+        <strong>@Model.AwaitingReviewCount</strong>
+    </div>
+    <div class="uo-stat">
+        <span>Refund pending</span>
+        <strong>@Model.RefundPendingCount</strong>
+    </div>
+    <div class="uo-stat">
+        <span>Resolved this month</span>
+        <strong>@Model.ResolvedThisMonthCount</strong>
+    </div>
+</div>
+
+@using (Html.BeginForm("UncollectedOrders", "StoreAdmin", FormMethod.Get, new { @class = "uo-filter" }))
+{
+    <input class="uo-input" name="search" value="@Model.Search" placeholder="Search order reference, member or email" />
+
+    @Html.DropDownList("status", new SelectList(new[]
+    {
+        new { Value = "", Text = "All statuses" },
+        new { Value = "ReadyForPickup", Text = "Ready for pickup" },
+        new { Value = "UncollectedPendingReview", Text = "Awaiting review" },
+        new { Value = "UncollectedRefundPending", Text = "Refund pending" },
+        new { Value = "UncollectedRefunded", Text = "Refunded" },
+        new { Value = "UncollectedResolved", Text = "Resolved" }
+    }, "Value", "Text", Model.Status), new { @class = "uo-input" })
+
+    <button class="uo-btn light" type="submit"><i class="fas fa-filter"></i> Apply</button>
+}
+
+<div class="uo-table-wrap">
+    @if (!Model.Orders.Any())
+    {
+        <div class="uo-empty">
+            <i class="fas fa-check-circle" style="font-size:32px;color:#16a34a"></i>
+            <div style="margin-top:10px;font-weight:700">No matching collection cases.</div>
+        </div>
+    }
+    else
+    {
+        <table class="uo-table">
+            <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Member</th>
+                    <th>Amount Paid</th>
+                    <th>Ready</th>
+                    <th>Deadline</th>
+                    <th>Reminder</th>
+                    <th>Stock</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var o in Model.Orders)
+                {
+                    var badge = o.Status == "ReadyForPickup" ? "ready"
+                        : o.Status == "UncollectedPendingReview" ? "review"
+                        : o.Status == "UncollectedRefundPending" ? "pending"
+                        : "done";
+
+                    var reminder = o.FinalReminderSentAt.HasValue ? "Final sent"
+                        : o.FirstReminderSentAt.HasValue ? "First sent"
+                        : "Not sent";
+
+                    <tr>
+                        <td>
+                            <div class="uo-ref">@o.ReferenceNumber</div>
+                            <div class="uo-muted">@o.CreatedAt.ToString("dd MMM yyyy")</div>
+                        </td>
+                        <td>
+                            <strong>@(o.Member?.FullName)</strong>
+                            <div class="uo-muted">@(o.Member?.Email)</div>
+                        </td>
+                        <td>
+                            <strong>@("R" + o.FinalTotal.ToString("F2"))</strong>
+                            @if (o.DiscountAmount > 0)
+                            {
+                                <div class="uo-muted">
+                                    Discount @("-R" + o.DiscountAmount.ToString("F2"))
+                                </div>
+                            }
+                        </td>
+                        <td>@(o.ReadyAt?.ToString("dd MMM HH:mm") ?? "—")</td>
+                        <td>@(o.PickupDeadline?.ToString("dd MMM HH:mm") ?? "—")</td>
+                        <td>@reminder</td>
+                        <td>@(o.IsPickupStockReserved ? "Reserved" : "Released")</td>
+                        <td><span class="uo-badge @badge">@o.Status</span></td>
+                        <td><a class="uo-btn light" href="@Url.Action("ReviewUncollectedOrder", "StoreAdmin", new { id = o.StoreOrderId })">Review</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

@@ -1,0 +1,296 @@
+﻿@model SwiftyS26.Models.MemberForm
+@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.ActivePage = "membership";
+    ViewBag.PageTitle = "Membership";
+    string nextBillingDate = ViewBag.NextBillingDate ?? "—";
+}
+
+@section head {
+    <link href="~/Content/membership.css" rel="stylesheet" />
+}
+
+<div class="section-header">
+    <div class="section-title">Membership</div>
+    <div class="section-sub">Manage your plan or cancel your membership</div>
+</div>
+
+<!-- Current Plan Card -->
+<div class="dash-card current-plan-card">
+    <div class="current-plan-header">
+        <div>
+            <div class="current-plan-label">
+                <i class="fas fa-crown"></i> Current Plan
+            </div>
+            <div class="current-plan-name">@Model.Plan.ToUpper()</div>
+        </div>
+        <div class="current-plan-price">
+            <span class="price-curr">R</span>
+            <span class="price-big">@Model.MonthlyFee</span>
+            <span class="price-per">/month</span>
+        </div>
+    </div>
+    <div class="plan-meta-grid">
+        <div class="plan-meta-item">
+            <div class="plan-meta-label"><i class="fas fa-calendar-alt"></i> Member Since</div>
+            <div class="plan-meta-value">@Model.RegisteredAt.ToString("dd MMM yyyy")</div>
+        </div>
+        <div class="plan-meta-item">
+            <div class="plan-meta-label"><i class="fas fa-calendar-check"></i> Next Billing</div>
+            <div class="plan-meta-value">@nextBillingDate</div>
+        </div>
+        <div class="plan-meta-item">
+            <div class="plan-meta-label"><i class="fas fa-qrcode"></i> Member ID</div>
+            <div class="plan-meta-value gold">@Model.MemberNumber</div>
+        </div>
+        <div class="plan-meta-item">
+            <div class="plan-meta-label"><i class="fas fa-flag-checkered"></i> Status</div>
+            <div class="plan-meta-value @(Model.Status == "Active" ? "status-active" : "status-suspended")">@Model.Status</div>
+        </div>
+    </div>
+</div>
+
+<!-- Plan Features -->
+<div class="dash-card">
+    <div class="card-title"><i class="fas fa-list-check"></i> What's Included in Your Plan</div>
+    <div class="features-grid">
+        @if (Model.Plan.ToLower() == "basic")
+        {
+            <div class="feat yes"><i class="fas fa-check"></i> Gym floor access</div>
+            <div class="feat yes"><i class="fas fa-check"></i> Free weights &amp; machines</div>
+            <div class="feat yes"><i class="fas fa-check"></i> Locker room access</div>
+            <div class="feat yes"><i class="fas fa-check"></i> 1 guest pass / month</div>
+            <div class="feat no"><i class="fas fa-times"></i> Group classes</div>
+            <div class="feat no"><i class="fas fa-times"></i> Personal trainer sessions</div>
+        }
+        else if (Model.Plan.ToLower() == "standard")
+        {
+            <div class="feat yes"><i class="fas fa-check"></i> Full gym floor access</div>
+            <div class="feat yes"><i class="fas fa-check"></i> Unlimited group classes</div>
+            <div class="feat yes"><i class="fas fa-check"></i> Nutrition guide access</div>
+            <div class="feat yes"><i class="fas fa-check"></i> 3 guest passes / month</div>
+            <div class="feat yes"><i class="fas fa-check"></i> Progress tracking</div>
+            <div class="feat no"><i class="fas fa-times"></i> Personal trainer sessions</div>
+        }
+        else
+        {
+            <div class="feat yes"><i class="fas fa-check"></i> Everything in Standard</div>
+            <div class="feat yes"><i class="fas fa-check"></i> 2 PT sessions / month</div>
+            <div class="feat yes"><i class="fas fa-check"></i> Custom workout plan</div>
+            <div class="feat yes"><i class="fas fa-check"></i> Unlimited guest passes</div>
+            <div class="feat yes"><i class="fas fa-check"></i> Priority class booking</div>
+            <div class="feat yes"><i class="fas fa-check"></i> Spa &amp; sauna access</div>
+        }
+    </div>
+</div>
+
+@if (Model.Status == "Active")
+{
+    <!-- Change Plan Section -->
+    <div class="dash-card">
+        <div class="card-title"><i class="fas fa-arrows-spin"></i> Change Your Plan</div>
+        <p class="card-desc">Select a new plan. Changes take effect immediately.</p>
+        <div class="plan-cards-grid">
+            <!-- BASIC PLAN -->
+            <div class="plan-option-card @(Model.Plan.ToLower() == "basic" ? "current" : "")">
+                @if (Model.Plan.ToLower() == "basic")
+                {
+                    <div class="plan-option-badge badge-current"><i class="fas fa-check"></i> Current Plan</div>
+                }
+                else
+                {
+                    <div class="plan-option-badge">@(199 > (int)Model.MonthlyFee ? "Upgrade" : "Downgrade")</div>
+                }
+                <div class="plan-option-name">BASIC</div>
+                <div class="plan-option-price">R199<span>/mo</span></div>
+                <ul class="plan-option-features">
+                    <li><i class="fas fa-check-circle"></i> Gym floor access</li>
+                    <li><i class="fas fa-check-circle"></i> Free weights &amp; machines</li>
+                    <li><i class="fas fa-check-circle"></i> Locker room access</li>
+                    <li><i class="fas fa-check-circle"></i> 1 guest pass / month</li>
+                    <li class="no"><i class="fas fa-times-circle"></i> Group classes</li>
+                    <li class="no"><i class="fas fa-times-circle"></i> Personal trainer</li>
+                </ul>
+                @if (Model.Plan.ToLower() != "basic")
+                {
+                    <button class="plan-option-btn @(199 < (int)Model.MonthlyFee ? "downgrade" : "upgrade")" onclick="openPlanModal('basic',199,'@(199 < (int)Model.MonthlyFee ? "Downgrade" : "Upgrade")')">
+                        @(199 < (int)Model.MonthlyFee ? "Downgrade to Basic" : "Upgrade to Basic")
+                    </button>
+                }
+                else
+                {
+                    <button class="plan-option-btn current-btn" disabled><i class="fas fa-check"></i> Your Current Plan</button>
+                }
+            </div>
+
+            <!-- STANDARD PLAN -->
+            <div class="plan-option-card popular @(Model.Plan.ToLower() == "standard" ? "current" : "")">
+                <div class="plan-popular-tag"><i class="fas fa-fire"></i> Most Popular</div>
+                @if (Model.Plan.ToLower() == "standard")
+                {
+                    <div class="plan-option-badge badge-current"><i class="fas fa-check"></i> Current Plan</div>
+                }
+                else
+                {
+                    <div class="plan-option-badge">@(399 > (int)Model.MonthlyFee ? "Upgrade" : "Downgrade")</div>
+                }
+                <div class="plan-option-name">STANDARD</div>
+                <div class="plan-option-price">R399<span>/mo</span></div>
+                <ul class="plan-option-features">
+                    <li><i class="fas fa-check-circle"></i> Full gym floor access</li>
+                    <li><i class="fas fa-check-circle"></i> Unlimited group classes</li>
+                    <li><i class="fas fa-check-circle"></i> Nutrition guide access</li>
+                    <li><i class="fas fa-check-circle"></i> 3 guest passes / month</li>
+                    <li><i class="fas fa-check-circle"></i> Progress tracking</li>
+                    <li class="no"><i class="fas fa-times-circle"></i> Personal trainer</li>
+                </ul>
+                @if (Model.Plan.ToLower() != "standard")
+                {
+                    <button class="plan-option-btn @(399 > (int)Model.MonthlyFee ? "upgrade" : "downgrade")" onclick="openPlanModal('standard',399,'@(399 > (int)Model.MonthlyFee ? "Upgrade" : "Downgrade")')">
+                        @(399 > (int)Model.MonthlyFee ? "Upgrade to Standard" : "Downgrade to Standard")
+                    </button>
+                }
+                else
+                {
+                    <button class="plan-option-btn current-btn" disabled><i class="fas fa-check"></i> Your Current Plan</button>
+                }
+            </div>
+
+            <!-- PREMIUM PLAN -->
+            <div class="plan-option-card @(Model.Plan.ToLower() == "premium" ? "current" : "")">
+                @if (Model.Plan.ToLower() == "premium")
+                {
+                    <div class="plan-option-badge badge-current"><i class="fas fa-check"></i> Current Plan</div>
+                }
+                else
+                {
+                    <div class="plan-option-badge">Upgrade</div>
+                }
+                <div class="plan-option-name">PREMIUM</div>
+                <div class="plan-option-price">R699<span>/mo</span></div>
+                <ul class="plan-option-features">
+                    <li><i class="fas fa-check-circle"></i> Everything in Standard</li>
+                    <li><i class="fas fa-check-circle"></i> 2 PT sessions / month</li>
+                    <li><i class="fas fa-check-circle"></i> Custom workout plan</li>
+                    <li><i class="fas fa-check-circle"></i> Unlimited guest passes</li>
+                    <li><i class="fas fa-check-circle"></i> Priority class booking</li>
+                    <li><i class="fas fa-check-circle"></i> Spa &amp; sauna access</li>
+                </ul>
+                @if (Model.Plan.ToLower() != "premium")
+                {
+                    <button class="plan-option-btn upgrade" onclick="openPlanModal('premium',699,'Upgrade')">Upgrade to Premium</button>
+                }
+                else
+                {
+                    <button class="plan-option-btn current-btn" disabled><i class="fas fa-check"></i> Your Current Plan</button>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Cancel Membership Section -->
+    <div class="dash-card cancel-card">
+        <div class="cancel-content">
+            <div class="cancel-info">
+                <div class="card-title cancel-title"><i class="fas fa-trash-alt"></i> Cancel Membership</div>
+                <p class="cancel-desc">
+                    <strong><i class="fas fa-clock"></i> Within 7 days of joining:</strong> Cancelled immediately with a full refund of <strong>R@((Model.MonthlyFee + 150).ToString("F2"))</strong> within 5–7 business days.<br />
+                    <strong><i class="fas fa-calendar"></i> After 7 days:</strong> Access continues until <strong>@nextBillingDate</strong>, then no further payments.
+                </p>
+            </div>
+            <button class="btn-cancel-membership" onclick="openCancelModal()">
+                <i class="fas fa-times-circle"></i> Cancel Membership
+            </button>
+        </div>
+    </div>
+}
+else if (Model.Status == "Pending Cancellation")
+{
+    <div class="dash-card status-card pending-cancel">
+        <div class="status-icon"><i class="fas fa-clock"></i></div>
+        <div class="status-info">
+            <div class="status-title">Cancellation Pending</div>
+            <p class="status-desc">Full access until <strong>@nextBillingDate</strong>. No further payments. Contact support to reverse.</p>
+        </div>
+    </div>
+}
+else if (Model.Status == "Cancelled")
+{
+    <div class="dash-card status-card cancelled">
+        <div class="status-icon"><i class="fas fa-ban"></i></div>
+        <div class="status-info">
+            <div class="status-title">Membership Cancelled</div>
+            <p class="status-desc">To rejoin GymHub, <a href="/Forms/Register">register a new account</a> or contact info@gymhub.co.za.</p>
+        </div>
+    </div>
+}
+else if (Model.Status == "Suspended")
+{
+    <div class="dash-card status-card suspended">
+        <div class="status-icon"><i class="fas fa-exclamation-triangle"></i></div>
+        <div class="status-info">
+            <div class="status-title">Membership Suspended</div>
+            <p class="status-desc">Contact support at <strong>info@gymhub.co.za</strong> to reactivate.</p>
+        </div>
+    </div>
+}
+else if (Model.Status == "Frozen")
+{
+    <div class="dash-card status-card frozen">
+        <div class="status-icon"><i class="fas fa-snowflake"></i></div>
+        <div class="status-info">
+            <div class="status-title">Membership Frozen</div>
+            <p class="status-desc">
+                Your membership is currently frozen. Gym access is paused until the freeze ends. See the
+                <a href="/Dashboard/Freeze">Freeze section</a> for details.
+            </p>
+        </div>
+    </div>
+}
+
+<!-- Plan Change Modal -->
+<div class="modal-overlay" id="planModal" onclick="if(event.target===this) closePlanModal()">
+    <div class="modal-card">
+        <div class="modal-icon" id="modalIcon">🔄</div>
+        <div class="modal-title" id="modalTitle">Upgrade Plan</div>
+        <div class="modal-body" id="modalBody"></div>
+        <div class="modal-notice">
+            <i class="fas fa-info-circle"></i> Your new plan takes effect from <strong id="modalEffectiveDate">@nextBillingDate</strong>.
+        </div>
+        <div id="plan-modal-error" class="modal-error" style="display: none;"></div>
+        <div class="modal-btn-row">
+            <button class="modal-btn-confirm" id="modalConfirmBtn" onclick="confirmPlanChange()">Confirm</button>
+            <button class="modal-btn-cancel" onclick="closePlanModal()">Keep Current Plan</button>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Modal -->
+<div class="modal-overlay" id="cancelModal" onclick="if(event.target===this) closeCancelModal()">
+    <div class="modal-card">
+        <div class="modal-icon warning">⚠️</div>
+        <div class="modal-title warning">Cancel Membership</div>
+        <div class="modal-body">
+            Are you sure you want to cancel your <strong>@Model.Plan.ToUpper()</strong> membership?
+            Access continues until <strong>@nextBillingDate</strong>, then your account closes.
+        </div>
+        <div class="modal-notice warning">
+            <i class="fas fa-exclamation-triangle"></i> This cannot be undone. You'll need to register again to rejoin.
+        </div>
+        <div id="cancel-modal-error" class="modal-error" style="display: none;"></div>
+        <div class="modal-btn-row">
+            <button class="modal-btn-confirm danger" id="cancelConfirmBtn" onclick="confirmCancellation()">Yes, Cancel My Membership</button>
+            <button class="modal-btn-cancel" onclick="closeCancelModal()">Keep My Membership</button>
+        </div>
+    </div>
+</div>
+
+@section scripts {
+    <script>
+    // Extend memberInfo with plan change data
+    var memberInfo = memberInfo || {};
+    memberInfo.plan = '@Model.Plan';
+    memberInfo.monthlyFee = @Model.MonthlyFee;
+    memberInfo.nextBillingDate = '@nextBillingDate';
+    </script>
+}

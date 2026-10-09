@@ -1,0 +1,1043 @@
+﻿@model SwiftyS26.ViewModels.OrderHistoryPageViewModel
+@using System
+@using System.Linq
+@using System.Globalization
+
+@{
+    Layout = Session["LoggedInAdmin"] != null
+        ? "~/Views/Shared/_AdminLayout.cshtml"
+        : "~/Views/Shared/_StoreStaffLayout.cshtml";
+
+    ViewBag.Title = "Order History";
+    ViewBag.PageTitle = "ORDER HISTORY";
+
+    var orders = Model != null && Model.Orders != null
+        ? Model.Orders
+        : new List<SwiftyS26.Models.StoreOrder>();
+
+    string fromDateValue = Model != null && Model.FromDate.HasValue
+        ? Model.FromDate.Value.ToString("yyyy-MM-dd")
+        : "";
+
+    string toDateValue = Model != null && Model.ToDate.HasValue
+        ? Model.ToDate.Value.ToString("yyyy-MM-dd")
+        : "";
+
+    string minimumAmountValue =
+        Model != null && Model.MinimumAmount.HasValue
+            ? Model.MinimumAmount.Value.ToString(
+                "0.00",
+                CultureInfo.InvariantCulture)
+            : "";
+
+    string maximumAmountValue =
+        Model != null && Model.MaximumAmount.HasValue
+            ? Model.MaximumAmount.Value.ToString(
+                "0.00",
+                CultureInfo.InvariantCulture)
+            : "";
+}
+
+<style>
+    @@keyframes oh-fade-up {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .oh-page {
+        max-width: 1600px;
+        margin: 0 auto;
+    }
+
+    .oh-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 14px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .oh-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .oh-title-icon {
+        color: #2563eb;
+        font-size: 28px;
+    }
+
+    .oh-title h2 {
+        margin: 0;
+        color: #0f172a;
+        font-family: 'Bebas Neue', sans-serif;
+        font-size: 30px;
+        letter-spacing: 1px;
+    }
+
+    .oh-subtitle {
+        margin: 4px 0 0;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .oh-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .oh-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        padding: 10px 15px;
+        border-radius: 9px;
+        font-size: 12px;
+        font-weight: 850;
+        text-decoration: none;
+        cursor: pointer;
+        transition: .2s ease;
+    }
+
+        .oh-button:hover {
+            text-decoration: none;
+            transform: translateY(-1px);
+        }
+
+    .oh-button-primary {
+        border: 1px solid #2563eb;
+        color: #fff;
+        background: #2563eb;
+    }
+
+        .oh-button-primary:hover {
+            color: #fff;
+            background: #1d4ed8;
+        }
+
+    .oh-button-light {
+        border: 1px solid #dbe3ef;
+        color: #334155;
+        background: #fff;
+    }
+
+        .oh-button-light:hover {
+            color: #0f172a;
+            background: #f8fafc;
+        }
+
+    .oh-button-pdf {
+        border: 1px solid #fecaca;
+        color: #dc2626;
+        background: #fff;
+    }
+
+        .oh-button-pdf:hover {
+            color: #b91c1c;
+            background: #fef2f2;
+        }
+
+    .oh-button-excel {
+        border: 1px solid #bbf7d0;
+        color: #15803d;
+        background: #fff;
+    }
+
+        .oh-button-excel:hover {
+            color: #166534;
+            background: #f0fdf4;
+        }
+
+    .oh-alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        padding: 12px 15px;
+        margin-bottom: 15px;
+        border: 1px solid;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    .oh-alert-success {
+        color: #15803d;
+        background: #f0fdf4;
+        border-color: #bbf7d0;
+    }
+
+    .oh-alert-error {
+        color: #b91c1c;
+        background: #fef2f2;
+        border-color: #fecaca;
+    }
+
+    .oh-stats {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(140px, 1fr));
+        gap: 12px;
+        margin-bottom: 17px;
+    }
+
+    .oh-stat {
+        padding: 15px;
+        border: 1px solid #e2e8f0;
+        border-radius: 13px;
+        background: #fff;
+        animation: oh-fade-up .3s ease both;
+    }
+
+    .oh-stat-label {
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 850;
+        letter-spacing: .35px;
+        text-transform: uppercase;
+    }
+
+    .oh-stat-value {
+        margin-top: 5px;
+        color: #0f172a;
+        font-size: 24px;
+        font-weight: 900;
+    }
+
+    .oh-financial-summary {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(190px, 1fr));
+        gap: 12px;
+        margin-bottom: 17px;
+    }
+
+    .oh-financial-card {
+        padding: 15px;
+        border: 1px solid #e2e8f0;
+        border-radius: 13px;
+        background: #fff;
+    }
+
+    .oh-financial-label {
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 850;
+        letter-spacing: .35px;
+        text-transform: uppercase;
+    }
+
+    .oh-financial-value {
+        margin-top: 5px;
+        color: #0f172a;
+        font-size: 20px;
+        font-weight: 900;
+    }
+
+    .oh-financial-discount {
+        color: #16a34a;
+    }
+
+    .oh-filter-card {
+        margin-bottom: 18px;
+        padding: 16px;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        background: #fff;
+    }
+
+    .oh-filter-title {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        margin-bottom: 13px;
+        color: #0f172a;
+        font-size: 13px;
+        font-weight: 900;
+    }
+
+        .oh-filter-title i {
+            color: #2563eb;
+        }
+
+    .oh-filter-grid {
+        display: grid;
+        grid-template-columns: minmax(220px, 1.7fr) minmax(165px, 1fr) repeat(2, minmax(145px, .85fr)) repeat(2, minmax(130px, .7fr));
+        gap: 10px;
+    }
+
+    .oh-field label {
+        display: block;
+        margin-bottom: 5px;
+        color: #64748b;
+        font-size: 10px;
+        font-weight: 850;
+        text-transform: uppercase;
+    }
+
+    .oh-input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 10px 11px;
+        border: 1px solid #dbe3ef;
+        border-radius: 8px;
+        outline: none;
+        color: #0f172a;
+        background: #fff;
+        font-size: 12.5px;
+        transition: .2s ease;
+    }
+
+        .oh-input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, .1);
+        }
+
+    .oh-filter-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 13px;
+        flex-wrap: wrap;
+    }
+
+    .oh-checkbox {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+        .oh-checkbox input {
+            width: 16px;
+            height: 16px;
+            accent-color: #2563eb;
+        }
+
+    .oh-filter-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .oh-table-wrap {
+        overflow-x: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        background: #fff;
+        animation: oh-fade-up .35s ease both;
+    }
+
+    .oh-table {
+        width: 100%;
+        min-width: 1250px;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+
+        .oh-table th {
+            padding: 11px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            color: #64748b;
+            background: #f8fafc;
+            font-size: 9.5px;
+            font-weight: 850;
+            text-align: left;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .oh-table td {
+            padding: 13px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+            vertical-align: middle;
+        }
+
+        .oh-table tbody tr {
+            transition: .15s ease;
+        }
+
+            .oh-table tbody tr:hover {
+                background: #fafcff;
+            }
+
+            .oh-table tbody tr:last-child td {
+                border-bottom: 0;
+            }
+
+    .oh-reference {
+        color: #0f172a;
+        font-weight: 900;
+        white-space: nowrap;
+    }
+
+    .oh-muted {
+        margin-top: 3px;
+        color: #64748b;
+        font-size: 10.5px;
+    }
+
+    .oh-member {
+        color: #0f172a;
+        font-weight: 800;
+    }
+
+    .oh-item-list {
+        max-width: 260px;
+    }
+
+    .oh-item {
+        margin-bottom: 4px;
+        color: #475569;
+        font-size: 11px;
+        line-height: 1.35;
+    }
+
+        .oh-item:last-child {
+            margin-bottom: 0;
+        }
+
+    .oh-more {
+        color: #2563eb;
+        font-size: 10px;
+        font-weight: 800;
+    }
+
+    .oh-money {
+        color: #0f172a;
+        font-weight: 850;
+        white-space: nowrap;
+    }
+
+    .oh-discount-value {
+        color: #16a34a;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .oh-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 9px;
+        border-radius: 999px;
+        font-size: 9.5px;
+        font-weight: 900;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .oh-status-paid,
+    .oh-status-preparing {
+        color: #b45309;
+        background: #fffbeb;
+    }
+
+    .oh-status-ready {
+        color: #2563eb;
+        background: #eff6ff;
+    }
+
+    .oh-status-collected,
+    .oh-status-refunded {
+        color: #16a34a;
+        background: #f0fdf4;
+    }
+
+    .oh-status-uncollected {
+        color: #dc2626;
+        background: #fef2f2;
+    }
+
+    .oh-status-pending {
+        color: #9333ea;
+        background: #faf5ff;
+    }
+
+    .oh-status-cancelled,
+    .oh-status-resolved {
+        color: #64748b;
+        background: #f1f5f9;
+    }
+
+    .oh-empty {
+        padding: 60px 20px;
+        color: #64748b;
+        text-align: center;
+    }
+
+        .oh-empty i {
+            display: block;
+            margin-bottom: 10px;
+            color: #94a3b8;
+            font-size: 32px;
+        }
+
+        .oh-empty strong {
+            display: block;
+            margin-bottom: 4px;
+            color: #0f172a;
+            font-size: 14px;
+        }
+
+    @@media (max-width: 1200px) {
+        .oh-filter-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        .oh-stats {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+
+    @@media (max-width: 800px) {
+        .oh-filter-grid,
+        .oh-financial-summary {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .oh-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @@media (max-width: 540px) {
+        .oh-header {
+            flex-direction: column;
+        }
+
+        .oh-header-actions,
+        .oh-header-actions .oh-button {
+            width: 100%;
+        }
+
+        .oh-filter-grid,
+        .oh-financial-summary,
+        .oh-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .oh-filter-footer {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        .oh-filter-actions,
+        .oh-filter-actions .oh-button {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="oh-page">
+    <div class="oh-header">
+        <div>
+            <div class="oh-title">
+                <i class="fas fa-receipt oh-title-icon"></i>
+                <h2>Order History</h2>
+            </div>
+
+            <p class="oh-subtitle">
+                Complete read-only register of GymHub store orders,
+                payments, discounts and outcomes.
+            </p>
+        </div>
+
+        <div class="oh-header-actions">
+            <a class="oh-button oh-button-light"
+               href="@Url.Action("StoreReports", "StoreAdmin")">
+                <i class="fas fa-arrow-left"></i>
+                Reports
+            </a>
+
+            <a class="oh-button oh-button-pdf"
+               href="@Url.Action(
+                   "ExportOrderHistoryPdf",
+                   "StoreAdmin",
+                   new
+                   {
+                       search = Model.Search,
+                       status = Model.Status,
+                       fromDate = fromDateValue,
+                       toDate = toDateValue,
+                       discountOnly = Model.DiscountOnly,
+                       minimumAmount = minimumAmountValue,
+                       maximumAmount = maximumAmountValue
+                   })">
+                <i class="fas fa-file-pdf"></i>
+                Export PDF
+            </a>
+
+            <a class="oh-button oh-button-excel"
+               href="@Url.Action(
+                   "ExportOrderHistoryExcel",
+                   "StoreAdmin",
+                   new
+                   {
+                       search = Model.Search,
+                       status = Model.Status,
+                       fromDate = fromDateValue,
+                       toDate = toDateValue,
+                       discountOnly = Model.DiscountOnly,
+                       minimumAmount = minimumAmountValue,
+                       maximumAmount = maximumAmountValue
+                   })">
+                <i class="fas fa-file-excel"></i>
+                Export Excel
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="oh-alert oh-alert-success">
+            <i class="fas fa-circle-check"></i>
+            <span>@TempData["Success"]</span>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="oh-alert oh-alert-error">
+            <i class="fas fa-circle-exclamation"></i>
+            <span>@TempData["Error"]</span>
+        </div>
+    }
+
+    <div class="oh-stats">
+        <div class="oh-stat">
+            <div class="oh-stat-label">Matching records</div>
+            <div class="oh-stat-value">@Model.TotalRecords</div>
+        </div>
+
+        <div class="oh-stat">
+            <div class="oh-stat-label">Active orders</div>
+            <div class="oh-stat-value">@Model.ActiveCount</div>
+        </div>
+
+        <div class="oh-stat">
+            <div class="oh-stat-label">Collected</div>
+            <div class="oh-stat-value">@Model.CollectedCount</div>
+        </div>
+
+        <div class="oh-stat">
+            <div class="oh-stat-label">Uncollected</div>
+            <div class="oh-stat-value">@Model.UncollectedCount</div>
+        </div>
+
+        <div class="oh-stat">
+            <div class="oh-stat-label">Cancelled</div>
+            <div class="oh-stat-value">@Model.CancelledCount</div>
+        </div>
+    </div>
+
+    <div class="oh-financial-summary">
+        <div class="oh-financial-card">
+            <div class="oh-financial-label">
+                Filtered subtotal
+            </div>
+
+            <div class="oh-financial-value">
+                @("R" + Model.TotalSubtotal.ToString("N2"))
+            </div>
+        </div>
+
+        <div class="oh-financial-card">
+            <div class="oh-financial-label">
+                Premium discounts
+            </div>
+
+            <div class="oh-financial-value oh-financial-discount">
+                @("-R" + Model.TotalDiscounts.ToString("N2"))
+            </div>
+        </div>
+
+        <div class="oh-financial-card">
+            <div class="oh-financial-label">
+                Filtered amount paid
+            </div>
+
+            <div class="oh-financial-value">
+                @("R" + Model.TotalPaid.ToString("N2"))
+            </div>
+        </div>
+    </div>
+
+    <div class="oh-filter-card">
+        <div class="oh-filter-title">
+            <i class="fas fa-filter"></i>
+            Filter Order Records
+        </div>
+
+        @using (Html.BeginForm(
+            "OrderHistory",
+            "StoreAdmin",
+            FormMethod.Get))
+        {
+            <div class="oh-filter-grid">
+                <div class="oh-field">
+                    <label for="search">Search</label>
+
+                    <input id="search"
+                           class="oh-input"
+                           type="search"
+                           name="search"
+                           value="@Model.Search"
+                           placeholder="Order, payment reference, member or email" />
+                </div>
+
+                <div class="oh-field">
+                    <label for="status">Order status</label>
+
+                    @Html.DropDownList(
+                             "status",
+                             new SelectList(
+                                 new[]
+                                 {
+                                new { Value = "", Text = "All statuses" },
+                                new { Value = "Paid", Text = "Payment received" },
+                                new { Value = "Preparing", Text = "Preparing" },
+                                new { Value = "ReadyForPickup", Text = "Ready for pickup" },
+                                new { Value = "Collected", Text = "Collected" },
+                                new { Value = "UncollectedPendingReview", Text = "Uncollected – awaiting review" },
+                                new { Value = "UncollectedRefundPending", Text = "Uncollected – refund pending" },
+                                new { Value = "UncollectedRefunded", Text = "Uncollected – refunded" },
+                                new { Value = "UncollectedResolved", Text = "Uncollected – resolved" },
+                                new { Value = "Cancelled", Text = "Cancelled" },
+                                new { Value = "Refunded", Text = "Refunded" }
+                             },
+                                 "Value",
+                                 "Text",
+                                 Model.Status),
+                             new
+                             {
+                                 @class = "oh-input",
+                                 id = "status"
+                             })
+                </div>
+
+                <div class="oh-field">
+                    <label for="fromDate">From date</label>
+
+                    <input id="fromDate"
+                           class="oh-input"
+                           type="date"
+                           name="fromDate"
+                           value="@fromDateValue" />
+                </div>
+
+                <div class="oh-field">
+                    <label for="toDate">To date</label>
+
+                    <input id="toDate"
+                           class="oh-input"
+                           type="date"
+                           name="toDate"
+                           value="@toDateValue" />
+                </div>
+
+                <div class="oh-field">
+                    <label for="minimumAmount">Minimum paid</label>
+
+                    <input id="minimumAmount"
+                           class="oh-input"
+                           type="number"
+                           name="minimumAmount"
+                           min="0"
+                           step="0.01"
+                           value="@minimumAmountValue"
+                           placeholder="0.00" />
+                </div>
+
+                <div class="oh-field">
+                    <label for="maximumAmount">Maximum paid</label>
+
+                    <input id="maximumAmount"
+                           class="oh-input"
+                           type="number"
+                           name="maximumAmount"
+                           min="0"
+                           step="0.01"
+                           value="@maximumAmountValue"
+                           placeholder="0.00" />
+                </div>
+            </div>
+
+            <div class="oh-filter-footer">
+                <label class="oh-checkbox">
+                    <input type="checkbox"
+                           name="discountOnly"
+                           value="true"
+                           @(Model.DiscountOnly ? "checked" : null) />
+
+                    Show only orders with a premium discount
+                </label>
+
+                <div class="oh-filter-actions">
+                    <a class="oh-button oh-button-light"
+                       href="@Url.Action("OrderHistory", "StoreAdmin")">
+                        <i class="fas fa-rotate-left"></i>
+                        Clear
+                    </a>
+
+                    <button class="oh-button oh-button-primary"
+                            type="submit">
+                        <i class="fas fa-filter"></i>
+                        Apply Filters
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="oh-table-wrap">
+        @if (!orders.Any())
+        {
+            <div class="oh-empty">
+                <i class="fas fa-receipt"></i>
+                <strong>No matching orders</strong>
+
+                <span>
+                    Adjust the selected filters and try again.
+                </span>
+            </div>
+        }
+        else
+        {
+            <table class="oh-table">
+                <thead>
+                    <tr>
+                        <th>Order</th>
+                        <th>Member</th>
+                        <th>Items</th>
+                        <th>Subtotal</th>
+                        <th>Discount</th>
+                        <th>Amount paid</th>
+                        <th>Payment reference</th>
+                        <th>Status</th>
+                        <th>Record</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var order in orders)
+                    {
+                        string statusText = order.Status;
+                        string statusClass = "oh-status-resolved";
+                        string statusIcon = "fas fa-circle";
+
+                        switch (order.Status)
+                        {
+                            case "Paid":
+                                statusText = "Payment Received";
+                                statusClass = "oh-status-paid";
+                                statusIcon = "fas fa-credit-card";
+                                break;
+
+                            case "Preparing":
+                                statusText = "Preparing";
+                                statusClass = "oh-status-preparing";
+                                statusIcon = "fas fa-box";
+                                break;
+
+                            case "ReadyForPickup":
+                                statusText = "Ready for Pickup";
+                                statusClass = "oh-status-ready";
+                                statusIcon = "fas fa-store";
+                                break;
+
+                            case "Collected":
+                                statusText = "Collected";
+                                statusClass = "oh-status-collected";
+                                statusIcon = "fas fa-circle-check";
+                                break;
+
+                            case "Uncollected":
+                            case "UncollectedPendingReview":
+                                statusText = "Uncollected – Review";
+                                statusClass = "oh-status-uncollected";
+                                statusIcon = "fas fa-triangle-exclamation";
+                                break;
+
+                            case "UncollectedRefundPending":
+                                statusText = "Refund Pending";
+                                statusClass = "oh-status-pending";
+                                statusIcon = "fas fa-hourglass-half";
+                                break;
+
+                            case "UncollectedRefunded":
+                            case "Refunded":
+                                statusText = "Refunded";
+                                statusClass = "oh-status-refunded";
+                                statusIcon = "fas fa-money-bill-transfer";
+                                break;
+
+                            case "UncollectedResolved":
+                                statusText = "Resolved";
+                                statusClass = "oh-status-resolved";
+                                statusIcon = "fas fa-circle-check";
+                                break;
+
+                            case "Cancelled":
+                                statusText = "Cancelled";
+                                statusClass = "oh-status-cancelled";
+                                statusIcon = "fas fa-ban";
+                                break;
+                        }
+
+                        var visibleItems =
+                            order.Items != null
+                                ? order.Items.Take(3).ToList()
+                                : new List<SwiftyS26.Models.StoreOrderItem>();
+
+                        int extraItemCount =
+                            order.Items != null
+                                ? Math.Max(
+                                    order.Items.Count - visibleItems.Count,
+                                    0)
+                                : 0;
+
+                        <tr>
+                            <td>
+                                <div class="oh-reference">
+                                    @order.ReferenceNumber
+                                </div>
+
+                                <div class="oh-muted">
+                                    @order.CreatedAt.ToString(
+                                             "dd MMM yyyy HH:mm")
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="oh-member">
+                                    @(order.Member != null
+                                        ? order.Member.FullName
+                                        : "Unknown member")
+                                </div>
+
+                                <div class="oh-muted">
+                                    @(order.Member != null &&
+                                      !string.IsNullOrWhiteSpace(
+                                          order.Member.Email)
+                                        ? order.Member.Email
+                                        : "No email recorded")
+                                </div>
+                            </td>
+
+                            <td>
+                                <div class="oh-item-list">
+                                    @if (!visibleItems.Any())
+                                    {
+                                        <div class="oh-muted">
+                                            No item records
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        foreach (var item in visibleItems)
+                                        {
+                                            <div class="oh-item">
+                                                @(item.Product != null
+                                                    ? item.Product.Name
+                                                    : "Unknown product")
+                                                &times; @item.Quantity
+                                            </div>
+                                        }
+
+                                        if (extraItemCount > 0)
+                                        {
+                                            <div class="oh-more">
+                                                +@extraItemCount more item(s)
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            </td>
+
+                            <td>
+                                <span class="oh-money">
+                                    @("R" + order.Subtotal.ToString("N2"))
+                                </span>
+                            </td>
+
+                            <td>
+                                @if (order.DiscountAmount > 0)
+                                {
+                                    <span class="oh-discount-value">
+                                        @("-R" +
+                                          order.DiscountAmount.ToString("N2"))
+                                    </span>
+
+                                    <div class="oh-muted">
+                                        Premium
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="oh-muted">—</span>
+                                }
+                            </td>
+
+                            <td>
+                                <span class="oh-money">
+                                    @("R" + order.FinalTotal.ToString("N2"))
+                                </span>
+                            </td>
+
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(
+                                    order.PaystackReference))
+                                {
+                                    <span>
+                                        @order.PaystackReference
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="oh-muted">
+                                        Not recorded
+                                    </span>
+                                }
+                            </td>
+
+                            <td>
+                                <span class="oh-status @statusClass">
+                                    <i class="@statusIcon"></i>
+                                    @statusText
+                                </span>
+                            </td>
+
+                            <td>
+                                <a class="oh-button oh-button-light"
+                                   href="@Url.Action(
+                                       "OrderHistoryDetails",
+                                       "StoreAdmin",
+                                       new
+                                       {
+                                           id = order.StoreOrderId
+                                       })">
+                                    View Record
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

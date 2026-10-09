@@ -1,0 +1,240 @@
+﻿@{
+    Layout = Session["LoggedInAdmin"] != null
+        ? "~/Views/Shared/_AdminLayout.cshtml"
+        : "~/Views/Shared/_StoreStaffLayout.cshtml";
+
+    ViewBag.Title = "Scan Delivery";
+    ViewBag.PageTitle = "SCAN DELIVERY";
+}
+
+<style>
+    .sd-page {
+        max-width: 800px;
+        margin: auto;
+    }
+
+    .sd-card {
+        background: #fff;
+        border: 1px solid #E2E8F0;
+        border-radius: 14px;
+        padding: 24px;
+        margin-bottom: 16px;
+    }
+
+        .sd-card h2 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 26px;
+            letter-spacing: 1px;
+            margin: 0 0 5px;
+        }
+
+    .sd-muted {
+        color: #64748B;
+        font-size: 12.5px;
+    }
+
+    .sd-tabs {
+        display: flex;
+        gap: 8px;
+        margin: 18px 0;
+    }
+
+    .sd-tab {
+        flex: 1;
+        padding: 11px;
+        border: 1px solid #CBD5E1;
+        background: #fff;
+        border-radius: 9px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+        .sd-tab.active {
+            background: #2563EB;
+            color: #fff;
+            border-color: #2563EB;
+        }
+
+    .sd-reader {
+        max-width: 520px;
+        margin: 0 auto;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .sd-status {
+        padding: 13px;
+        border-radius: 9px;
+        margin-top: 15px;
+        display: none;
+        font-size: 13px;
+    }
+
+    .sd-error {
+        display: block;
+        background: #FEF2F2;
+        color: #DC2626;
+    }
+
+    .sd-success {
+        display: block;
+        background: #F0FDF4;
+        color: #16A34A;
+    }
+
+    .sd-match {
+        display: block;
+        width: 100%;
+        padding: 12px;
+        margin-top: 8px;
+        text-align: left;
+        border: 1px solid #E2E8F0;
+        border-radius: 9px;
+        background: #fff;
+        cursor: pointer;
+    }
+
+        .sd-match:hover {
+            border-color: #2563EB;
+            background: #EFF6FF;
+        }
+
+    .sd-manual {
+        display: flex;
+        gap: 8px;
+        margin-top: 18px;
+    }
+
+        .sd-manual input {
+            flex: 1;
+            padding: 11px;
+            border: 1px solid #CBD5E1;
+            border-radius: 9px;
+        }
+
+    .sd-btn {
+        padding: 11px 17px;
+        border: 0;
+        border-radius: 9px;
+        background: #2563EB;
+        color: #fff;
+        font-weight: 700;
+        cursor: pointer;
+    }
+</style>
+
+<div class="sd-page">
+    <div class="sd-card">
+        <h2><i class="fas fa-qrcode" style="color:#2563EB"></i> Scan Supplier Delivery</h2>
+        <div class="sd-muted">Scan the purchase-order QR for an exact match. A product QR can be used as a fallback.</div>
+
+        <div class="sd-tabs">
+            <button id="poTab" class="sd-tab active" type="button">Purchase Order QR</button>
+            <button id="productTab" class="sd-tab" type="button">Product QR Fallback</button>
+        </div>
+
+        <div id="reader" class="sd-reader"></div>
+        <div id="status" class="sd-status"></div>
+        <div id="matches"></div>
+
+        <div class="sd-manual">
+            <input id="manualQr" placeholder="Paste decoded QR content as a fallback" />
+            <button id="verifyManual" class="sd-btn" type="button">Verify</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+    (function () {
+        var mode = 'po';
+        var busy = false;
+        var status = document.getElementById('status');
+        var matches = document.getElementById('matches');
+
+        function setMode(value) {
+            mode = value;
+            document.getElementById('poTab').classList.toggle('active', mode === 'po');
+            document.getElementById('productTab').classList.toggle('active', mode === 'product');
+            status.className = 'sd-status';
+            status.textContent = '';
+            matches.innerHTML = '';
+        }
+
+        document.getElementById('poTab').onclick = function () { setMode('po'); };
+        document.getElementById('productTab').onclick = function () { setMode('product'); };
+
+        function show(message, ok) {
+            status.className = 'sd-status ' + (ok ? 'sd-success' : 'sd-error');
+            status.textContent = message;
+        }
+
+        function verify(qrData) {
+            if (busy || !qrData) return;
+            busy = true;
+
+            var url = mode === 'po'
+                ? '@Url.Action("VerifyDeliveryQr", "StoreAdmin")'
+                : '@Url.Action("FindPurchaseOrdersByProductQr", "StoreAdmin")';
+
+            var body = 'qrData=' + encodeURIComponent(qrData);
+
+            fetch(url, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                body: body
+            })
+                .then(function (r) { return r.json(); })
+                .then(function (result) {
+                    busy = false;
+
+                    if (!result.success) {
+                        show(result.message || 'QR verification failed.', false);
+                        return;
+                    }
+
+                    if (mode === 'po') {
+                        show('Purchase order verified. Opening inspection...', true);
+                        window.location.href = result.redirectUrl;
+                        return;
+                    }
+
+                    show(result.productName + ' verified. Select the matching delivery.', true);
+                    matches.innerHTML = '';
+
+                    result.matches.forEach(function (m) {
+                        var button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'sd-match';
+                        button.innerHTML =
+                            '<strong>' + m.referenceNumber + '</strong><br>' +
+                            '<span>' + m.supplierName + ' • Expected ' + m.expectedQty + '</span>';
+
+                        button.onclick = function () {
+                            window.location.href =
+                                '@Url.Action("InspectDelivery", "StoreAdmin")?purchaseOrderId=' + m.purchaseOrderId;
+                        };
+
+                        matches.appendChild(button);
+                    });
+                })
+                .catch(function () {
+                    busy = false;
+                    show('Could not contact GymHub. Please try again.', false);
+                });
+        }
+
+        document.getElementById('verifyManual').onclick = function () {
+            verify(document.getElementById('manualQr').value);
+        };
+
+        if (typeof Html5QrcodeScanner === 'undefined') {
+            show('Camera scanner could not load. Use manual QR content below.', false);
+            return;
+        }
+
+        var scanner = new Html5QrcodeScanner('reader', { fps: 10, qrbox: { width: 250, height: 250 } }, false);
+        scanner.render(function (decodedText) { verify(decodedText); }, function () { });
+    })();
+</script>

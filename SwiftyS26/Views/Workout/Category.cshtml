@@ -1,0 +1,81 @@
+﻿@{
+    Layout = "~/Views/Shared/_DashboardLayout.cshtml";
+    ViewBag.ActivePage = "workout";
+
+    var category = ViewBag.Category as SwiftyS26.Models.WorkoutCategory;
+    var plans = ViewBag.Plans as List<SwiftyS26.Models.WorkoutPlan>;
+
+    ViewBag.PageTitle = category != null ? category.Name : "Workout Plans";
+}
+
+@section head {
+    <link href="~/Content/workout.css" rel="stylesheet" />
+}
+
+<!-- Category Hero -->
+<div class="category-hero" style="background: linear-gradient(135deg, @category.ColorAccent20 0%, rgba(15,23,42,0.95) 100%);">
+    <div class="hero-back-link">
+        <a href="@Url.Action("Index", "Workout")" class="back-link">
+            <i class="fas fa-arrow-left"></i> Back to Workout Hub
+        </a>
+    </div>
+    <div class="hero-content-center">
+        <div class="category-icon-large" style="background: @category.ColorAccent20; color: @category.ColorAccent">
+            <i class="@category.IconClass"></i>
+        </div>
+        <h1 class="category-title">@category.Name</h1>
+        <p class="category-description">@category.Description</p>
+    </div>
+</div>
+
+<!-- Plans Section -->
+<div class="workout-plans-section">
+    <div class="section-header">
+        <div class="section-title">Available Plans</div>
+        <div class="section-sub">Select a plan that matches your fitness level</div>
+    </div>
+
+    @if (plans == null || !plans.Any())
+    {
+        <div class="empty-state">
+            <i class="fas fa-dumbbell"></i>
+            <p>No plans available for this category</p>
+        </div>
+    }
+    else
+    {
+        <div class="plans-grid">
+            @foreach (var plan in plans)
+            {
+                string difficultyClass = plan.Difficulty != null ? plan.Difficulty.ToLower() : "beginner";
+
+                <div class="plan-card">
+                    <div class="plan-card-header">
+                        <span class="plan-difficulty @difficultyClass">
+                            <i class="fas fa-signal"></i> @plan.Difficulty
+                        </span>
+                        <span class="plan-duration">
+                            <i class="fas fa-clock"></i> @plan.EstimatedMinutes min
+                        </span>
+                    </div>
+                    <h3 class="plan-name">@plan.Name</h3>
+                    <p class="plan-description">@plan.Description</p>
+                    <div class="plan-equipment">
+                        <i class="fas fa-dumbbell"></i>
+                        <span>@plan.Equipment</span>
+                    </div>
+                    <a href="@Url.Action("Start", "Workout", new { planId = plan.PlanId })" class="plan-start-btn">
+                        <i class="fas fa-play"></i> Start Workout
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@section scripts {
+    <script>
+        console.log('Workout category loaded: @(category != null ? category.Name : "")');
+    </script>
+}
